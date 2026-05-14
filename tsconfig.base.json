@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": false,
+    "checkJs": false,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@kb/ai-providers": ["src/packages/ai-providers/src/index.ts"],
+      "@kb/audit": ["src/packages/audit/src/index.ts"],
+      "@kb/auth": ["src/packages/auth/src/index.ts"],
+      "@kb/config": ["src/packages/config/src/index.ts"],
+      "@kb/db": ["src/packages/db/src/index.ts"],
+      "@kb/ingestion": ["src/packages/ingestion/src/index.ts"],
+      "@kb/knowledge": ["src/packages/knowledge/src/index.ts"],
+      "@kb/observability": ["src/packages/observability/src/index.ts"],
+      "@kb/queue": ["src/packages/queue/src/index.ts"],
+      "@kb/rag": ["src/packages/rag/src/index.ts"],
+      "@kb/search": ["src/packages/search/src/index.ts"],
+      "@kb/security": ["src/packages/security/src/index.ts"],
+      "@kb/shared": ["src/packages/shared/src/index.ts"],
+      "@kb/storage": ["src/packages/storage/src/index.ts"],
+      "@kb/users": ["src/packages/users/src/index.ts"]
+    }
+  }
+}

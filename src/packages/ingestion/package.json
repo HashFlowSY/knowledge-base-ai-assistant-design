@@ -1,0 +1,19 @@
+{
+  "name": "@kb/ingestion",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kb/knowledge": "workspace:*",
+    "zod": "^3.24.0"
+  }
+}

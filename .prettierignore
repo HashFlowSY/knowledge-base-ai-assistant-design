@@ -1,0 +1,14 @@
+.codex
+.git
+.trellis
+.turbo
+**/.next
+**/.turbo
+coverage
+**/coverage
+dist
+**/dist
+node_modules
+playwright-report
+test-results
+pnpm-lock.yaml
