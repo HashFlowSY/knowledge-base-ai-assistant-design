@@ -144,6 +144,86 @@ URL ingestion must enforce:
 
 Redirects must be revalidated at every hop. DNS resolution and IP classification must be performed on the final target before fetching content.
 
+### URL Ingestion SSRF Pre-Validation Contract
+
+#### 1. Scope / Trigger
+
+- Trigger: any code that accepts a URL ingestion payload before enqueueing or fetching remote content.
+- Owner: `src/packages/queue` owns the shared payload schema; future fetchers must re-use or strengthen the same invariant.
+
+#### 2. Signatures
+
+- Payload field: `sourceUrl: string`.
+- Schema: `sourceUrlSchema`.
+- Job contract: `ingestionJobPayloadSchema` with `type: "url_ingestion"`.
+
+#### 3. Contracts
+
+- Allow only `http:` and `https:` protocols.
+- Reject localhost aliases before enqueueing: `localhost`, subdomains under `.localhost`, trailing-dot aliases such as `localhost.`, and loopback IP literals.
+- Reject private, link-local, carrier-grade NAT, multicast/reserved, and otherwise non-public IP literals before enqueueing.
+- Treat bracketed IPv6 hosts as IP literals after removing brackets.
+- Treat IPv4-mapped IPv6 literals as IPv4 for private-range classification.
+- Do not classify ordinary DNS names as IPv6 just because they start with text like `fc` or `fd`; only IP literals should use IP range checks.
+
+#### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| `https://example.com/source.html` | Accepted |
+| `https://fc00.example.com/source.html` | Accepted as a DNS hostname |
+| `file:///etc/passwd` | Rejected with `URL protocol is not allowed` |
+| `http://127.0.0.1/admin` | Rejected with `URL host is not allowed` |
+| `http://0177.0.0.1/admin` | Rejected with `URL host is not allowed` |
+| `https://10.0.0.8/source` | Rejected with `URL host is not allowed` |
+| `https://192.0.2.10/source` | Rejected with `URL host is not allowed` |
+| `https://[::1]/source` | Rejected with `URL host is not allowed` |
+| `https://[::ffff:127.0.0.1]/source` | Rejected with `URL host is not allowed` |
+| `https://localhost./source` | Rejected with `URL host is not allowed` |
+
+#### 5. Good/Base/Bad Cases
+
+- Good: validate the normalized URL object and classify hosts at the queue boundary before any worker fetcher can receive the job.
+- Base: public HTTP(S) DNS hostnames remain valid so legitimate imports can be queued.
+- Bad: checking `hostname.startsWith("fc")` before proving the host is an IP literal; this blocks normal domains such as `fc00.example.com`.
+
+#### 6. Tests Required
+
+- Unit tests for public HTTP(S) acceptance and non-HTTP(S) rejection.
+- Unit tests for localhost, textual loopback aliases, private IPv4, reserved IPv4, bracketed IPv6 loopback, IPv4-mapped IPv6, and trailing-dot localhost aliases.
+- Unit tests for DNS hostnames that resemble private IPv6 prefixes but are not IP literals.
+
+#### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+function isBlockedUrlHost(hostname: string): boolean {
+  return hostname.startsWith("fc") || hostname === "localhost";
+}
+```
+
+This confuses DNS labels with IPv6 literals and misses normalized forms such as `[::1]` and `localhost.`.
+
+#### Correct
+
+```typescript
+function isBlockedUrlHost(hostname: string): boolean {
+  const normalized = normalizeUrlHostname(hostname);
+  const ipVersion = isIP(normalized);
+
+  if (ipVersion === 4) {
+    return isPrivateIpv4(normalized);
+  }
+
+  if (ipVersion === 6) {
+    return isPrivateIpv6(normalized);
+  }
+
+  return normalized === "localhost" || normalized.endsWith(".localhost");
+}
+```
+
 ## CORS and CSRF
 
 CORS must default to the deployed web origin, not `*`, for authenticated APIs.
