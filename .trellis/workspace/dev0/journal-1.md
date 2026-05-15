@@ -46,3 +46,37 @@ Initialized Trellis project metadata and scaffolded the Next.js 16 local develop
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: Database schema and security hardening
+
+**Date**: 2026-05-15
+**Task**: Database schema and security hardening
+**Branch**: `main`
+
+### Summary
+
+Added initial Drizzle database schema and migrations; hardened URL ingestion and storage filename boundaries; archived completed database and security hardening tasks.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4acd828` | (see git log) |
+| `1560834` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
