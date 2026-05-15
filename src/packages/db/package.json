@@ -15,9 +15,13 @@
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.45.2",
+    "pg": "^8.13.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.30.0"
+    "@types/pg": "^8.11.0",
+    "drizzle-kit": "^0.31.10"
   }
 }
