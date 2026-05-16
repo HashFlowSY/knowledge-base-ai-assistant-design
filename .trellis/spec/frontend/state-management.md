@@ -77,3 +77,28 @@ Bad uses:
 - Per-list pagination and filters.
 - State used by a single component.
 
+## Frontend-Only Mock Store Exception
+
+Use this pattern only for frontend MVP review tasks that explicitly exclude real
+backend/auth/API integration.
+
+When a task needs cross-page mock workflow state:
+
+- Keep the mock business state behind one feature-owned boundary, such as
+  `src/apps/web/src/features/mock/store.tsx`.
+- Persist only to a clearly named frontend-only `localStorage` key.
+- Include a `schemaVersion` field in the persisted shape.
+- Initialize from deterministic seed data when storage is absent.
+- Discard and recover to seed data when JSON parsing fails, `schemaVersion` is
+  unsupported, or required top-level collections are missing.
+- Show a non-raw user-facing recovery notice after discarding bad persisted
+  state.
+- Provide a visible development/mock reset control.
+- Keep feature components receiving typed data and mutation callbacks from the
+  store; do not import unrelated page fixtures.
+- Keep URL search params responsible for list state such as `search`, `filter`,
+  `sort`, and `page`.
+
+This exception is not a production persistence contract. When real APIs exist,
+server state must move to TanStack Query hooks and typed API contracts rather
+than remaining in React Context.
