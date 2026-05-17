@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   documentChunkDetailScrollClassName,
   documentChunkPlaceholderClassName,
+  documentChunkReturnButtonClassName,
+  documentChunkReturnLabel,
   documentDetailExitHref,
   documentDetailHeaderActionsClassName,
   documentDetailLogHref,
@@ -74,5 +76,11 @@ describe("document detail layout", () => {
 
     expect(documentChunkDetailScrollClassName()).toContain("pl-4");
     expect(documentChunkDetailScrollClassName()).toContain("pr-4");
+  });
+
+  it("provides an in-page exit action for selected chunk details", () => {
+    expect(documentChunkReturnLabel()).toBe("返回片段列表");
+    expect(documentChunkReturnButtonClassName()).toContain("w-full");
+    expect(documentChunkReturnButtonClassName()).toContain("justify-center");
   });
 });

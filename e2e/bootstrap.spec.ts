@@ -70,3 +70,67 @@ test("member can view tasks but cannot access admin-only routes directly", async
   await expect(page.getByRole("heading", { name: "无权访问此页面" })).toBeVisible();
   await expect(page.getByRole("link", { name: "模型服务" })).toHaveCount(0);
 });
+
+test("admin manages model service and user CRUD flows", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "登录" }).click();
+
+  await page.goto("/providers");
+  const rerankRow = page.getByRole("button", { name: /重排模型 · 重排模型服务/ }).locator("xpath=..");
+  await rerankRow.getByRole("button", { name: "删除" }).click();
+  await page.getByRole("button", { name: "确认" }).click();
+  await expect(page.getByText("重排模型配置已删除。")).toBeVisible();
+
+  await page.getByRole("button", { name: "配置" }).click();
+  await page.getByLabel("服务名称").fill("重排模型服务 E2E");
+  await page.getByLabel("模型 ID").fill("rerank-e2e-v1");
+  await page.getByLabel("Base URL").fill("https://models.example.com/v1");
+  await page.getByLabel("API Key").fill("sk-rerank-e2e-1234");
+  await page.getByRole("button", { name: "保存并测试" }).click();
+  await expect(page.getByText("重排模型已保存，并完成连接测试。")).toBeVisible();
+  await expect(page.getByText("重排模型 · 重排模型服务 E2E")).toBeVisible();
+
+  const createdProviderRow = page
+    .getByRole("button", { name: /重排模型 · 重排模型服务 E2E/ })
+    .locator("xpath=..");
+  await createdProviderRow.getByRole("button", { name: "编辑" }).click();
+  await page.getByLabel("模型 ID").fill("rerank-e2e-v2");
+  await page.getByRole("button", { name: "保存并测试" }).click();
+  await expect(page.getByText("rerank-e2e-v2")).toBeVisible();
+
+  await page.goto("/users");
+  await page.getByRole("button", { name: "新增用户" }).click();
+  await page.getByLabel("姓名").fill("自动化用户");
+  await page.getByLabel("邮箱").fill("automation@example.com");
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByText("用户已新增。")).toBeVisible();
+  await expect(page.getByText("automation@example.com")).toBeVisible();
+
+  const userRow = page.getByRole("button", { name: /自动化用户/ }).locator("xpath=..");
+  await userRow.getByRole("button", { name: "编辑" }).click();
+  await page.getByLabel("姓名").fill("自动化用户二");
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByText("用户信息已更新。")).toBeVisible();
+  await expect(page.getByText("自动化用户二")).toBeVisible();
+
+  const updatedUserRow = page.getByRole("button", { name: /自动化用户二/ }).locator("xpath=..");
+  await updatedUserRow.getByRole("button", { name: "删除" }).click();
+  await page.getByRole("button", { name: "确认" }).click();
+  await expect(page.getByText("用户已删除。")).toBeVisible();
+  await expect(page.getByText("automation@example.com")).toHaveCount(0);
+});
+
+test("document detail links open related task and log details", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "登录" }).click();
+
+  await page.goto("/documents/doc-travel-policy");
+  await page.getByRole("link", { name: "查看相关任务" }).click();
+  await expect(page).toHaveURL(/\/tasks\?selectedId=job-import-001$/);
+  await expect(page.getByLabel("详情").getByText("job-import-001")).toBeVisible();
+
+  await page.goto("/documents/doc-travel-policy");
+  await page.getByRole("link", { name: "查看日志" }).click();
+  await expect(page).toHaveURL(/\/logs\?selectedId=log-import-002$/);
+  await expect(page.getByLabel("详情").getByText("log-import-002")).toBeVisible();
+});

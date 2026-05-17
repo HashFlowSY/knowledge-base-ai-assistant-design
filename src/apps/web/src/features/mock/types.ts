@@ -47,8 +47,6 @@ export type MockAuditAction =
   | "provider.create"
   | "provider.update"
   | "provider.delete"
-  | "provider.enable"
-  | "provider.disable"
   | "provider.test_connection"
   | "user.create"
   | "user.update"
@@ -296,7 +294,6 @@ export type MockAction =
     }
   | { type: "saveProviderConfig"; provider: MockProviderConfigInput }
   | { type: "deleteProviderConfig"; providerId: string }
-  | { type: "setProviderStatus"; providerId: string; status: "enabled" | "disabled" }
   | { type: "createUser"; name: string; email: string; role: MockRole; status: MockUserStatus }
   | { type: "updateUser"; userId: string; name: string; email: string; role: MockRole; status: MockUserStatus }
   | { type: "deleteUser"; userId: string }

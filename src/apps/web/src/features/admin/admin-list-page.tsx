@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Copy, Pencil, Plus, Search, Trash2, UserPlus } from "lucide-react";
-import { type FormEvent, type ReactElement, useState } from "react";
+import { type ReactElement, useState } from "react";
 
 import { adminCopy } from "../../copy/admin";
 import {
@@ -17,16 +17,11 @@ import type {
   MockAuditEvent,
   MockIngestionJob,
   MockProcessingLog,
-  MockProviderConfig,
-  MockProviderConfigInput,
   MockProviderKind,
-  MockRole,
   MockState,
   MockUser,
-  MockUserStatus,
 } from "../mock/types";
 import { Button, ButtonLink } from "../ui/button";
-import { DialogFrame } from "../ui/dialog";
 import { Drawer } from "../ui/drawer";
 import { Notice } from "../ui/notice";
 import { Panel, PanelHeader } from "../ui/panel";
@@ -39,7 +34,6 @@ import {
   canRetryIngestionJob,
   parsePositiveInt,
   providerSlotsForState,
-  providerKindLabels,
   rowSelectionFromId,
   rowsForKind,
   shouldShowDetailCopyButton,
@@ -58,6 +52,9 @@ import {
   adminRowPrimaryActionClassName,
   adminRowSideClassName,
 } from "./admin-list-layout";
+import { AdminPagination } from "./admin-pagination";
+import { ProviderConfigDialog } from "./provider-config-dialog";
+import { UserDialog } from "./user-dialog";
 
 type SelectedRow =
   | { kind: "tasks"; id: string }
@@ -282,7 +279,7 @@ function PaginatedRows({
           state={state}
         />
       </ScrollArea>
-      <Pagination
+      <AdminPagination
         currentPage={currentPage}
         pageSize={pageSize}
         total={rows.length}
@@ -754,294 +751,6 @@ function EmptyState({ message }: { message: string }): ReactElement {
   );
 }
 
-function Pagination({
-  currentPage,
-  pageSize,
-  total,
-  totalPages,
-  updateParam,
-}: {
-  currentPage: number;
-  pageSize: number;
-  total: number;
-  totalPages: number;
-  updateParam: (key: string, value: string) => void;
-}): ReactElement {
-  return (
-    <div className="flex flex-col gap-3 border-t border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-slate-600">
-        共 {total} 条 · 第 {currentPage}/{totalPages} 页
-      </p>
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2 text-sm text-slate-600">
-          每页
-          <SelectField
-            ariaLabel="每页条数"
-            className="w-20"
-            onChange={(value) => updateParam("pageSize", value)}
-            options={toSelectOptions([["5", "5"], ["8", "8"], ["12", "12"]])}
-            value={pageSize.toString()}
-          />
-        </div>
-        <Button
-          disabled={currentPage <= 1}
-          disabledReason="已经是第一页。"
-          onClick={() => updateParam("page", (currentPage - 1).toString())}
-        >
-          上一页
-        </Button>
-        <Button
-          disabled={currentPage >= totalPages}
-          disabledReason="已经是最后一页。"
-          onClick={() => updateParam("page", (currentPage + 1).toString())}
-        >
-          下一页
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function UserDialog({
-  onClose,
-  onNotice,
-  user,
-}: {
-  onClose: () => void;
-  onNotice: (notice: string) => void;
-  user: MockUser | null;
-}): ReactElement {
-  const { dispatch } = useMockStore();
-  const [name, setName] = useState(user?.name ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
-  const [role, setRole] = useState<MockRole>(user?.role ?? "member");
-  const [status, setStatus] = useState<MockUserStatus>(user?.status ?? "active");
-  const [error, setError] = useState<string | null>(null);
-  const isCreateMode = user === null;
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    if (name.trim().length === 0) {
-      setError(adminCopy.validation.nameRequired);
-      return;
-    }
-    if (!email.includes("@")) {
-      setError(adminCopy.validation.emailRequired);
-      return;
-    }
-
-    if (isCreateMode) {
-      dispatch({ email: email.trim(), name: name.trim(), role, status, type: "createUser" });
-      onNotice("用户已新增。");
-    } else if (user !== null) {
-      dispatch({
-        email: email.trim(),
-        name: name.trim(),
-        role,
-        status,
-        type: "updateUser",
-        userId: user.id,
-      });
-      onNotice("用户信息已更新。");
-    }
-    onClose();
-  }
-
-  return (
-    <DialogFrame
-      description={isCreateMode ? adminCopy.createUserDescription : adminCopy.editUserDescription}
-      onClose={onClose}
-      onSubmit={handleSubmit}
-      title={isCreateMode ? adminCopy.createUser : adminCopy.editUser}
-    >
-      <div className="space-y-4">
-        {error === null ? null : <Notice tone="error">{error}</Notice>}
-        <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="user-name">
-            姓名
-          </label>
-          <input
-            className="mt-2 h-11 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-            id="user-name"
-            onChange={(event) => setName(event.target.value)}
-            value={name}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="user-email">
-            邮箱
-          </label>
-          <input
-            className="mt-2 h-11 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-            id="user-email"
-            onChange={(event) => setEmail(event.target.value)}
-            type="email"
-            value={email}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="user-role">
-            角色
-          </label>
-          <SelectField
-            ariaLabel="角色"
-            className="mt-2"
-            onChange={(value) => setRole(value as MockRole)}
-            options={toSelectOptions([["member", "member"], ["admin", "admin"]])}
-            value={role}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="user-status">
-            状态
-          </label>
-          <SelectField
-            ariaLabel="用户状态"
-            className="mt-2"
-            onChange={(value) => setStatus(value as MockUserStatus)}
-            options={toSelectOptions([["active", "启用"], ["disabled", "停用"], ["pending", "待确认"]])}
-            value={status}
-          />
-        </div>
-        <div className="flex flex-wrap justify-end gap-2">
-          <Button onClick={onClose}>取消</Button>
-          <Button type="submit" variant="primary">
-            保存
-          </Button>
-        </div>
-      </div>
-    </DialogFrame>
-  );
-}
-
-function ProviderConfigDialog({
-  kind,
-  onClose,
-  onNotice,
-  provider,
-}: {
-  kind: MockProviderKind;
-  onClose: () => void;
-  onNotice: (notice: string) => void;
-  provider: MockProviderConfig | null;
-}): ReactElement {
-  const { dispatch } = useMockStore();
-  const [displayName, setDisplayName] = useState(provider?.displayName ?? providerKindLabels[kind]);
-  const [providerName, setProviderName] = useState(provider?.provider ?? providerNameForKind(kind));
-  const [modelId, setModelId] = useState(provider?.modelId ?? "");
-  const [baseUrl, setBaseUrl] = useState(provider?.baseUrl ?? "");
-  const [apiKey, setApiKey] = useState("");
-  const [status, setStatus] = useState<Extract<MockProviderConfigInput["status"], "enabled" | "disabled">>(
-    provider?.status === "disabled" ? "disabled" : "enabled",
-  );
-  const [error, setError] = useState<string | null>(null);
-  const title = provider === null ? `配置${providerKindLabels[kind]}` : `编辑${providerKindLabels[kind]}`;
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
-    const validationError = validateProviderForm({
-      apiKey,
-      baseUrl,
-      displayName,
-      existingProvider: provider,
-      modelId,
-      providerName,
-    });
-
-    if (validationError !== null) {
-      setError(validationError);
-      return;
-    }
-
-    dispatch({
-      provider: {
-        apiKey,
-        baseUrl: baseUrl.trim(),
-        displayName: displayName.trim(),
-        ...(provider === null ? {} : { id: provider.id }),
-        kind,
-        modelId: modelId.trim(),
-        provider: providerName.trim(),
-        status,
-      },
-      type: "saveProviderConfig",
-    });
-    onNotice(`${providerKindLabels[kind]}已保存，并完成连接测试。`);
-    onClose();
-  }
-
-  return (
-    <DialogFrame
-      description="保存时会自动执行一次连接测试；API Key 不会回显，留空表示保持原密钥。"
-      onClose={onClose}
-      onSubmit={handleSubmit}
-      title={title}
-    >
-      <div className="space-y-4">
-        {error === null ? null : <Notice tone="error">{error}</Notice>}
-        <Info label="模型类型" value={`${providerKindLabels[kind]} · ${kind}`} />
-        <FormField label="服务名称" value={displayName} onChange={setDisplayName} />
-        <FormField label="Provider" value={providerName} onChange={setProviderName} />
-        <FormField label="模型 ID" value={modelId} onChange={setModelId} />
-        <FormField label="Base URL" type="url" value={baseUrl} onChange={setBaseUrl} />
-        <FormField
-          label={provider === null ? "API Key" : "API Key（留空不修改）"}
-          type="password"
-          value={apiKey}
-          onChange={setApiKey}
-        />
-        <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="provider-status">
-            状态
-          </label>
-          <SelectField
-            ariaLabel="模型服务状态"
-            className="mt-2"
-            onChange={(value) => setStatus(value as Extract<MockProviderConfigInput["status"], "enabled" | "disabled">)}
-            options={toSelectOptions([["enabled", "启用"], ["disabled", "停用"]])}
-            value={status}
-          />
-        </div>
-        <div className="flex flex-wrap justify-end gap-2">
-          <Button onClick={onClose}>取消</Button>
-          <Button type="submit" variant="primary">
-            保存并测试
-          </Button>
-        </div>
-      </div>
-    </DialogFrame>
-  );
-}
-
-function FormField({
-  label,
-  onChange,
-  type = "text",
-  value,
-}: {
-  label: string;
-  onChange: (value: string) => void;
-  type?: "password" | "text" | "url";
-  value: string;
-}): ReactElement {
-  const id = `provider-${slugifyFieldId(label)}`;
-
-  return (
-    <div>
-      <label className="block text-sm font-medium text-slate-700" htmlFor={id}>
-        {label}
-      </label>
-      <input
-        className="mt-2 h-11 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
-        id={id}
-        onChange={(event) => onChange(event.target.value)}
-        type={type}
-        value={value}
-      />
-    </div>
-  );
-}
-
 function filterOptions(kind: AdminPageKind): [string, string][] {
   if (kind === "tasks") {
     return [["all", "全部状态"], ["queued", "排队中"], ["running", "运行中"], ["failed", "失败"], ["succeeded", "成功"]];
@@ -1061,8 +770,6 @@ function filterOptions(kind: AdminPageKind): [string, string][] {
     ["provider.update", "编辑模型服务"],
     ["provider.delete", "删除模型服务"],
     ["provider.test_connection", "测试模型服务连接"],
-    ["provider.enable", "启用模型服务"],
-    ["provider.disable", "停用模型服务"],
     ["user.create", "新增用户"],
     ["user.update", "编辑用户"],
     ["user.delete", "删除用户"],
@@ -1091,55 +798,4 @@ function copyText(value: string, onNotice: (notice: string) => void): void {
   }
 
   onNotice("当前浏览器不支持复制，请手动选中内容。");
-}
-
-function providerNameForKind(kind: MockProviderKind): string {
-  if (kind === "rerank") {
-    return "Cohere Compatible";
-  }
-
-  return "OpenAI Compatible";
-}
-
-function validateProviderForm(input: {
-  apiKey: string;
-  baseUrl: string;
-  displayName: string;
-  existingProvider: MockProviderConfig | null;
-  modelId: string;
-  providerName: string;
-}): string | null {
-  if (input.displayName.trim().length === 0) {
-    return "请输入服务名称。";
-  }
-  if (input.providerName.trim().length === 0) {
-    return "请输入 Provider。";
-  }
-  if (input.modelId.trim().length === 0) {
-    return "请输入模型 ID。";
-  }
-  if (!isValidHttpUrl(input.baseUrl.trim())) {
-    return "请输入有效的 Base URL。";
-  }
-  if (input.existingProvider === null && input.apiKey.trim().length === 0) {
-    return "新增模型服务必须输入 API Key。";
-  }
-
-  return null;
-}
-
-function isValidHttpUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "http:";
-  } catch {
-    return false;
-  }
-}
-
-function slugifyFieldId(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "") || "field";
 }

@@ -45,3 +45,21 @@ Run applicable checks:
 
 If a listed script has not been scaffolded yet, mark the frontend quality gate as
 blocked or add the script. A missing script is not a successful check.
+
+## PRD Drift Checks
+
+When frontend implementation intentionally narrows or revises a PRD decision,
+add an executable contract test that reads the relevant task PRD and asserts the
+new accepted wording is present while superseded terms are absent.
+
+Use this for scope changes that future work could accidentally revert, such as:
+
+- Removing invite flows from user management in favor of CRUD.
+- Limiting model service configuration to fixed `chat`, `embedding`, and
+  `rerank` configs.
+- Removing deprecated actions such as default-provider selection or standalone
+  key rotation from the current frontend scope.
+
+These tests do not replace product review. They keep implementation-driving PRD
+text aligned with the accepted frontend behavior before future agents continue
+from the document.

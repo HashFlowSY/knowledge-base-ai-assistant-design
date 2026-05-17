@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { documentsListScrollClassName, documentsPanelClassName } from "./documents-layout";
+import {
+  documentsListScrollClassName,
+  documentsPanelClassName,
+  paginateDocuments,
+} from "./documents-layout";
 
 describe("documents layout", () => {
   it("uses the task page viewport height baseline for the document list", () => {
@@ -11,5 +15,27 @@ describe("documents layout", () => {
     expect(documentsPanelClassName()).toContain("xl:flex-col");
     expect(documentsPanelClassName()).toContain("overflow-hidden");
     expect(documentsListScrollClassName()).toContain("xl:flex-1");
+  });
+
+  it("paginates document rows from URL page and pageSize state", () => {
+    const result = paginateDocuments(["doc-1", "doc-2", "doc-3", "doc-4", "doc-5"], 2, 2);
+
+    expect(result).toEqual({
+      currentPage: 2,
+      items: ["doc-3", "doc-4"],
+      pageSize: 2,
+      total: 5,
+      totalPages: 3,
+    });
+  });
+
+  it("clamps invalid document list pagination inputs to a visible page", () => {
+    expect(paginateDocuments(["doc-1"], 99, 0)).toEqual({
+      currentPage: 1,
+      items: ["doc-1"],
+      pageSize: 8,
+      total: 1,
+      totalPages: 1,
+    });
   });
 });

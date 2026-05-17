@@ -17,7 +17,12 @@ import { ScrollArea } from "../ui/scroll-area";
 import { SelectField, type SelectFieldOption } from "../ui/select-field";
 import { StatusPill } from "../ui/status";
 import { ProtectedPage } from "../shell/protected-page";
-import { documentsListScrollClassName, documentsPanelClassName } from "./documents-layout";
+import {
+  documentsListScrollClassName,
+  documentsPanelClassName,
+  paginateDocuments,
+  parseDocumentPageParam,
+} from "./documents-layout";
 
 export function DocumentsPage(): ReactElement {
   const { state } = useMockStore();
@@ -29,6 +34,8 @@ export function DocumentsPage(): ReactElement {
   const status = (searchParams.get("status") ?? "all") as MockDocumentStatus | "all";
   const sourceType = (searchParams.get("sourceType") ?? "all") as MockSourceType | "all";
   const sort = searchParams.get("sort") ?? "updated";
+  const page = parseDocumentPageParam(searchParams.get("page"), 1);
+  const pageSize = parseDocumentPageParam(searchParams.get("pageSize"), 8);
   const filteredDocuments = useMemo(() => {
     const items = state.documents.filter((document) => {
       const haystack = `${document.title} ${knowledgeBaseName(state, document.knowledgeBaseId)}`.toLowerCase();
@@ -46,6 +53,7 @@ export function DocumentsPage(): ReactElement {
       return right.updatedAt.localeCompare(left.updatedAt);
     });
   }, [search, sort, sourceType, state, status]);
+  const paginatedDocuments = paginateDocuments(filteredDocuments, page, pageSize);
 
   function updateParam(key: string, value: string): void {
     const next = new URLSearchParams(searchParams.toString());
@@ -121,33 +129,94 @@ export function DocumentsPage(): ReactElement {
             <Notice>当前筛选条件下暂无文档。</Notice>
           </div>
         ) : (
-          <ScrollArea aria-label="文档列表" className={documentsListScrollClassName()} size="fill">
-            {filteredDocuments.map((document) => (
-              <Link
-                className={listActionLinkClassName()}
-                href={`/documents/${document.id}`}
-                key={document.id}
-              >
-                <div className="grid gap-2 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_120px_120px_120px] md:items-center">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-slate-950">{document.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">版本 {document.version}</p>
+          <>
+            <ScrollArea aria-label="文档列表" className={documentsListScrollClassName()} size="fill">
+              {paginatedDocuments.items.map((document) => (
+                <Link
+                  className={listActionLinkClassName()}
+                  href={`/documents/${document.id}`}
+                  key={document.id}
+                >
+                  <div className="grid gap-2 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_120px_120px_120px] md:items-center">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-950">{document.title}</p>
+                      <p className="mt-1 text-xs text-slate-500">版本 {document.version}</p>
+                    </div>
+                    <p className="truncate text-sm text-slate-600">
+                      {knowledgeBaseName(state, document.knowledgeBaseId)}
+                    </p>
+                    <p className="text-sm text-slate-600">{sourceTypeLabel(document.sourceType)}</p>
+                    <StatusPill tone={document.status === "ready" ? "teal" : document.status === "failed" ? "red" : "yellow"}>
+                      {statusLabel(document.status)}
+                    </StatusPill>
+                    <p className="text-xs text-slate-500">{document.updatedAt.slice(0, 10)}</p>
                   </div>
-                  <p className="truncate text-sm text-slate-600">
-                    {knowledgeBaseName(state, document.knowledgeBaseId)}
-                  </p>
-                  <p className="text-sm text-slate-600">{sourceTypeLabel(document.sourceType)}</p>
-                  <StatusPill tone={document.status === "ready" ? "teal" : document.status === "failed" ? "red" : "yellow"}>
-                    {statusLabel(document.status)}
-                  </StatusPill>
-                  <p className="text-xs text-slate-500">{document.updatedAt.slice(0, 10)}</p>
-                </div>
-              </Link>
-            ))}
-          </ScrollArea>
+                </Link>
+              ))}
+            </ScrollArea>
+            <DocumentsPagination
+              currentPage={paginatedDocuments.currentPage}
+              pageSize={paginatedDocuments.pageSize}
+              total={paginatedDocuments.total}
+              totalPages={paginatedDocuments.totalPages}
+              updateParam={updateParam}
+            />
+          </>
         )}
       </Panel>
     </ProtectedPage>
+  );
+}
+
+function DocumentsPagination({
+  currentPage,
+  pageSize,
+  total,
+  totalPages,
+  updateParam,
+}: {
+  currentPage: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  updateParam: (key: string, value: string) => void;
+}): ReactElement {
+  return (
+    <div className="flex flex-col gap-3 border-t border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-slate-600">
+        共 {total} 个文档 · 第 {currentPage}/{totalPages} 页
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 text-sm text-slate-600">
+          每页
+          <SelectField
+            ariaLabel="每页文档数"
+            className="w-20"
+            onChange={(value) => updateParam("pageSize", value)}
+            options={[
+              { label: "5", value: "5" },
+              { label: "8", value: "8" },
+              { label: "12", value: "12" },
+            ]}
+            value={pageSize.toString()}
+          />
+        </div>
+        <Button
+          disabled={currentPage <= 1}
+          disabledReason="已经是第一页。"
+          onClick={() => updateParam("page", (currentPage - 1).toString())}
+        >
+          上一页
+        </Button>
+        <Button
+          disabled={currentPage >= totalPages}
+          disabledReason="已经是最后一页。"
+          onClick={() => updateParam("page", (currentPage + 1).toString())}
+        >
+          下一页
+        </Button>
+      </div>
+    </div>
   );
 }
 

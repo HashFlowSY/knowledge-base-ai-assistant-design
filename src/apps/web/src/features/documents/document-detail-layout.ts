@@ -57,6 +57,14 @@ export function documentChunkDetailScrollClassName(): string {
   return "space-y-4 py-4 pl-4 pr-4";
 }
 
+export function documentChunkReturnLabel(): string {
+  return "返回片段列表";
+}
+
+export function documentChunkReturnButtonClassName(): string {
+  return "w-full justify-center";
+}
+
 export function documentProcessingSummaryScrollClassName(): string {
   return "space-y-3 py-4 pl-4 pr-4";
 }

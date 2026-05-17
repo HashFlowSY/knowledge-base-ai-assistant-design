@@ -19,6 +19,8 @@ import { ProtectedPage } from "../shell/protected-page";
 import {
   documentChunkDetailScrollClassName,
   documentChunkPlaceholderClassName,
+  documentChunkReturnButtonClassName,
+  documentChunkReturnLabel,
   documentDetailExitHref,
   documentDetailHeaderActionsClassName,
   documentDetailLogHref,
@@ -158,7 +160,7 @@ export function DocumentDetailPage({ documentId }: { documentId: string }): Reac
             </Panel>
           ) : (
             <Drawer onClose={() => setSelectedChunkId(null)} title={knowledgeCopy.chunkDrawerTitle}>
-              <ChunkDetail chunk={selectedChunk} />
+              <ChunkDetail chunk={selectedChunk} onReturn={() => setSelectedChunkId(null)} />
             </Drawer>
           )}
         </aside>
@@ -202,9 +204,12 @@ function ChunkRow({
   );
 }
 
-function ChunkDetail({ chunk }: { chunk: MockChunk }): ReactElement {
+function ChunkDetail({ chunk, onReturn }: { chunk: MockChunk; onReturn: () => void }): ReactElement {
   return (
     <ScrollArea aria-label="片段详情" className={documentChunkDetailScrollClassName()} size="md">
+      <Button className={documentChunkReturnButtonClassName()} onClick={onReturn}>
+        {documentChunkReturnLabel()}
+      </Button>
       <Info label="来源位置" value={chunk.locator} />
       <Info label="Token 估算" value={chunk.tokenEstimate.toString()} />
       <Info label="内容哈希" value={chunk.contentHash} />

@@ -8,7 +8,7 @@ Build a responsive, multi-page, interactive frontend MVP for the knowledge-base 
 
 * The product is an enterprise knowledge-base AI assistant for private deployment.
 * Production v1 UI language is Chinese; no i18n framework is planned for v1.
-* The existing product design lists these v1 frontend areas: login, knowledge base list/detail, file upload and URL import, chat Q&A with citations and feedback, user management, task queue status, document processing logs, and Provider/key configuration.
+* The existing product design lists these v1 frontend areas: login, knowledge base list/detail, file upload and URL import, chat Q&A with citations and feedback, user management, task queue status, document processing logs, and model service configuration.
 * The current web app is a minimal Next.js bootstrap page at `src/apps/web/src/app/page.tsx`.
 * Existing web stack: Next.js 16 App Router, React 19.2, strict TypeScript, Tailwind CSS, shadcn/ui conventions, TanStack Query, lucide-react, and URL query parameters for list state.
 * The repo uses pnpm workspaces and Turborepo. Frontend commands exist for `dev`, `build`, `typecheck`, `lint`, and `test`.
@@ -60,7 +60,7 @@ Build a responsive, multi-page, interactive frontend MVP for the knowledge-base 
 * Chat Q&A must cover and allow users to trigger key answer lifecycle states with mock/local state: empty/waiting for input, retrieval in progress, answer generation in progress, completed answer with citations, completed answer with no citation warning, and failed answer with retry.
 * Chat Q&A citation panel should show source card details: snippet summary, document name, page number or URL, and match/relevance reason.
 * Chat Q&A feedback must support useful/not useful plus an optional reason entry point, save the feedback in local/mock state, and show a submitted state.
-* Implement the admin/operations page group: user management, task queue status, document processing logs, Provider/key configuration, and audit logs.
+* Implement the admin/operations page group: user management, task queue status, document processing logs, model service configuration, and audit logs.
 * Admin/operations pages use a shared list/table plus right-side detail drawer model.
 * Admin/operations pages must be implemented at usable interaction depth: per-page columns, filters, drawer content, row and batch actions where specified, confirmations, empty/error/loading states, and admin/member permission differences through local/mock role state.
 * Implement login and entry pages. Login uses email/password mock authentication, keeps SSO/OAuth/password recovery as disabled future placeholders, routes successful login through `redirectTo` when present, and provides restrained unauthorized/session-expired states.
@@ -161,7 +161,7 @@ Required entities:
 * `MockChatSession`: id, knowledgeBaseId, title, messages, selectedAnswerId, createdAt, updatedAt.
 * `MockChatMessage`: id, sessionId, role `user | assistant`, lifecycle state, content, citationIds, feedback.
 * `MockCitation`: id, answerMessageId, documentId, chunkId, title, locator, excerpt, matchReason.
-* `MockProviderConfig`: id, displayName, kind `chat | embedding | rerank`, provider, modelId, status, isDefault, maskedKeySuffix, keyVersion, updatedAt.
+* `MockProviderConfig`: id, displayName, kind `chat | embedding | rerank`, provider, modelId, baseUrl, status, maskedKeySuffix, keyVersion, updatedAt.
 * `MockAuditEvent`: id, actorId, actorType, action, targetType, targetId, requestId, ipSummary, userAgentSummary, sanitizedMetadata, createdAt.
 
 Mock enum values:
@@ -179,7 +179,7 @@ Mock enum values:
 * `MockProviderConfig.status`: `enabled | disabled | testing | error`.
 * `MockAuditEvent.actorType`: `user | system`.
 * `MockAuditEvent.targetType`: `knowledge_base | document | ingestion_job | provider | user | chat_message | session`.
-* `MockAuditEvent.action`: use a finite frontend enum covering required local mutations, including `knowledge_base.create`, `document.import`, `job.retry`, `job.cancel`, `chat.feedback.submit`, `provider.enable`, `provider.disable`, `provider.rotate_key`, `provider.set_default`, `provider.test_connection`, `user.invite`, `user.role_change`, `user.disable`, and `session.expire`.
+* `MockAuditEvent.action`: use a finite frontend enum covering required local mutations, including `knowledge_base.create`, `document.import`, `job.retry`, `job.cancel`, `chat.feedback.submit`, `provider.create`, `provider.update`, `provider.delete`, `provider.test_connection`, `user.create`, `user.update`, `user.delete`, `user.role_change`, `user.enable`, `user.disable`, and `session.expire`.
 
 Required relationships:
 
@@ -199,7 +199,9 @@ Required local mutations:
 * Cancelling a queued/running job updates status and disables retry/cancel appropriately.
 * Submitting a chat question creates a user message, then deterministic assistant lifecycle states ending in either cited answer, no-citation warning, or failure depending on selected demo control/input.
 * Submitting feedback updates the answer's feedback state and shows submitted copy.
-* Changing a user role, disabling a user, enabling/disabling provider, rotating key, setting provider default, and mock testing provider connection update local state and show audit-style feedback.
+* Creating, updating, deleting, enabling, or disabling users updates local state and appends audit-style feedback.
+* Creating, updating, or deleting one of the three model service configs updates local state and appends audit-style feedback.
+* 保存模型配置时自动执行一次连接测试；连接测试失败时不保存配置，并显示可理解的验证错误。
 
 Mock localStorage rules:
 
@@ -274,7 +276,7 @@ Route boundaries:
 * `/documents/[documentId]` - document/source/chunk detail page.
 * `/tasks` - ingestion task queue.
 * `/logs` - document processing logs.
-* `/providers` - Provider/key configuration.
+* `/providers` - model service configuration.
 * `/users` - user management.
 * `/audit` - audit logs.
 * `/unauthorized` - no-access state.
@@ -434,7 +436,7 @@ Pages:
 * User management.
 * Task queue status.
 * Document processing logs.
-* Provider/key configuration.
+* Model service configuration.
 * Audit logs.
 
 Shared constraints:
@@ -470,13 +472,15 @@ Shared states and permissions:
 User management page:
 
 * Purpose: manage fixed Production v1 users and roles without custom role management.
+* 用户管理取消邀请用户功能。
+* 用户管理通过新增、查看、编辑、删除实现 CRUD。
 * Columns: user name, email, role, email verification status, status/session indicator, created time, last updated time, row actions.
 * Filters: role (`admin`, `member`), email verified, status, search by name/email, sort by created/updated/name.
 * Drawer: profile summary, role/membership summary, recent session metadata summary, created/updated timestamps, audit-relevant actions.
-* Actions: invite/add user through mock dialog, change fixed role, disable/remove access, reset session through local state.
+* Actions: add user through mock dialog, view details, edit fixed role/status/profile fields, enable or disable access, delete user, and reset session through local state where applicable.
 * Batch actions: disabled by default for v1 unless API support is explicit; single-row actions must work.
 * Confirmations: changing role and removing access require confirmation with precise copy.
-* Empty state: no users beyond current admin, prompt to invite user.
+* Empty state: no users beyond current admin, prompt to add a user.
 * Error state: "用户列表加载失败，请重试。" with request id placeholder.
 
 Task queue status page:
@@ -502,17 +506,20 @@ Document processing logs page:
 * Empty state: no logs for selected filters.
 * Error state: "处理日志加载失败，请重试。" with request id placeholder.
 
-Provider/key configuration page:
+Model service configuration page:
 
-* Purpose: configure chat, embedding, and rerank providers while keeping secrets masked.
-* Columns: display name, kind, provider, model id, status, default marker, key status/masked suffix, updated time, row actions.
-* Filters: kind (`chat`, `embedding`, `rerank`), status, default, provider, search display/model, sort by updated/name/kind.
-* Drawer: provider settings summary, status, default usage, masked key metadata, key version, created by, created/updated timestamps, recent audit summary.
-* Actions: add provider config, edit settings, set as default, enable/disable, rotate key, and mock test connection. These update local state and append visible audit-style summary.
+* Purpose: configure the three model services required by the current system while keeping secrets masked.
+* 模型服务页面仅保留三类模型：问答模型、向量模型、重排模型。
+* Columns: model service type, display name, provider, model id, base URL, status, masked key suffix, updated time, row actions.
+* Filters: configured/missing status, provider, search display/model, sort by updated/name/kind.
+* Drawer: provider settings summary, status, masked key metadata, key version, created/updated timestamps, recent audit summary.
+* Actions: add config, edit config, and delete config for each fixed model service type. These update local state and append visible audit-style summary.
+* 保存模型配置时自动执行一次连接测试；新增配置必须输入 API Key，编辑时 API Key 留空表示保持原密钥。
+* 模型服务不提供备用模型、设为默认、单独启用/停用、单独轮换密钥操作。
 * Batch actions: none for key/provider security operations.
-* Confirmations: disable provider, rotate key, and set default require confirmation.
+* Confirmations: deleting model service configs requires confirmation.
 * Secret rule: never display plaintext API keys, encrypted payloads, or raw provider errors.
-* Empty state: no provider configured, prompt to add required provider.
+* Empty state: a required model service type has no config, prompt to configure it.
 * Error state: "模型服务配置加载失败，请重试。" with request id placeholder.
 
 Audit logs page:
@@ -691,3 +698,5 @@ States:
 * 2026-05-15: Route ambiguity is resolved: `/workspace` is the canonical workspace route and `/` redirects to `/workspace`.
 * 2026-05-15: Skeletons must exist and match the final layout shape, but automated tests do not need to reliably freeze every transient route-level loading frame.
 * 2026-05-15: User approved adding minimal executable constraints for the mock store: fixed localStorage key/version, deterministic seed reset, parse/version recovery, route access matrix, finite mock enum values, and representative P2 automated test depth.
+* 2026-05-16: User clarified model service scope. The current frontend keeps only three model service types: chat, embedding, and rerank. It does not include standby providers, default-provider selection, separate enable/disable buttons, or separate key-rotation actions. Add/edit saves run an automatic mock connection test.
+* 2026-05-16: User clarified user management scope. Invitation flows are removed; user management is a CRUD surface for fixed `admin` and `member` users, including add, view, edit, enable/disable, and delete.

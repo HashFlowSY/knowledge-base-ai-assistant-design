@@ -74,8 +74,6 @@ export function auditActionLabel(action: MockAuditAction): string {
     "knowledge_base.create": "新建知识库",
     "provider.create": "新增模型服务",
     "provider.delete": "删除模型服务",
-    "provider.disable": "停用模型服务",
-    "provider.enable": "启用模型服务",
     "provider.test_connection": "测试模型服务连接",
     "provider.update": "编辑模型服务",
     "session.expire": "会话过期",

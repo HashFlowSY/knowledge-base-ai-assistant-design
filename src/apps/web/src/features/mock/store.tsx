@@ -32,7 +32,6 @@ import {
   type MockProviderConfig,
   type MockProviderConfigInput,
   type MockProviderKind,
-  type MockProviderStatus,
   type MockRole,
   type MockSource,
   type MockState,
@@ -267,8 +266,6 @@ export function mockStoreReducer(state: MockState, action: MockAction): MockStat
       return saveProviderConfig(state, action.provider);
     case "deleteProviderConfig":
       return deleteProviderConfig(state, action.providerId);
-    case "setProviderStatus":
-      return setProviderStatus(state, action.providerId, action.status);
     case "createUser":
       return createUser(state, {
         email: action.email,
@@ -773,45 +770,6 @@ function deleteProviderConfig(state: MockState, providerId: string): MockState {
       targetType: "provider",
     },
   );
-}
-
-function setProviderStatus(
-  state: MockState,
-  providerId: string,
-  status: "enabled" | "disabled",
-): MockState {
-  return updateProviderAndAudit(
-    state,
-    providerId,
-    status,
-    status === "enabled" ? "provider.enable" : "provider.disable",
-  );
-}
-
-function updateProviderAndAudit(
-  state: MockState,
-  providerId: string,
-  status: MockProviderStatus,
-  action: MockAuditAction,
-): MockState {
-  const updatedState = {
-    ...state,
-    providerConfigs: state.providerConfigs.map((item) =>
-      item.id === providerId
-        ? {
-            ...item,
-            status,
-            updatedAt: MOCK_NOW,
-          }
-        : item,
-    ),
-  };
-
-  return appendAuditEvent(updatedState, {
-    action,
-    targetId: providerId,
-    targetType: "provider",
-  });
 }
 
 function passesProviderConnectionTest(state: MockState, input: MockProviderConfigInput): boolean {
