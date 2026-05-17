@@ -52,6 +52,11 @@ When frontend implementation intentionally narrows or revises a PRD decision,
 add an executable contract test that reads the relevant task PRD and asserts the
 new accepted wording is present while superseded terms are absent.
 
+Keep the contract wording in the same narrative language as the task PRD. For
+the current frontend PRD, accepted PRD contract phrases should be English;
+Chinese belongs in UI copy examples and required product strings, not in new
+English-PRD requirement bullets.
+
 Use this for scope changes that future work could accidentally revert, such as:
 
 - Removing invite flows from user management in favor of CRUD.

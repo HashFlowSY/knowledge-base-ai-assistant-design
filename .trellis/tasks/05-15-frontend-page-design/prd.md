@@ -201,7 +201,7 @@ Required local mutations:
 * Submitting feedback updates the answer's feedback state and shows submitted copy.
 * Creating, updating, deleting, enabling, or disabling users updates local state and appends audit-style feedback.
 * Creating, updating, or deleting one of the three model service configs updates local state and appends audit-style feedback.
-* 保存模型配置时自动执行一次连接测试；连接测试失败时不保存配置，并显示可理解的验证错误。
+* Saving a model service config automatically runs a connection test; if the connection test fails, do not save the config and show an understandable validation error.
 
 Mock localStorage rules:
 
@@ -472,8 +472,8 @@ Shared states and permissions:
 User management page:
 
 * Purpose: manage fixed Production v1 users and roles without custom role management.
-* 用户管理取消邀请用户功能。
-* 用户管理通过新增、查看、编辑、删除实现 CRUD。
+* Invitation flows are removed from user management.
+* User management implements CRUD through add, view, edit, and delete.
 * Columns: user name, email, role, email verification status, status/session indicator, created time, last updated time, row actions.
 * Filters: role (`admin`, `member`), email verified, status, search by name/email, sort by created/updated/name.
 * Drawer: profile summary, role/membership summary, recent session metadata summary, created/updated timestamps, audit-relevant actions.
@@ -509,13 +509,13 @@ Document processing logs page:
 Model service configuration page:
 
 * Purpose: configure the three model services required by the current system while keeping secrets masked.
-* 模型服务页面仅保留三类模型：问答模型、向量模型、重排模型。
+* The model service page keeps only three model types: chat model, embedding model, and rerank model.
 * Columns: model service type, display name, provider, model id, base URL, status, masked key suffix, updated time, row actions.
 * Filters: configured/missing status, provider, search display/model, sort by updated/name/kind.
 * Drawer: provider settings summary, status, masked key metadata, key version, created/updated timestamps, recent audit summary.
 * Actions: add config, edit config, and delete config for each fixed model service type. These update local state and append visible audit-style summary.
-* 保存模型配置时自动执行一次连接测试；新增配置必须输入 API Key，编辑时 API Key 留空表示保持原密钥。
-* 模型服务不提供备用模型、设为默认、单独启用/停用、单独轮换密钥操作。
+* Saving a model service config automatically runs a connection test; new configs require an API key, and leaving the API key empty while editing keeps the existing key.
+* The model service page does not provide standby models, set-as-default, separate enable/disable, or separate key-rotation actions.
 * Batch actions: none for key/provider security operations.
 * Confirmations: deleting model service configs requires confirmation.
 * Secret rule: never display plaintext API keys, encrypted payloads, or raw provider errors.
