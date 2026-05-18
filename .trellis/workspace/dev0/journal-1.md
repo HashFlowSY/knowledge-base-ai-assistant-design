@@ -148,3 +148,36 @@ Recorded frontend spec checks for replacing MVP mock store state with typed API 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 5: Add pre-implementation design alignment guide
+
+**Date**: 2026-05-18
+**Task**: Add pre-implementation design alignment guide
+**Branch**: `main`
+
+### Summary
+
+Added lightweight cross-layer guide rules that require backend work for existing frontend workflows to check relevant frontend, backend, and database design slices before coding.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6e38672` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
