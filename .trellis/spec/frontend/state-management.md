@@ -91,6 +91,10 @@ When a task needs cross-page mock workflow state:
 - Initialize from deterministic seed data when storage is absent.
 - Discard and recover to seed data when JSON parsing fails, `schemaVersion` is
   unsupported, or required top-level collections are missing.
+- Validate required fields inside persisted entity collections after mock state
+  shape changes. If an existing persisted state is missing a newly required
+  field, either migrate it explicitly or discard and recover to seed data with
+  the standard recovery notice.
 - Show a non-raw user-facing recovery notice after discarding bad persisted
   state.
 - Provide a visible development/mock reset control.

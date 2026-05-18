@@ -28,6 +28,7 @@ describe("frontend mock store contract", () => {
     expect(state.providerConfigs.some((item) => item.displayName.includes("备用"))).toBe(false);
     expect(state.auditEvents.map((item) => item.id)).toContain("audit-provider-001");
     expect(state.users.map((item) => item.id)).toContain("user-admin-001");
+    expect(state.users.every((item) => item.password === "password123")).toBe(true);
   });
 
   it("recovers corrupted or unsupported persisted state to seed data with a user notice", () => {
@@ -39,6 +40,21 @@ describe("frontend mock store contract", () => {
       JSON.stringify({ schemaVersion: 1, users: [] }),
     );
     const seed = createSeedMockState();
+    const parsedFromMissingUserPassword = hydrateMockState(
+      JSON.stringify({
+        ...seed,
+        users: seed.users.map((user) => ({
+          createdAt: user.createdAt,
+          email: user.email,
+          emailVerified: user.emailVerified,
+          id: user.id,
+          name: user.name,
+          role: user.role,
+          status: user.status,
+          updatedAt: user.updatedAt,
+        })),
+      }),
+    );
     const parsedFromValidState = hydrateMockState(
       JSON.stringify({
         ...seed,
@@ -52,6 +68,8 @@ describe("frontend mock store contract", () => {
     expect(parsedFromUnsupportedVersion.notice).toBe("演示数据已恢复为初始状态。");
     expect(parsedFromMissingCollections.state.documents[0]?.id).toBe("doc-travel-policy");
     expect(parsedFromMissingCollections.notice).toBe("演示数据已恢复为初始状态。");
+    expect(parsedFromMissingUserPassword.state.users[0]?.password).toBe("password123");
+    expect(parsedFromMissingUserPassword.notice).toBe("演示数据已恢复为初始状态。");
     expect(parsedFromValidState.state.selectedKnowledgeBaseId).toBe("kb-support");
     expect(parsedFromValidState.notice).toBeNull();
   });
@@ -266,6 +284,7 @@ describe("frontend mock store contract", () => {
     const created = mockStoreReducer(createSeedMockState(), {
       email: "operator@example.com",
       name: "运营管理员",
+      password: "operator-secret",
       role: "member",
       status: "active",
       type: "createUser",
@@ -276,6 +295,7 @@ describe("frontend mock store contract", () => {
       email: "operator@example.com",
       emailVerified: true,
       name: "运营管理员",
+      password: "operator-secret",
       role: "member",
       status: "active",
     });
@@ -288,6 +308,7 @@ describe("frontend mock store contract", () => {
     const updated = mockStoreReducer(created, {
       email: "ops-admin@example.com",
       name: "运营负责人",
+      password: "",
       role: "admin",
       status: "pending",
       type: "updateUser",
@@ -297,6 +318,7 @@ describe("frontend mock store contract", () => {
     expect(updated.users.find((item) => item.id === createdUser?.id)).toMatchObject({
       email: "ops-admin@example.com",
       name: "运营负责人",
+      password: "operator-secret",
       role: "admin",
       status: "pending",
     });
@@ -306,7 +328,32 @@ describe("frontend mock store contract", () => {
       targetType: "user",
     });
 
-    const deleted = mockStoreReducer(updated, {
+    const resetPassword = mockStoreReducer(updated, {
+      email: "ops-admin@example.com",
+      name: "运营负责人",
+      password: "new-operator-secret",
+      role: "admin",
+      status: "active",
+      type: "updateUser",
+      userId: createdUser?.id ?? "",
+    });
+    const failedOldPasswordLogin = mockStoreReducer(resetPassword, {
+      email: "ops-admin@example.com",
+      password: "operator-secret",
+      redirectTo: "/workspace",
+      type: "login",
+    });
+    const successfulNewPasswordLogin = mockStoreReducer(resetPassword, {
+      email: "ops-admin@example.com",
+      password: "new-operator-secret",
+      redirectTo: "/workspace",
+      type: "login",
+    });
+
+    expect(failedOldPasswordLogin.session.userId).toBeNull();
+    expect(successfulNewPasswordLogin.session.userId).toBe(createdUser?.id);
+
+    const deleted = mockStoreReducer(resetPassword, {
       type: "deleteUser",
       userId: createdUser?.id ?? "",
     });

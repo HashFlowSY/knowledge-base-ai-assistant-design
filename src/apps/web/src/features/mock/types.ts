@@ -61,6 +61,7 @@ export interface MockUser {
   id: string;
   name: string;
   email: string;
+  password: string;
   role: MockRole;
   emailVerified: boolean;
   status: MockUserStatus;
@@ -294,8 +295,16 @@ export type MockAction =
     }
   | { type: "saveProviderConfig"; provider: MockProviderConfigInput }
   | { type: "deleteProviderConfig"; providerId: string }
-  | { type: "createUser"; name: string; email: string; role: MockRole; status: MockUserStatus }
-  | { type: "updateUser"; userId: string; name: string; email: string; role: MockRole; status: MockUserStatus }
+  | { type: "createUser"; name: string; email: string; password: string; role: MockRole; status: MockUserStatus }
+  | {
+      type: "updateUser";
+      userId: string;
+      name: string;
+      email: string;
+      password?: string;
+      role: MockRole;
+      status: MockUserStatus;
+    }
   | { type: "deleteUser"; userId: string }
   | { type: "changeUserRole"; userId: string; role: MockRole }
   | { type: "setUserStatus"; userId: string; status: "active" | "disabled" }

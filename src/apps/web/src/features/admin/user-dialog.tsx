@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent, type ReactElement } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { useState, type ClipboardEvent, type FormEvent, type ReactElement } from "react";
 
 import { adminCopy } from "../../copy/admin";
 import { useMockStore } from "../mock/store";
@@ -22,6 +23,7 @@ export function UserDialog({
   const { dispatch } = useMockStore();
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState<MockRole>(user?.role ?? "member");
   const [status, setStatus] = useState<MockUserStatus>(user?.status ?? "active");
   const [error, setError] = useState<string | null>(null);
@@ -37,14 +39,19 @@ export function UserDialog({
       setError(adminCopy.validation.emailRequired);
       return;
     }
+    if (isCreateMode && password.trim().length === 0) {
+      setError(adminCopy.validation.passwordRequired);
+      return;
+    }
 
     if (isCreateMode) {
-      dispatch({ email: email.trim(), name: name.trim(), role, status, type: "createUser" });
+      dispatch({ email: email.trim(), name: name.trim(), password, role, status, type: "createUser" });
       onNotice("用户已新增。");
     } else if (user !== null) {
       dispatch({
         email: email.trim(),
         name: name.trim(),
+        password,
         role,
         status,
         type: "updateUser",
@@ -87,6 +94,11 @@ export function UserDialog({
             value={email}
           />
         </div>
+        <PasswordField
+          label={isCreateMode ? "密码" : "密码（留空不修改）"}
+          onChange={setPassword}
+          value={password}
+        />
         <div>
           <label className="block text-sm font-medium text-slate-700" htmlFor="user-role">
             角色
@@ -119,6 +131,68 @@ export function UserDialog({
         </div>
       </div>
     </DialogFrame>
+  );
+}
+
+function PasswordField({
+  label,
+  onChange,
+  value,
+}: {
+  label: string;
+  onChange: (value: string) => void;
+  value: string;
+}): ReactElement {
+  const [showPassword, setShowPassword] = useState(false);
+  const id = "user-password";
+
+  function hidePassword(): void {
+    setShowPassword(false);
+  }
+
+  function handleCopy(event: ClipboardEvent<HTMLInputElement>): void {
+    event.preventDefault();
+    event.clipboardData.setData("text/plain", "");
+  }
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700" htmlFor={id}>
+        {label}
+      </label>
+      <div className="relative mt-2">
+        <input
+          className="h-11 w-full rounded-md border border-slate-200 px-3 pr-12 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+          id={id}
+          onBlur={hidePassword}
+          onChange={(event) => onChange(event.target.value)}
+          onCopy={handleCopy}
+          type={showPassword ? "text" : "password"}
+          value={value}
+        />
+        <button
+          aria-label="显示密码"
+          className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 outline-none transition hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-teal-100"
+          onBlur={hidePassword}
+          onContextMenu={(event) => event.preventDefault()}
+          onPointerCancel={hidePassword}
+          onPointerDown={(event) => {
+            event.preventDefault();
+            setShowPassword(true);
+          }}
+          onPointerLeave={hidePassword}
+          onPointerUp={hidePassword}
+          title="按住显示密码"
+          type="button"
+        >
+          {showPassword ? (
+            <EyeOff aria-hidden="true" className="h-4 w-4" />
+          ) : (
+            <Eye aria-hidden="true" className="h-4 w-4" />
+          )}
+        </button>
+      </div>
+    </div>
   );
 }
 

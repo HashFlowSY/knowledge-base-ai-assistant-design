@@ -270,6 +270,7 @@ export function mockStoreReducer(state: MockState, action: MockAction): MockStat
       return createUser(state, {
         email: action.email,
         name: action.name,
+        password: action.password,
         role: action.role,
         status: action.status,
       });
@@ -277,6 +278,7 @@ export function mockStoreReducer(state: MockState, action: MockAction): MockStat
       return updateUser(state, {
         email: action.email,
         name: action.name,
+        ...(action.password === undefined ? {} : { password: action.password }),
         role: action.role,
         status: action.status,
         userId: action.userId,
@@ -312,12 +314,36 @@ function isMockState(value: unknown): value is MockState {
     Array.isArray(value.chatSessions) &&
     Array.isArray(value.citations) &&
     isValidProviderConfigs(value.providerConfigs) &&
-    Array.isArray(value.users) &&
+    isValidUsers(value.users) &&
     Array.isArray(value.auditEvents) &&
     isRecord(value.session) &&
     typeof value.selectedKnowledgeBaseId === "string" &&
     typeof value.selectedChatSessionId === "string"
   );
+}
+
+function isValidUsers(value: unknown): value is MockUser[] {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+
+  return value.every((item) => {
+    if (!isRecord(item)) {
+      return false;
+    }
+
+    return (
+      typeof item.id === "string" &&
+      typeof item.name === "string" &&
+      typeof item.email === "string" &&
+      typeof item.password === "string" &&
+      (item.role === "admin" || item.role === "member") &&
+      typeof item.emailVerified === "boolean" &&
+      (item.status === "active" || item.status === "disabled" || item.status === "pending") &&
+      typeof item.createdAt === "string" &&
+      typeof item.updatedAt === "string"
+    );
+  });
 }
 
 function isValidProviderConfigs(value: unknown): value is MockProviderConfig[] {
@@ -363,7 +389,7 @@ function normalizeRoutePath(path: string): string {
 
 function login(state: MockState, email: string, password: string, redirectTo: string | null): MockState {
   const user = state.users.find((item) => item.email === email && item.status === "active");
-  if (user === undefined || password !== "password123") {
+  if (user === undefined || password !== user.password) {
     return {
       ...state,
       session: {
@@ -818,6 +844,7 @@ function createUser(
   input: {
     email: string;
     name: string;
+    password: string;
     role: MockRole;
     status: MockUserStatus;
   },
@@ -827,6 +854,7 @@ function createUser(
     id: `user-${slugify(email)}-${state.users.length + 1}`,
     name: input.name.trim(),
     email,
+    password: input.password,
     role: input.role,
     emailVerified: true,
     status: input.status,
@@ -852,6 +880,7 @@ function updateUser(
   input: {
     email: string;
     name: string;
+    password?: string;
     role: MockRole;
     status: MockUserStatus;
     userId: string;
@@ -871,6 +900,7 @@ function updateUser(
               ...item,
               email: input.email.trim(),
               name: input.name.trim(),
+              ...(input.password?.trim() ? { password: input.password } : {}),
               role: input.role,
               status: input.status,
               updatedAt: MOCK_NOW,

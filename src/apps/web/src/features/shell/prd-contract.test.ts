@@ -19,7 +19,7 @@ function findRepoRoot(start: string): string {
 function readFrontendPrd(): string {
   const root = findRepoRoot(process.cwd());
   return readFileSync(
-    resolve(root, ".trellis/tasks/05-15-frontend-page-design/prd.md"),
+    resolve(root, ".trellis/tasks/archive/2026-05/05-15-frontend-page-design/prd.md"),
     "utf8",
   );
 }

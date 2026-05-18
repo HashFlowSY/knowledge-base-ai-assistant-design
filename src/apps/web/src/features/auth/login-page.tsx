@@ -35,7 +35,7 @@ export function LoginPage(): ReactElement {
     setError(null);
     setPending(true);
     const user = state.users.find((item) => item.email === email && item.status === "active");
-    if (user === undefined || password !== "password123") {
+    if (user === undefined || password !== user.password) {
       setPending(false);
       setError(authCopy.invalid);
       return;

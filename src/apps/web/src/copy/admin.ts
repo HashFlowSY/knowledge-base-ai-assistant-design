@@ -30,9 +30,9 @@ export const adminCopy = {
     error: "审计日志加载失败，请重试。请求编号：req-audit-demo。",
   },
   createUser: "新增用户",
-  createUserDescription: "直接创建本地演示账号，并写入审计摘要。",
+  createUserDescription: "直接创建本地演示账号，设置初始密码，并写入审计摘要。",
   editUser: "编辑用户",
-  editUserDescription: "修改用户姓名、邮箱、角色和访问状态。",
+  editUserDescription: "修改用户姓名、邮箱、角色、访问状态，或填写新密码完成重置。",
   disabled: {
     adminTaskAction: "member 用户可查看任务状态，重试和取消仅限 admin。",
     retry: "仅失败且未超过最大尝试次数的任务可重试。",
@@ -43,6 +43,7 @@ export const adminCopy = {
   validation: {
     nameRequired: "请输入用户姓名。",
     emailRequired: "请输入有效邮箱。",
+    passwordRequired: "请输入用户密码。",
   },
   confirmHighImpact: "该操作会更新本地演示状态并写入审计摘要，是否继续？",
 } as const;
