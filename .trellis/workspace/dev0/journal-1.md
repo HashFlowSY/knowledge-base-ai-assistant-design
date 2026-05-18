@@ -115,3 +115,36 @@ Implemented and polished the frontend functional MVP, aligned the frontend PRD a
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: Frontend API State Migration Spec
+
+**Date**: 2026-05-18
+**Task**: Frontend API State Migration Spec
+**Branch**: `main`
+
+### Summary
+
+Recorded frontend spec checks for replacing MVP mock store state with typed API hooks and TanStack Query during backend integration.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4ae80f7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
