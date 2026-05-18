@@ -22,7 +22,7 @@ These guides help you **ask the right questions before coding**.
 | Guide | Purpose | When to Use |
 |-------|---------|-------------|
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
-| [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
+| [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow and design alignment across layers | Features spanning multiple layers or backend work for an existing frontend page/workflow |
 
 ---
 
@@ -31,8 +31,10 @@ These guides help you **ask the right questions before coding**.
 ### When to Think About Cross-Layer Issues
 
 - [ ] Feature touches 3+ layers (API, Service, Component, Database)
+- [ ] Backend work implements or replaces an existing frontend page/workflow
 - [ ] Data format changes between layers
 - [ ] Multiple consumers need the same data
+- [ ] Product docs, frontend mock contracts, backend specs, or database schema may describe the same feature differently
 - [ ] You're not sure where to put some logic
 
 → Read [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md)

@@ -10,6 +10,7 @@ This is a thinking guide, not a code-spec. Use it to decide what contracts to in
 
 Most serious bugs in this project happen when data crosses boundaries:
 
+- Product docs, frontend mock contracts, backend specs, and database schema preserve different versions of the same feature.
 - Upload API accepts metadata that the worker cannot process.
 - Ingestion persists chunks without the fields RAG citations need.
 - Retrieval filters correctly in PostgreSQL but not in Meilisearch.
@@ -25,6 +26,7 @@ Before changing behavior that touches more than one app/package, trace the full 
 
 Use this guide when work touches any of:
 
+- Backend/API work for an existing frontend page or workflow.
 - `src/apps/web` plus `src/apps/api`.
 - API plus domain packages.
 - API or worker plus database schema.
@@ -38,7 +40,32 @@ If the feature spans 3+ layers, write or update a flow note in the task before c
 
 ---
 
-## Step 1: Map The Flow
+## Step 1: Align The Design Slices
+
+Before implementing backend work for an existing frontend page or workflow, inspect only the relevant slices. Do not bulk-load every PRD, schema, or feature file into the session.
+
+Read the smallest useful set:
+
+- Latest frontend PRD change log or executable contract test for the feature.
+- Current frontend mock types/store behavior or page component for the workflow.
+- Backend API/spec section for the same domain.
+- Database schema fields/tables for the same domain.
+- Initial product design only when current scope is unclear.
+
+Write a short task note before coding:
+
+- Current frontend contract.
+- Backend/database assumptions.
+- Mismatches or deprecated concepts.
+- Decisions needed before implementation.
+
+If one layer still describes a removed or superseded product behavior, stop and resolve the contract before coding. Examples include invite flows after user management moved to CRUD, default-provider selection after model service scope removed it, or standalone key rotation after provider editing absorbed it.
+
+Keep this note concise. Link to relevant files and line numbers; do not paste whole documents unless the task genuinely depends on them.
+
+---
+
+## Step 2: Map The Flow
 
 Write the flow in project terms, not generic layers.
 
@@ -67,7 +94,7 @@ For each arrow, answer:
 
 ---
 
-## Step 2: Identify Contract Owners
+## Step 3: Identify Contract Owners
 
 Use these default owners unless a more specific spec says otherwise.
 
@@ -88,7 +115,7 @@ Do not duplicate cross-layer types in consumers. Import or infer them from the o
 
 ---
 
-## Step 3: Check The Required IDs
+## Step 4: Check The Required IDs
 
 Most cross-layer records must carry enough identity to enforce permissions, debug failures, and correlate logs.
 
@@ -292,6 +319,8 @@ After implementing:
 
 ## Pre-Implementation Checklist
 
+- [ ] Relevant design slices were checked for frontend/backend/database drift without bulk-loading unrelated documents.
+- [ ] Short task note records current frontend contract, backend/database assumptions, mismatches, and decisions needed.
 - [ ] Flow mapped from UI/API/worker through packages, storage, database, providers, and UI output.
 - [ ] Contract owner identified for every request, response, payload, row, event, and config value.
 - [ ] Required IDs and authorization context are present at each boundary.
