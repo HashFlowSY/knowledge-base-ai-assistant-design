@@ -181,3 +181,36 @@ Added lightweight cross-layer guide rules that require backend work for existing
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: User Password Management
+
+**Date**: 2026-05-18
+**Task**: User Password Management
+**Branch**: `main`
+
+### Summary
+
+Added admin-managed user passwords in the web mock user flow, including create/reset UI, per-user password login, copy prevention, tests, and mock-state validation.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ece9515` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
