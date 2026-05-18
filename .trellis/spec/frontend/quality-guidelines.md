@@ -22,10 +22,22 @@ Before completing frontend work, verify:
 ## State and API
 
 - [ ] Server state uses TanStack Query in client components.
+- [ ] Backend-integrated production pages do not import
+  `src/apps/web/src/features/mock/*`.
+- [ ] Backend-integrated production pages do not use `useMockStore`,
+  `MockStoreProvider`, `MockState`, `MockAction`, or `Mock*` business entity
+  types.
+- [ ] API data is not stored in React Context or persisted to `localStorage`.
 - [ ] List pagination, search, sort, and filters are reflected in URL state.
+- [ ] List query keys include every URL/input value that affects the API
+  response.
+- [ ] Frontend filtering/sorting/pagination does not replace API-owned list
+  semantics for server collections.
 - [ ] Mutations invalidate or update affected queries.
 - [ ] Internal API calls use the project API client/RPC contract.
 - [ ] Raw `fetch` is not used for internal APIs unless explicitly justified.
+- [ ] Auth/session/permission behavior comes from the auth layer or API
+  responses, not mock session flags.
 
 ## Layout
 
