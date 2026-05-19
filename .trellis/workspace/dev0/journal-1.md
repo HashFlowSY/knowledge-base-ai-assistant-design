@@ -247,3 +247,36 @@ Added admin-managed user passwords in the web mock user flow, including create/r
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: Archive user auth management task
+
+**Date**: 2026-05-19
+**Task**: Archive user auth management task
+**Branch**: `main`
+
+### Summary
+
+Archived 05-18-user-auth-and-management after fixing dev auth seed to import the Better Auth password helper through the server-only package subpath. Verified lint, typecheck, and relevant auth/db/api/web tests before archive.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `dda137f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
