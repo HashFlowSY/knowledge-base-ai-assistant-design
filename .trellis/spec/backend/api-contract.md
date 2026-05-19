@@ -17,14 +17,18 @@ API middleware must run in this order unless a route documents an exception:
 1. Request context: create or propagate `requestId`, attach request logger, set response header.
 2. Security headers and CORS/CSRF controls.
 3. Body size and content-type guards for routes that accept bodies.
-4. Rate limiting for login, upload, provider, ingestion, and chat routes.
-5. Better Auth session resolution.
-6. Tenant context resolution.
+4. Better Auth session resolution.
+5. Tenant context resolution.
+6. Route-level rate limiting for covered routes.
 7. Route-level authorization.
 8. Route handler.
 9. Error mapper.
 
 Request context must exist before any middleware that can log or throw.
+Covered routes that reject before step 6, such as CSRF or content-type failures,
+must still count the attempt with the route's unauthenticated identity. A request
+must increment at most one limiter key; skip the later route-level limiter if an
+earlier guard already counted the request.
 
 ## Hono Context Variables
 
@@ -77,7 +81,41 @@ Place schemas in the domain API module `types.ts` or in a shared contract packag
 
 ## Response Rules
 
-Use domain-specific success payloads, but keep shape explicit and typed.
+Business JSON APIs use a uniform response envelope. Domain-specific success data
+goes in `data`; errors go through the standard error envelope. Health/readiness
+routes may document a narrower response if they are intentionally not consumed by
+the web app contract.
+
+```typescript
+type ApiSuccessResponse<T> = {
+  success: true;
+  httpStatus: number;
+  data: T;
+  requestId: string;
+};
+
+type ApiErrorResponse = {
+  success: false;
+  httpStatus: number;
+  code: string;
+  message: string;
+  requestId: string;
+  validationErrors?: Array<{
+    path: Array<string | number>;
+    message: string;
+  }>;
+};
+
+type EmptyPayload = null;
+```
+
+Rules:
+
+- `httpStatus` in the response body must match the actual HTTP status code.
+- Success responses do not include a business `code`; the status is represented by `httpStatus`.
+- Error responses must include a standard public `code`.
+- No-business-data success responses use `data: null`, not `{}` or a bare `{ success: true }`.
+- Do not return bare domain payloads such as `SessionPayload`, `UserSummary`, or `PageResult<T>` from business JSON APIs.
 
 List responses must include:
 
@@ -94,19 +132,7 @@ Use cursor pagination for high-volume append-only streams such as logs when offs
 
 ## Error Contract
 
-All API errors returned to clients must use this shape:
-
-```typescript
-type ApiErrorResponse = {
-  code: string;
-  message: string;
-  requestId: string;
-  validationErrors?: Array<{
-    path: Array<string | number>;
-    message: string;
-  }>;
-};
-```
+All API errors returned to clients must use `ApiErrorResponse`.
 
 Standard codes:
 
@@ -161,9 +187,37 @@ The web app may use Hono RPC for internal type-safe calls.
 Rules:
 
 - Export API route types from a single API entrypoint.
+- If routes are registered imperatively on a mutable `Hono` app, preserve a
+  literal RPC route schema type explicitly. Returning a widened `Hono<ApiEnv>`
+  or deriving `typeof app` after mutating `const app = new Hono(); app.get(...)`
+  can erase the route schema and make `hc<ApiApp>()` degrade to `unknown`.
 - Frontend query hooks import or infer types from that API entrypoint.
 - Do not redefine API response types in frontend modules.
 - Use the same input schemas for Hono RPC and OpenAPI-exposed endpoints.
+
+Wrong:
+
+```typescript
+export function createApiApp(): Hono<ApiEnv> {
+  const app = new Hono<ApiEnv>();
+  app.get("/api/auth/session", sessionHandler);
+  return app;
+}
+
+export type ApiApp = ReturnType<typeof createApiApp>; // route schema erased
+```
+
+Correct:
+
+```typescript
+type ApiRouteSchema = {
+  "/api/auth/session": {
+    $get: JsonEndpoint<Record<string, never>, ApiSuccessResponse<SessionPayload>, 200>;
+  };
+};
+
+export type ApiApp = HonoBase<ApiEnv, ApiRouteSchema, "/">;
+```
 
 ## Streaming Chat
 

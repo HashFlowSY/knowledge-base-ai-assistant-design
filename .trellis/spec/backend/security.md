@@ -248,13 +248,37 @@ Audit logs must not include raw secrets, full prompt text, or full document/chun
 
 ## Rate Limits
 
-Apply rate limits to:
+Rate limits run on the API server. Browser code must never connect to Redis or
+other limiter storage directly.
 
-- Login and auth routes.
-- Upload routes.
-- URL ingestion routes.
-- Chat routes.
-- Provider status/check routes.
-- Admin mutation routes.
+For browser-facing auth and user-management routes, keep the policy deliberately
+simple:
 
-Rate limit keys should include tenant and actor when authenticated, and IP/user-agent summary when unauthenticated.
+| Scope | Routes | Identity | Limit |
+| --- | --- | --- | ---: |
+| `auth` | `POST /api/auth/login`, `GET /api/auth/session`, `POST /api/auth/logout` | Login uses `ipSummaryHash + normalizedEmailHash` when email is parseable, otherwise `ipSummaryHash`; session/logout use `sessionCookieHash` when present, otherwise `ipSummaryHash`. | Login: 30 / 15 min. Session/logout: 120 / 1 min. |
+| `user-management` | `/api/users*` | `tenantId + actorId` after actor resolution; otherwise `ipSummaryHash`. | Actor: 120 / 1 min. Unresolved actor: 60 / 1 min. |
+
+Rules:
+
+- A request counts against exactly one scope.
+- Malformed body, unsupported content type, CSRF failures, validation failures,
+  unauthenticated probing, and forbidden member attempts still count in the same
+  route scope; do not create separate sub-scopes for these cases.
+- If a request is rejected before actor resolution, count it with `ipSummaryHash`;
+  if actor resolution succeeds, count it with the actor identity. Never increment
+  both keys for the same request.
+- Redis-backed counters must update atomically. Do not implement Redis rate
+  limits as `GET` followed by `PSETEX` read-modify-write; concurrent requests to
+  the same key can overwrite each other and undercount attempts. Use a Lua
+  script or an equivalent single atomic Redis operation that returns both
+  `count` and `resetAt`.
+- Exceeded requests return HTTP `429`, API code `RATE_LIMITED`, a safe message,
+  and a `Retry-After` header.
+- Redis-backed key format is `kbai:ratelimit:{scope}:{window}:{identity}`.
+- Limiter keys must not contain raw email, full IP, full user-agent, session
+  token, cookie value, password, password hash, or other secret-bearing values.
+- Hash raw identifiers before they enter keys: `normalizedEmailHash =
+  sha256(lowercase(trim(email)))`, `sessionCookieHash = sha256(raw session cookie
+  value)`, and `ipSummaryHash = sha256(ipSummary)`.
+- Keep key length under 200 characters.

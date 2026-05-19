@@ -1,15 +1,29 @@
-import type { RouteAccess } from "../mock/types";
+import type { SessionPayload } from "@kb/auth";
 
 export function getLoginRedirectTarget({
-  hydrated,
-  routeAccess,
+  isLoading,
+  redirectTo,
+  session,
 }: {
-  hydrated: boolean;
-  routeAccess: RouteAccess;
+  isLoading: boolean;
+  redirectTo: string;
+  session: SessionPayload | null | undefined;
 }): string | null {
-  if (!hydrated || routeAccess.allowed || routeAccess.reason !== "already_authenticated") {
+  if (isLoading || session === null || session === undefined) {
     return null;
   }
 
-  return routeAccess.redirectTo;
+  return redirectTo;
+}
+
+export function isInternalRedirect(value: string | null): value is string {
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//");
+}
+
+export function sanitizeRedirectTo(value: string | null): string {
+  if (!isInternalRedirect(value) || value === "/login" || value.startsWith("/login/")) {
+    return "/workspace";
+  }
+
+  return value;
 }

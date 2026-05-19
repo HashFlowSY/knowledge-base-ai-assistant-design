@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-import { MockStoreProvider } from "../features/mock/store";
+import { AppProviders } from "../features/api/app-providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: ReactNode }): React
   return (
     <html lang="zh-CN">
       <body>
-        <MockStoreProvider>{children}</MockStoreProvider>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

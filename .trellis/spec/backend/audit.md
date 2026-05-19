@@ -31,7 +31,9 @@ Do not store full IP addresses if a privacy-preserving summary is enough for ope
 Use stable dot-separated action names:
 
 - `user.created`
-- `user.disabled`
+- `user.updated`
+- `user.access_removed`
+- `user.password_reset`
 - `knowledge_base.created`
 - `knowledge_base.member_added`
 - `document.uploaded`
@@ -51,7 +53,7 @@ Action names are part of the operational contract. Do not rename existing action
 Audit these events:
 
 - Provider config create/update/disable/status check.
-- User create/update/disable.
+- User create/update/access removal/password reset.
 - Knowledge base create/update/delete.
 - Knowledge base membership changes.
 - File upload and URL ingestion request.
@@ -105,4 +107,3 @@ Audit log list APIs must:
 ## Retention
 
 Production v1 must document retention expectations in deployment docs. Until a retention policy is explicitly implemented, audit logs are retained indefinitely.
-

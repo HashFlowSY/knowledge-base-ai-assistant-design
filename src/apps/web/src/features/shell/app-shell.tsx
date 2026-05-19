@@ -2,59 +2,80 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, ClockAlert, LogOut, Menu, RotateCcw } from "lucide-react";
-import { useEffect, useMemo, useState, type ReactElement, type ReactNode } from "react";
+import { BookOpen, LogOut, Menu } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState, type ReactElement, type ReactNode } from "react";
+
+import type { SessionPayload } from "@kb/auth";
 
 import { commonCopy } from "../../copy/common";
-import { getRouteAccess, useMockStore } from "../mock/store";
-import type { MockRole } from "../mock/types";
+import { authQueryKey, useLogoutMutation, useSessionQuery } from "../auth/auth-hooks";
 import { Button } from "../ui/button";
 import { Notice } from "../ui/notice";
-import { SelectField } from "../ui/select-field";
 import { AppShellSkeleton } from "../ui/skeleton";
 import { shellSkeletonVariantForPath } from "../ui/skeleton-variants";
 import { visibleNavigationItems } from "./navigation";
+import {
+  getAppShellSessionGateDecision,
+} from "./session-gate";
 
 export function AppShell({ children }: { children: ReactNode }): ReactElement {
   const pathname = usePathname();
   const router = useRouter();
-  const { dismissNotice, dispatch, hydrated, notice, state } = useMockStore();
+  const queryClient = useQueryClient();
+  const sessionQuery = useSessionQuery();
+  const logoutMutation = useLogoutMutation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const routeAccess = useMemo(
-    () => getRouteAccess(state.session, pathname),
-    [pathname, state.session],
-  );
-  const user = state.users.find((item) => item.id === state.session.userId);
+  const session = sessionQuery.data ?? null;
+  const gateDecision = getAppShellSessionGateDecision({
+    error: sessionQuery.error,
+    isLoading: sessionQuery.isLoading,
+    pathname,
+    session,
+  });
 
   useEffect(() => {
-    if (hydrated && !routeAccess.allowed) {
-      router.replace(routeAccess.redirectTo);
+    if (gateDecision.kind === "clear-session-and-redirect") {
+      queryClient.removeQueries({ queryKey: authQueryKey });
+      router.replace(gateDecision.href);
+      return;
     }
-  }, [hydrated, routeAccess, router]);
 
-  if (!hydrated || !routeAccess.allowed) {
+    if (gateDecision.kind === "redirect") {
+      router.replace(gateDecision.href);
+    }
+  }, [gateDecision, queryClient, router]);
+
+  async function handleLogout(): Promise<void> {
+    await logoutMutation.mutateAsync();
+    router.replace("/login");
+  }
+
+  if (gateDecision.kind === "error") {
+    return (
+      <main className="min-h-screen bg-slate-100 p-4 text-slate-950">
+        <div className="mx-auto max-w-xl pt-10">
+          <Notice tone="error">{gateDecision.message}</Notice>
+        </div>
+      </main>
+    );
+  }
+
+  if (gateDecision.kind !== "render" || session === null) {
     return <AppShellSkeleton variant={shellSkeletonVariantForPath(pathname)} />;
   }
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
       <div className="flex min-h-screen">
-        <Sidebar
-          activePath={pathname}
-          onExpireSession={() => dispatch({ intendedRedirectTo: pathname, type: "expireSession" })}
-          onLogout={() => dispatch({ type: "logout" })}
-          onReset={() => dispatch({ type: "resetDemoData" })}
-          onSwitchRole={(role) => dispatch({ role, type: "switchRole" })}
-          role={state.session.role}
-          userName={user?.name ?? "未登录"}
-        />
+        <Sidebar activePath={pathname} onLogout={handleLogout} session={session} />
 
         <section className="min-w-0 flex-1">
           <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur md:hidden">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">{commonCopy.productName}</p>
-                <p className="text-xs text-slate-500">{commonCopy.mockNotice}</p>
+                <p className="text-xs text-slate-500">{commonCopy.tenantLabel}</p>
               </div>
               <Button aria-label="打开导航" onClick={() => setMobileOpen(true)} variant="secondary">
                 <Menu aria-hidden="true" className="h-4 w-4" />
@@ -70,30 +91,14 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
                   activePath={pathname}
                   compact
                   onClose={() => setMobileOpen(false)}
-                  onExpireSession={() => dispatch({ intendedRedirectTo: pathname, type: "expireSession" })}
-                  onLogout={() => dispatch({ type: "logout" })}
-                  onReset={() => dispatch({ type: "resetDemoData" })}
-                  onSwitchRole={(role) => dispatch({ role, type: "switchRole" })}
-                  role={state.session.role}
-                  userName={user?.name ?? "未登录"}
+                  onLogout={handleLogout}
+                  session={session}
                 />
               </div>
             </div>
           ) : null}
 
-          <div className="mx-auto max-w-[1500px] px-4 py-4 sm:px-6 lg:px-8">
-            {notice === null ? null : (
-              <div className="mb-4">
-                <Notice tone="info">
-                  <span>{notice}</span>
-                  <button className="ml-3 underline" onClick={dismissNotice} type="button">
-                    知道了
-                  </button>
-                </Notice>
-              </div>
-            )}
-            {children}
-          </div>
+          <div className="mx-auto max-w-[1500px] px-4 py-4 sm:px-6 lg:px-8">{children}</div>
         </section>
       </div>
     </main>
@@ -104,24 +109,16 @@ function Sidebar({
   activePath,
   compact = false,
   onClose,
-  onExpireSession,
   onLogout,
-  onReset,
-  onSwitchRole,
-  role,
-  userName,
+  session,
 }: {
   activePath: string;
   compact?: boolean;
   onClose?: () => void;
-  onExpireSession: () => void;
   onLogout: () => void;
-  onReset: () => void;
-  onSwitchRole: (role: MockRole) => void;
-  role: MockRole | null;
-  userName: string;
+  session: SessionPayload;
 }): ReactElement {
-  const items = visibleNavigationItems(role);
+  const items = visibleNavigationItems(session.role);
 
   return (
     <aside
@@ -145,9 +142,7 @@ function Sidebar({
               aria-current={active ? "page" : undefined}
               className={[
                 "group flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-sm transition",
-                active
-                  ? "bg-white text-slate-950"
-                  : "text-slate-300 hover:bg-white/10 hover:text-white",
+                active ? "bg-white text-slate-950" : "text-slate-300 hover:bg-white/10 hover:text-white",
               ].join(" ")}
               href={item.href}
               key={item.href}
@@ -174,32 +169,9 @@ function Sidebar({
 
       <div className="space-y-3 border-t border-white/10 p-4">
         <div>
-          <p className="text-sm font-medium">{userName}</p>
-          <p className="mt-1 text-xs text-slate-400">
-            {commonCopy.mockNotice} · {role ?? "未登录"}
-          </p>
+          <p className="text-sm font-medium">{session.user.name}</p>
+          <p className="mt-1 text-xs text-slate-400">{session.role}</p>
         </div>
-        <div>
-          <p className="mb-2 text-xs font-medium text-slate-300">{commonCopy.roleSwitcher}</p>
-          <SelectField
-            ariaLabel={commonCopy.roleSwitcher}
-            onChange={(value) => onSwitchRole(value as MockRole)}
-            options={[
-              { label: "admin", value: "admin" },
-              { label: "member", value: "member" },
-            ]}
-            tone="inverse"
-            value={role ?? "admin"}
-          />
-        </div>
-        <Button className="w-full" onClick={onReset} variant="inverse">
-          <RotateCcw aria-hidden="true" className="h-4 w-4" />
-          {commonCopy.resetDemoData}
-        </Button>
-        <Button className="w-full" onClick={onExpireSession} variant="inverse">
-          <ClockAlert aria-hidden="true" className="h-4 w-4" />
-          模拟会话过期
-        </Button>
         <Button className="w-full" onClick={onLogout} variant="inverse">
           <LogOut aria-hidden="true" className="h-4 w-4" />
           {commonCopy.logout}

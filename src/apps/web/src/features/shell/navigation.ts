@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import type { MockRole } from "../mock/types";
+import type { Role } from "@kb/auth";
 
 export interface NavigationItem {
   href: string;
@@ -79,6 +79,6 @@ export const navigationItems: NavigationItem[] = [
   },
 ];
 
-export function visibleNavigationItems(role: MockRole | null): NavigationItem[] {
+export function visibleNavigationItems(role: Role | null): NavigationItem[] {
   return navigationItems.filter((item) => !item.adminOnly || role === "admin");
 }

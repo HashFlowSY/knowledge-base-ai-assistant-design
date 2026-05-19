@@ -171,6 +171,98 @@ Rules:
 - Prefer explicit input objects for package functions.
 - Include `tenantId` and `actorId` in package function inputs when authorization or audit decisions depend on them.
 
+## Scenario: Browser-Safe Package Entry Points
+
+### 1. Scope / Trigger
+
+- Trigger: a package is consumed by both `src/apps/web` browser/client code and server-only API or worker code.
+- Common examples: frontend imports API schemas or inferred types from a domain package while `src/apps/api` imports that package's database-backed service.
+
+### 2. Signatures
+
+- Browser-safe root entry:
+  ```json
+  {
+    "exports": {
+      ".": "./src/index.ts"
+    }
+  }
+  ```
+- Server-only subpath entry:
+  ```json
+  {
+    "exports": {
+      ".": "./src/index.ts",
+      "./service": "./src/service.ts"
+    }
+  }
+  ```
+- TypeScript path aliases must mirror the exported subpaths:
+  ```json
+  {
+    "paths": {
+      "@kb/users": ["src/packages/users/src/index.ts"],
+      "@kb/users/service": ["src/packages/users/src/service.ts"]
+    }
+  }
+  ```
+
+### 3. Contracts
+
+- Package root entries that may be imported by `src/apps/web` client components must export only browser-safe contracts: Zod schemas, inferred types, constants, and pure decision helpers.
+- Database-backed services, Node runtime adapters, queue clients, Redis clients, filesystem access, and packages that pull in Node built-ins must live behind explicit server-only subpaths such as `@kb/users/service`.
+- `src/apps/api` and `src/apps/worker` may import server-only subpaths. `src/apps/web` production code must not import those subpaths.
+- Do not re-export server-only files from a browser-consumable root entry.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| Frontend client component imports `@kb/users` schemas/types | Next build succeeds without bundling `pg`, `fs`, `net`, `tls`, or `dns` |
+| Frontend production code imports `@kb/users/service` | Reject in review or lint/static check |
+| API imports `@kb/users/service` | Allowed; service may depend on `@kb/db`, Drizzle, Redis, or Node-only packages |
+| Package root re-exports `./service` | Invalid for packages consumed by browser/client code |
+
+### 5. Good/Base/Bad Cases
+
+- Good: `src/apps/web` imports `listUsersQuerySchema` and `UserSummary` from `@kb/users`; `src/apps/api` imports `createUserManagementService` from `@kb/users/service`.
+- Base: a purely backend package that is never imported by `src/apps/web` may keep service exports at the root if package ownership remains clear.
+- Bad: `export * from "./service"` in a package root that frontend hooks import for schemas; this can pull Node-only transitive dependencies into the browser bundle.
+
+### 6. Tests Required
+
+- Run `pnpm --filter @kb/web build` after changing exports for packages imported by web client components.
+- Add or keep static checks where practical that search `src/apps/web/src` for server-only subpath imports.
+- Run package and API type-checks after adding an exported subpath so path aliases, package exports, and imports stay aligned.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+// src/packages/users/src/index.ts
+export * from "./service";
+export const userSummarySchema = z.object({ /* ... */ });
+```
+
+```typescript
+// src/apps/web/src/features/admin/user-hooks.ts
+import { userSummarySchema } from "@kb/users";
+```
+
+#### Correct
+
+```typescript
+// src/packages/users/src/index.ts
+export const userSummarySchema = z.object({ /* ... */ });
+export type UserSummary = z.infer<typeof userSummarySchema>;
+```
+
+```typescript
+// src/apps/api/src/runtime-services.ts
+import { createUserManagementService } from "@kb/users/service";
+```
+
 ## Database Access
 
 Database schema and low-level client setup belong to `src/packages/db`.

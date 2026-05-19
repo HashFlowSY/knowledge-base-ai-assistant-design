@@ -11,6 +11,11 @@ import {
   shouldShowDetailCopyButton,
   targetHrefForAuditEvent,
 } from "./admin-list-helpers";
+import {
+  canRemoveUserAccessFromUi,
+  roleOptionsForUser,
+  shouldLogoutAfterUserUpdate,
+} from "./user-ui-helpers";
 
 describe("admin list page helpers", () => {
   it("parses positive pagination integers with a fallback", () => {
@@ -94,6 +99,43 @@ describe("admin list page helpers", () => {
 
   it("does not expose copy controls inside the detail page", () => {
     expect(shouldShowDetailCopyButton()).toBe(false);
+  });
+
+  it("protects the current admin from self access removal and self demotion in the UI", () => {
+    expect(canRemoveUserAccessFromUi({ currentUserId: "admin_1", targetUserId: "user_2" })).toBe(true);
+    expect(canRemoveUserAccessFromUi({ currentUserId: "admin_1", targetUserId: "admin_1" })).toBe(false);
+
+    expect(roleOptionsForUser({ currentUserId: "admin_1", targetUserId: "user_2" }).map((option) => option.value)).toEqual([
+      "member",
+      "admin",
+    ]);
+    expect(roleOptionsForUser({ currentUserId: "admin_1", targetUserId: "admin_1" }).map((option) => option.value)).toEqual([
+      "admin",
+    ]);
+  });
+
+  it("logs out the current admin only after a self password reset", () => {
+    expect(
+      shouldLogoutAfterUserUpdate({
+        currentUserId: "admin_1",
+        password: "new-password",
+        targetUserId: "admin_1",
+      }),
+    ).toBe(true);
+    expect(
+      shouldLogoutAfterUserUpdate({
+        currentUserId: "admin_1",
+        password: "",
+        targetUserId: "admin_1",
+      }),
+    ).toBe(false);
+    expect(
+      shouldLogoutAfterUserUpdate({
+        currentUserId: "admin_1",
+        password: "new-password",
+        targetUserId: "user_2",
+      }),
+    ).toBe(false);
   });
 
   it("restores admin row detail selections from URL selectedId values", () => {

@@ -2,27 +2,32 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { LogIn } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent, type ReactElement } from "react";
+import { useEffect, useState, type FormEvent, type ReactElement } from "react";
 
 import { authCopy } from "../../copy/auth";
 import { commonCopy } from "../../copy/common";
-import { getRouteAccess, sanitizeRedirectTo, useMockStore } from "../mock/store";
+import { ApiClientError } from "../api/client";
 import { Button } from "../ui/button";
 import { Notice } from "../ui/notice";
-import { getLoginRedirectTarget } from "./login-redirect";
+import { useLoginMutation, useSessionQuery } from "./auth-hooks";
+import { getLoginRedirectTarget, sanitizeRedirectTo } from "./login-redirect";
 
 export function LoginPage(): ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { dispatch, hydrated, state } = useMockStore();
+  const sessionQuery = useSessionQuery();
+  const loginMutation = useLoginMutation();
   const redirectTo = sanitizeRedirectTo(searchParams.get("redirectTo"));
-  const sessionExpired = searchParams.get("sessionExpired") === "1" || state.session.sessionExpired;
+  const sessionExpired = searchParams.get("sessionExpired") === "1";
   const [email, setEmail] = useState("admin@example.com");
   const [password, setPassword] = useState("password123");
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const routeAccess = useMemo(() => getRouteAccess(state.session, "/login"), [state.session]);
-  const loginRedirectTarget = getLoginRedirectTarget({ hydrated, routeAccess });
+  const pending = loginMutation.isPending;
+  const loginRedirectTarget = getLoginRedirectTarget({
+    isLoading: sessionQuery.isLoading,
+    redirectTo,
+    session: sessionQuery.data,
+  });
 
   useEffect(() => {
     if (loginRedirectTarget !== null) {
@@ -30,20 +35,17 @@ export function LoginPage(): ReactElement {
     }
   }, [loginRedirectTarget, router]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     setError(null);
-    setPending(true);
-    const user = state.users.find((item) => item.email === email && item.status === "active");
-    if (user === undefined || password !== user.password) {
-      setPending(false);
-      setError(authCopy.invalid);
-      return;
-    }
 
-    dispatch({ email, password, redirectTo, type: "login" });
-    setPending(false);
-    router.push(redirectTo);
+    try {
+      await loginMutation.mutateAsync({ email, password });
+      router.push(redirectTo);
+    } catch (caught) {
+      const message = caught instanceof ApiClientError ? caught.response.message : authCopy.invalid;
+      setError(message);
+    }
   }
 
   return (

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+export * from "./client";
 export * from "./schema";
 
 export const databaseConfigSchema = z.object({

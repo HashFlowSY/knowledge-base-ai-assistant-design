@@ -1,6 +1,7 @@
 import type { ReactElement } from "react";
 
 import { DocumentDetailPage } from "../../../features/documents/document-detail-page";
+import { MockDataBoundary } from "../../../features/mock/mock-data-boundary";
 
 export default async function Page({
   params,
@@ -8,5 +9,9 @@ export default async function Page({
   params: Promise<{ documentId: string }>;
 }): Promise<ReactElement> {
   const { documentId } = await params;
-  return <DocumentDetailPage documentId={documentId} />;
+  return (
+    <MockDataBoundary>
+      <DocumentDetailPage documentId={documentId} />
+    </MockDataBoundary>
+  );
 }

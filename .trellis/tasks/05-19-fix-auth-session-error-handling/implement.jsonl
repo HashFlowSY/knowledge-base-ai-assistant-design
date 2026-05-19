@@ -1,0 +1,11 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend stack and core ownership rules for API/auth/user-management changes."}
+{"file": ".trellis/spec/backend/api-contract.md", "reason": "Uniform API envelope, Hono RPC typed client, and error contract requirements."}
+{"file": ".trellis/spec/backend/audit.md", "reason": "Required auth.forbidden audit event and audit metadata rules."}
+{"file": ".trellis/spec/backend/security.md", "reason": "Auth, tenant, default tenant, and rate-limit security requirements."}
+{"file": ".trellis/spec/backend/package-boundaries.md", "reason": "Package/app boundary rules for auth, users, audit, and API orchestration."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Frontend stack and core rules for web session gate and hooks."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "TanStack Query session/auth state and backend integration rules."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Feature-scoped query/mutation hook and internal API client rules."}
+{"file": ".trellis/spec/testing/index.md", "reason": "Testing strategy index for package-level verification."}
+{"file": ".trellis/spec/testing/strategy.md", "reason": "Vitest and permission/error-state testing expectations."}
+{"file": ".trellis/tasks/05-18-user-auth-and-management/prd.md", "reason": "Original auth/user-management PRD contract that these defects violate."}

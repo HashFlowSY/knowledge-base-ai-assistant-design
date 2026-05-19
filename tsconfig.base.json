@@ -22,8 +22,10 @@
     "baseUrl": ".",
     "paths": {
       "@kb/ai-providers": ["src/packages/ai-providers/src/index.ts"],
+      "@kb/api": ["src/apps/api/src/app.ts"],
       "@kb/audit": ["src/packages/audit/src/index.ts"],
       "@kb/auth": ["src/packages/auth/src/index.ts"],
+      "@kb/auth/server": ["src/packages/auth/src/server.ts"],
       "@kb/config": ["src/packages/config/src/index.ts"],
       "@kb/db": ["src/packages/db/src/index.ts"],
       "@kb/ingestion": ["src/packages/ingestion/src/index.ts"],
@@ -35,7 +37,8 @@
       "@kb/security": ["src/packages/security/src/index.ts"],
       "@kb/shared": ["src/packages/shared/src/index.ts"],
       "@kb/storage": ["src/packages/storage/src/index.ts"],
-      "@kb/users": ["src/packages/users/src/index.ts"]
+      "@kb/users": ["src/packages/users/src/index.ts"],
+      "@kb/users/service": ["src/packages/users/src/service.ts"]
     }
   }
 }

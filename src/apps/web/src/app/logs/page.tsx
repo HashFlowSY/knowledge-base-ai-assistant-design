@@ -1,7 +1,12 @@
 import type { ReactElement } from "react";
 
 import { AdminListPage } from "../../features/admin/admin-list-page";
+import { MockDataBoundary } from "../../features/mock/mock-data-boundary";
 
 export default function Page(): ReactElement {
-  return <AdminListPage kind="logs" />;
+  return (
+    <MockDataBoundary>
+      <AdminListPage kind="logs" />
+    </MockDataBoundary>
+  );
 }

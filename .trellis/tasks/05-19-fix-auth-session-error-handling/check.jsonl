@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/backend/api-contract.md", "reason": "Verify HTTP status/body code consistency and Hono RPC typed client contract."}
+{"file": ".trellis/spec/backend/audit.md", "reason": "Verify member admin API forbidden attempts write auth.forbidden audit events."}
+{"file": ".trellis/spec/backend/security.md", "reason": "Verify default tenant, auth, and rate-limit security behavior."}
+{"file": ".trellis/spec/backend/package-boundaries.md", "reason": "Verify app/package ownership and browser-safe exports remain valid."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Verify frontend session gate uses API error states instead of raw data null checks."}
+{"file": ".trellis/spec/frontend/hook-guidelines.md", "reason": "Verify hooks use the project API/RPC client instead of ad hoc raw fetch."}
+{"file": ".trellis/spec/testing/strategy.md", "reason": "Verify adequate unit/integration coverage for auth, permissions, and error states."}
+{"file": ".trellis/tasks/05-18-user-auth-and-management/prd.md", "reason": "Verify the fix restores the original PRD contract."}
