@@ -2,7 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { ProjectDb } from "@kb/db";
 
+import { createNotFoundError } from "./service-errors";
 import { resolveSessionPayload } from "./service";
+
+describe("user service error helpers", () => {
+  it("maps missing active users to the service HTTP error contract", () => {
+    expect(createNotFoundError()).toEqual({
+      ok: false,
+      code: "NOT_FOUND",
+      httpStatus: 404,
+      message: "用户不存在或已被移除。",
+    });
+  });
+});
 
 describe("resolveSessionPayload", () => {
   it("reports default tenant unavailable when no default tenant exists", async () => {

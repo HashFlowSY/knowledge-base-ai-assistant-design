@@ -10,6 +10,10 @@ import {
   healthResponseSchema,
   type AuthService,
 } from "./app";
+import {
+  createEmptyUserService,
+  createUnauthenticatedAuthService,
+} from "./default-services";
 import type { RateLimitConsumeInput } from "./rate-limit";
 
 const adminSession = {
@@ -34,6 +38,36 @@ const userSummary = {
 };
 
 describe("@kb/api", () => {
+  it("keeps default service stubs available through an internal module boundary", async () => {
+    const authService = createUnauthenticatedAuthService();
+    const userService = createEmptyUserService();
+
+    await expect(
+      authService.getSession({ cookieHeader: null }),
+    ).resolves.toMatchObject({
+      ok: false,
+      code: "UNAUTHORIZED",
+      httpStatus: 401,
+      message: "请先登录。",
+    });
+    await expect(
+      userService.createUser({
+        actor: adminSession,
+        body: {
+          name: "成员",
+          email: "member@example.com",
+          role: "member",
+          password: "password123",
+        },
+      }),
+    ).resolves.toMatchObject({
+      ok: false,
+      code: "INTERNAL_ERROR",
+      httpStatus: 500,
+      message: "操作失败，请稍后重试。",
+    });
+  });
+
   it("returns a typed health payload and request id header", async () => {
     const app = createApiApp();
     const response = await app.request("/health", {
