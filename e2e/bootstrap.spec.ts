@@ -5,6 +5,12 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => window.localStorage.clear());
 });
 
+test("opens login directly for unauthenticated root visits", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page).toHaveURL(/\/login$/);
+});
+
 test("logs in and renders implemented route smoke set", async ({ page }) => {
   await page.goto("/login");
   await page.getByRole("button", { name: "登录" }).click();
