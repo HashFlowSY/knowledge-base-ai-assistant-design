@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import { eq, sql } from "drizzle-orm";
 
-import { hashPasswordForAccount, normalizeEmail, type Role } from "@kb/auth";
+import { normalizeEmail, type Role } from "@kb/auth";
+import { hashPasswordForAccount } from "@kb/auth/server";
 import {
   authAccounts,
   authUsers,
