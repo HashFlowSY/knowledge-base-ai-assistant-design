@@ -280,3 +280,36 @@ Archived 05-18-user-auth-and-management after fixing dev auth seed to import the
 ### Next Steps
 
 - None - task complete
+
+
+## Session 9: 修复首页登录跳转
+
+**Date**: 2026-05-19
+**Task**: 修复首页登录跳转
+**Branch**: `main`
+
+### Summary
+
+修复根路径访问先跳 workspace 再进入登录页的问题，改为根路径直接进入登录页，并补充单元和 E2E 回归测试。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `36eb185` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
