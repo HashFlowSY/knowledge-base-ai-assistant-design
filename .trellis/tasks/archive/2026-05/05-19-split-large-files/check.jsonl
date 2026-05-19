@@ -1,0 +1,12 @@
+{"file": ".trellis/spec/shared/index.md", "reason": "Verify shared code quality expectations after refactor."}
+{"file": ".trellis/spec/shared/typescript.md", "reason": "Verify strict TypeScript correctness and clean module boundaries."}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "Verify the split improves cohesion and avoids unrelated churn."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Verify frontend-specific changes if selected files include src/apps/web."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Verify component boundaries and client/server usage remain correct."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Verify extracted state and hooks follow project rules."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Verify frontend quality checklist after refactor."}
+{"file": ".trellis/spec/backend/index.md", "reason": "Verify backend-specific changes if selected files include API or packages."}
+{"file": ".trellis/spec/backend/api-module.md", "reason": "Verify API module organization if app routes are split."}
+{"file": ".trellis/spec/backend/package-boundaries.md", "reason": "Verify dependency direction and package ownership."}
+{"file": ".trellis/spec/testing/index.md", "reason": "Verify testing guidance is followed."}
+{"file": ".trellis/spec/testing/strategy.md", "reason": "Verify relevant tests are preserved or updated appropriately."}

@@ -1,0 +1,12 @@
+{"file": ".trellis/spec/shared/index.md", "reason": "Shared code quality and TypeScript guidance applies to all refactor targets."}
+{"file": ".trellis/spec/shared/typescript.md", "reason": "Splitting files must preserve strict, type-safe TypeScript boundaries."}
+{"file": ".trellis/spec/shared/code-quality.md", "reason": "Refactor should improve cohesion without broad unrelated churn."}
+{"file": ".trellis/spec/frontend/index.md", "reason": "Large frontend files are likely split targets under src/apps/web."}
+{"file": ".trellis/spec/frontend/component-guidelines.md", "reason": "Frontend component splits must preserve server/client boundaries and accessible UI patterns."}
+{"file": ".trellis/spec/frontend/state-management.md", "reason": "Frontend state and hook extraction must follow project state ownership rules."}
+{"file": ".trellis/spec/frontend/quality-guidelines.md", "reason": "Frontend refactor quality checklist for tests, imports, and UI stability."}
+{"file": ".trellis/spec/backend/index.md", "reason": "Large API and package files are likely split targets."}
+{"file": ".trellis/spec/backend/api-module.md", "reason": "API route composition and handler splits must follow module organization rules."}
+{"file": ".trellis/spec/backend/package-boundaries.md", "reason": "Package-level refactors must preserve ownership and dependency direction."}
+{"file": ".trellis/spec/testing/index.md", "reason": "Test structure and verification guidance for moved imports and split test files."}
+{"file": ".trellis/spec/testing/strategy.md", "reason": "Refactor should keep or improve relevant test coverage without changing behavior."}
