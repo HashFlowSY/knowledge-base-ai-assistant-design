@@ -313,3 +313,36 @@ Archived 05-18-user-auth-and-management after fixing dev auth seed to import the
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: 拆分 API 和用户服务大文件
+
+**Date**: 2026-05-19
+**Task**: 拆分 API 和用户服务大文件
+**Branch**: `main`
+
+### Summary
+
+将 API app 和 users service 的大文件拆分为更聚焦的内部模块，保留公开入口和行为契约；mock store 按用户反馈排除出本次范围。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3fbf998` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
