@@ -2,7 +2,7 @@ import { and, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 
 import { authUsers, tenantMemberships, type ProjectDb } from "@kb/db";
 
-import type { ListUsersQuery } from "./index";
+import type { ListUsersQuery } from "./schemas";
 import type { ActiveUserRow } from "./service-mappers";
 
 export function createVisibleUserConditions(

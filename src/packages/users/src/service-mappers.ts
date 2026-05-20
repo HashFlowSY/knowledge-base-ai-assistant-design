@@ -1,4 +1,4 @@
-import type { UpdateUserInput, UserSummary } from "./index";
+import type { UpdateUserInput, UserSummary } from "./schemas";
 
 export interface ActiveUserRow {
   createdAt: Date;

@@ -19,7 +19,7 @@ import type {
   AuditService,
   AuthService,
   UserService,
-} from "./app";
+} from "./contracts";
 
 export interface ApiRuntimeServices extends Required<ApiAppOptions> {
   close(): Promise<void>;

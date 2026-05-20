@@ -3,7 +3,7 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import type { ApiErrorResponse, ApiSuccessResponse } from "@kb/shared";
 
-import type { ApiEnv } from "./app";
+import type { ApiEnv } from "./contracts";
 
 export function createSuccessResponse<T>(input: {
   data: T;

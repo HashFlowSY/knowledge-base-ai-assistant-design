@@ -1,4 +1,4 @@
-import type { UpdateUserInput } from "./index";
+import type { UpdateUserInput } from "./schemas";
 import {
   createConflictError,
   createSelfProtectionError,
