@@ -346,3 +346,36 @@ Archived 05-18-user-auth-and-management after fixing dev auth seed to import the
 ### Next Steps
 
 - None - task complete
+
+
+## Session 11: 后端代码分层重构
+
+**Date**: 2026-05-20
+**Task**: 后端代码分层重构
+**Branch**: `main`
+
+### Summary
+
+拆分 API、auth、db seed、queue、users 等后端文件职责边界，保留原入口作为兼容导出；验证通过 typecheck、lint、test。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6dc9e22` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
