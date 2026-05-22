@@ -2,12 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { LogIn } from "lucide-react";
-import { useEffect, useState, type FormEvent, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
 
 import { authCopy } from "../../copy/auth";
 import { commonCopy } from "../../copy/common";
 import { ApiClientError } from "../api/client";
 import { Button } from "../ui/button";
+import type { FormSubmitHandler } from "../ui/form-types";
 import { Notice } from "../ui/notice";
 import { useLoginMutation, useSessionQuery } from "./auth-hooks";
 import { getLoginRedirectTarget, sanitizeRedirectTo } from "./login-redirect";
@@ -35,7 +36,7 @@ export function LoginPage(): ReactElement {
     }
   }, [loginRedirectTarget, router]);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  const handleSubmit: FormSubmitHandler = async (event) => {
     event.preventDefault();
     setError(null);
 
@@ -46,7 +47,7 @@ export function LoginPage(): ReactElement {
       const message = caught instanceof ApiClientError ? caught.response.message : authCopy.invalid;
       setError(message);
     }
-  }
+  };
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-100 p-4 text-slate-950">

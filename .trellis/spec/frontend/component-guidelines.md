@@ -54,6 +54,22 @@ Use proper elements:
 
 Do not use clickable `<div>` or `<span>` elements for actions.
 
+### Form Submit Handler Types
+
+Do not import or annotate handlers with React's `FormEvent` type. For form
+submit handlers, use the frontend shared handler type:
+
+```tsx
+import type { FormSubmitHandler } from "../ui/form-types";
+
+const handleSubmit: FormSubmitHandler = (event) => {
+  event.preventDefault();
+};
+```
+
+This keeps handler signatures aligned with React's `<form onSubmit>` contract
+without direct `FormEvent` references.
+
 ## Images
 
 Use `next/image` instead of raw `<img>` tags.
@@ -84,4 +100,3 @@ Parent components own external placement and spacing. Child components own inter
 Interactive targets should be at least `44px` by `44px` on touch devices.
 
 Use `-webkit-tap-highlight-color: transparent` for custom mobile controls when needed.
-

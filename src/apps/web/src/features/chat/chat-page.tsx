@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MessageSquarePlus, RotateCcw, Send } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 
 import { chatCopy } from "../../copy/chat";
 import { knowledgeBaseName } from "../mock/selectors";
 import { useMockStore } from "../mock/store";
 import type { ChatAnswerMode, MockChatMessage, MockChatSession, MockCitation } from "../mock/types";
 import { Button } from "../ui/button";
+import type { FormSubmitHandler } from "../ui/form-types";
 import { cardActionButtonClassName, listActionButtonClassName } from "../ui/list-item-styles";
 import { Notice } from "../ui/notice";
 import { Panel, PanelHeader } from "../ui/panel";
@@ -89,7 +90,7 @@ export function ChatPage(): ReactElement {
     router.replace(query.length > 0 ? `${pathname}?${query}` : pathname);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault();
     if (selectedSession === undefined || question.trim().length === 0) {
       return;
@@ -103,7 +104,7 @@ export function ChatPage(): ReactElement {
     });
     updateUrl({ citationId: null, sessionId: selectedSession.id });
     setQuestion("");
-  }
+  };
 
   function retryAnswer(messageId: string): void {
     if (selectedSession === undefined) {

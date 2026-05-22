@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactElement } from "react";
+import { useState, type ReactElement } from "react";
 
 import { useMockStore } from "../mock/store";
 import type {
@@ -10,6 +10,7 @@ import type {
 } from "../mock/types";
 import { Button } from "../ui/button";
 import { DialogFrame } from "../ui/dialog";
+import type { FormSubmitHandler } from "../ui/form-types";
 import { Notice } from "../ui/notice";
 import { SelectField, type SelectFieldOption } from "../ui/select-field";
 import { providerKindLabels } from "./admin-list-helpers";
@@ -37,7 +38,7 @@ export function ProviderConfigDialog({
   const [error, setError] = useState<string | null>(null);
   const title = provider === null ? `配置${providerKindLabels[kind]}` : `编辑${providerKindLabels[kind]}`;
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault();
     const validationError = validateProviderForm({
       apiKey,
@@ -68,7 +69,7 @@ export function ProviderConfigDialog({
     });
     onNotice(`${providerKindLabels[kind]}已保存，并完成连接测试。`);
     onClose();
-  }
+  };
 
   return (
     <DialogFrame

@@ -3,7 +3,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, type ClipboardEvent, type FormEvent, type ReactElement } from "react";
+import { useState, type ClipboardEvent, type ReactElement } from "react";
 
 import type { Role } from "@kb/auth";
 import type { UserSummary } from "@kb/users";
@@ -12,6 +12,7 @@ import { adminCopy } from "../../copy/admin";
 import { ApiClientError } from "../api/client";
 import { Button } from "../ui/button";
 import { DialogFrame } from "../ui/dialog";
+import type { FormSubmitHandler } from "../ui/form-types";
 import { Notice } from "../ui/notice";
 import { SelectField } from "../ui/select-field";
 import { roleOptionsForUser, shouldLogoutAfterUserUpdate } from "./user-ui-helpers";
@@ -44,7 +45,7 @@ export function UserDialog({
   });
   const pending = createUser.isPending || updateUser.isPending;
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  const handleSubmit: FormSubmitHandler = async (event) => {
     event.preventDefault();
     setError(null);
 
@@ -94,7 +95,7 @@ export function UserDialog({
     } catch (caught) {
       setError(caught instanceof ApiClientError ? caught.response.message : "操作失败，请稍后重试。");
     }
-  }
+  };
 
   return (
     <DialogFrame

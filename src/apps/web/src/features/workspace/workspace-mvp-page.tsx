@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FileUp, Globe2, Plus, Search } from "lucide-react";
-import { useEffect, useMemo, useState, type FormEvent, type ReactElement } from "react";
+import { useEffect, useMemo, useState, type ReactElement } from "react";
 
 import { knowledgeCopy } from "../../copy/knowledge";
 import { useMockStore } from "../mock/store";
@@ -11,6 +11,7 @@ import type { MockDocument, MockKnowledgeBase } from "../mock/types";
 import { knowledgeBaseName, sourceTypeLabel, statusLabel } from "../mock/selectors";
 import { Button, ButtonLink } from "../ui/button";
 import { DialogFrame } from "../ui/dialog";
+import type { FormSubmitHandler } from "../ui/form-types";
 import { Notice } from "../ui/notice";
 import { Panel, PanelHeader } from "../ui/panel";
 import { ScrollArea } from "../ui/scroll-area";
@@ -398,7 +399,7 @@ function CreateKnowledgeDialog({ onClose }: { onClose: () => void }): ReactEleme
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault();
     if (name.trim().length === 0) {
       setError(knowledgeCopy.validation.nameRequired);
@@ -406,7 +407,7 @@ function CreateKnowledgeDialog({ onClose }: { onClose: () => void }): ReactEleme
     }
     dispatch({ description: description.trim() || "暂无描述", name: name.trim(), type: "createKnowledgeBase" });
     onClose();
-  }
+  };
 
   return (
     <DialogFrame
@@ -438,7 +439,7 @@ function UploadDialog({
   const [fileName, setFileName] = useState("供应商准入规范.pdf");
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault();
     if (fileName.trim().length === 0) {
       setError(knowledgeCopy.validation.fileRequired);
@@ -446,7 +447,7 @@ function UploadDialog({
     }
     dispatch({ fileName: fileName.trim(), knowledgeBaseId: knowledgeBase.id, type: "uploadFile" });
     onClose();
-  }
+  };
 
   return (
     <DialogFrame
@@ -478,7 +479,7 @@ function UrlDialog({
   const [error, setError] = useState<string | null>(null);
   const validUrl = useMemo(() => url.startsWith("https://") || url.startsWith("http://"), [url]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
+  const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault();
     if (!validUrl) {
       setError(knowledgeCopy.validation.urlRequired);
@@ -486,7 +487,7 @@ function UrlDialog({
     }
     dispatch({ knowledgeBaseId: knowledgeBase.id, title: "网页导入文档", type: "importUrl", url });
     onClose();
-  }
+  };
 
   return (
     <DialogFrame

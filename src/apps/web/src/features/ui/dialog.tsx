@@ -1,7 +1,8 @@
-import type { FormEvent, ReactElement, ReactNode } from "react";
+import type { ReactElement, ReactNode } from "react";
 import { X } from "lucide-react";
 
 import { Button } from "./button";
+import type { FormSubmitHandler } from "./form-types";
 
 export function DialogFrame({
   children,
@@ -13,7 +14,7 @@ export function DialogFrame({
   children: ReactNode;
   description?: string;
   onClose: () => void;
-  onSubmit?: (event: FormEvent<HTMLFormElement>) => void;
+  onSubmit?: FormSubmitHandler;
   title: string;
 }): ReactElement {
   const content = (
