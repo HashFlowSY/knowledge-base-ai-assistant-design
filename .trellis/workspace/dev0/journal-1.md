@@ -379,3 +379,36 @@ Archived 05-18-user-auth-and-management after fixing dev auth seed to import the
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: Replace frontend FormEvent types
+
+**Date**: 2026-05-22
+**Task**: Replace frontend FormEvent types
+**Branch**: `main`
+
+### Summary
+
+Replaced deprecated frontend FormEvent usage with a shared React form submit handler type, updated affected form submit handlers, documented the frontend convention, and verified typecheck, lint, and web tests.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `62a8cd2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

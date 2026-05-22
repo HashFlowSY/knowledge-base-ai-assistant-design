@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 11
-- **Last Active**: 2026-05-20
+- **Total Sessions**: 12
+- **Last Active**: 2026-05-22
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~381 | Active |
+| `journal-1.md` | ~414 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 12 | 2026-05-22 | Replace frontend FormEvent types | `62a8cd2` | `main` |
 | 11 | 2026-05-20 | 后端代码分层重构 | `6dc9e22` | `main` |
 | 10 | 2026-05-19 | 拆分 API 和用户服务大文件 | `3fbf998` | `main` |
 | 9 | 2026-05-19 | 修复首页登录跳转 | `36eb185` | `main` |
