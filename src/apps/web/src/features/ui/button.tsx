@@ -16,10 +16,16 @@ export function Button({
   type = "button",
   ...props
 }: ButtonProps): ReactElement {
-  const title = props.disabled && disabledReason !== undefined ? disabledReason : props.title;
+  const title =
+    props.disabled && disabledReason !== undefined ? disabledReason : props.title;
 
   return (
-    <button className={`${buttonClassName(variant)} ${className}`} title={title} type={type} {...props}>
+    <button
+      className={`${buttonClassName(variant)} ${className}`}
+      title={title}
+      type={type}
+      {...props}
+    >
       {children}
       {props.disabled && disabledReason !== undefined ? (
         <span className="sr-only">（{disabledReason}）</span>
