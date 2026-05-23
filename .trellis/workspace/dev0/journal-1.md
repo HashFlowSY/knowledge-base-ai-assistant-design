@@ -478,3 +478,36 @@ Tested the real document upload flow with the local PDF, applied pending migrati
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: Temporarily remove document pages
+
+**Date**: 2026-05-23
+**Task**: Temporarily remove document pages
+**Branch**: `main`
+
+### Summary
+
+Removed standalone document routes and navigation, cleared seeded document mock data, upgraded mock storage version, and added regression coverage.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bdec608` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

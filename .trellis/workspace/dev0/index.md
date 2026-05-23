@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 14
+- **Total Sessions**: 15
 - **Last Active**: 2026-05-23
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~480 | Active |
+| `journal-1.md` | ~513 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 15 | 2026-05-23 | Temporarily remove document pages | `bdec608` | `main` |
 | 14 | 2026-05-23 | Fix document upload unicode filename save | `efdedb6` | `main` |
 | 13 | 2026-05-23 | Knowledge base management | `72d7e61` | `main` |
 | 12 | 2026-05-22 | Replace frontend FormEvent types | `62a8cd2` | `main` |
