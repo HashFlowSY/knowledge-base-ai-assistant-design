@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { createDocumentObjectKey, objectStorageConfigSchema } from "./index";
+import {
+  createDocumentObjectKey,
+  normalizeObjectMetadata,
+  objectStorageConfigSchema,
+} from "./index";
 
 describe("@kb/storage", () => {
   it("creates server-owned document object keys", () => {
@@ -81,6 +85,18 @@ describe("@kb/storage", () => {
       bucket: "kb-source",
       forcePathStyle: true,
       region: "local",
+    });
+  });
+
+  it("normalizes non-ASCII object metadata values for S3 headers", () => {
+    expect(
+      normalizeObjectMetadata({
+        checksum: "sha256:abc",
+        originalFilename: "反脆弱 .pdf",
+      }),
+    ).toEqual({
+      checksum: "sha256:abc",
+      originalFilename: "%E5%8F%8D%E8%84%86%E5%BC%B1%20.pdf",
     });
   });
 });

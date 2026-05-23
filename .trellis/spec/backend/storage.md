@@ -81,6 +81,11 @@ Persist storage metadata in PostgreSQL:
 
 Database metadata is the source of truth for authorization and lifecycle operations. Object storage alone is not a source of authorization truth.
 
+S3-compatible object metadata is transported as HTTP headers. Values sent to the
+storage client must therefore be ASCII-safe. Keep original display metadata such
+as Unicode filenames in PostgreSQL, and have `src/packages/storage` normalize
+non-ASCII or control-character object metadata values before issuing `PutObject`.
+
 ## Downloads
 
 Downloads must authorize against database metadata before reading object storage.
@@ -185,6 +190,11 @@ CREATE UNIQUE INDEX "document_sources_active_source_hash_idx"
 tenants/{tenantId}/knowledge-bases/{knowledgeBaseId}/documents/{documentId}/versions/{documentVersion}/source/{filename}
 ```
 
+- Object metadata passed to S3-compatible storage must contain only printable
+  ASCII header values after storage-client normalization. Unicode filenames may
+  remain in `document_sources.source_uri` and database metadata, but must not be
+  sent raw as `x-amz-meta-*` header values.
+
 - New upload flow:
   1. authenticate actor and enforce route rate/concurrency limits;
   2. require valid `Content-Length` before multipart parsing;
@@ -226,7 +236,8 @@ tenants/{tenantId}/knowledge-bases/{knowledgeBaseId}/documents/{documentId}/vers
 
 - DB tests assert upload/scan/cleanup enums, required `bucket`, `pending_source`, and the active-source dedupe index.
 - Config tests assert upload size, rate limit, and concurrency defaults plus env overrides.
-- Storage tests assert object key format and filename sanitization.
+- Storage tests assert object key format, filename sanitization, and ASCII-safe
+  normalization of non-ASCII object metadata values.
 - API tests assert auth-before-parse behavior, `Content-Length` gates, exactly-one-file validation, title fallback, allowed types, spoof detection, actor rate limit, upload concurrency, duplicate response status, and safe audit calls for sensitive failures.
 - Service or integration tests should assert reservation/finalization transactions, object upload failure retention, duplicate DB conflict behavior, and cleanup-failure metadata when a PostgreSQL/S3 test harness is available.
 
@@ -262,3 +273,25 @@ await finalizeUploadInTransaction({
 ```
 
 This makes pending, available, and failed states explicit and gives compensation code a stable source/job record to update.
+
+#### Wrong
+
+```typescript
+await objectStorage.putObject({
+  metadata: { originalFilename: "反脆弱 .pdf" },
+});
+```
+
+This sends a Unicode value through S3 metadata headers and can fail before the
+object is stored.
+
+#### Correct
+
+```typescript
+await objectStorage.putObject({
+  metadata: normalizeObjectMetadata({ originalFilename: "反脆弱 .pdf" }),
+});
+```
+
+The database still preserves the original filename for display and authorization
+metadata, while S3 receives an ASCII-safe metadata header value.

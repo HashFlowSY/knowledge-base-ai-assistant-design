@@ -1,9 +1,5 @@
 import { z } from "zod";
-import {
-  DeleteObjectCommand,
-  PutObjectCommand,
-  S3Client,
-} from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 export const objectStorageConfigSchema = z.object({
   endpoint: z.string().url(),
@@ -36,6 +32,19 @@ export interface ObjectStorageClient {
   deleteObject(input: DeleteObjectInput): Promise<void>;
 }
 
+const safeMetadataValuePattern = /^[\u0020-\u007E]*$/;
+
+export function normalizeObjectMetadata(
+  metadata: Record<string, string>,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(metadata).map(([key, value]) => [
+      key,
+      safeMetadataValuePattern.test(value) ? value : encodeURIComponent(value),
+    ]),
+  );
+}
+
 export function createS3ObjectStorageClient(
   configInput: ObjectStorageConfig,
 ): ObjectStorageClient {
@@ -57,10 +66,10 @@ export function createS3ObjectStorageClient(
           Body: input.body,
           Bucket: input.bucket,
           Key: input.key,
-          ...(input.contentType === undefined
+          ...(input.contentType === undefined ? {} : { ContentType: input.contentType }),
+          ...(input.metadata === undefined
             ? {}
-            : { ContentType: input.contentType }),
-          ...(input.metadata === undefined ? {} : { Metadata: input.metadata }),
+            : { Metadata: normalizeObjectMetadata(input.metadata) }),
         }),
       );
     },
