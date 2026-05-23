@@ -1,0 +1,15 @@
+{"file":".trellis/spec/backend/database.md","reason":"Knowledge-base CRUD persists through Drizzle/PostgreSQL tables and transactional member replacement."}
+{"file":".trellis/spec/backend/api-module.md","reason":"New knowledge-base API module should follow existing Hono module organization."}
+{"file":".trellis/spec/backend/api-contract.md","reason":"API inputs, outputs, errors, and Hono RPC contract must match project conventions."}
+{"file":".trellis/spec/backend/performance.md","reason":"Requirement includes rate limiting and concurrency safeguards."}
+{"file":".trellis/spec/backend/security.md","reason":"Knowledge-base access rules depend on authenticated admin/member authorization."}
+{"file":".trellis/spec/backend/timestamps.md","reason":"Create/update/list responses include createdAt/updatedAt fields."}
+{"file":".trellis/spec/frontend/component-guidelines.md","reason":"Workspace create/edit dialogs and member picker must follow frontend component conventions."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Knowledge-base list state must use URL query state and TanStack Query server state."}
+{"file":".trellis/spec/frontend/hook-guidelines.md","reason":"Frontend API integration needs query and mutation hooks."}
+{"file":".trellis/spec/frontend/lists.md","reason":"Knowledge-base list pagination, search, and sort should follow list page rules."}
+{"file":".trellis/spec/frontend/copywriting.md","reason":"Workspace UI copy is Chinese and should stay centralized/consistent."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Workspace UI changes need accessible states and responsive behavior."}
+{"file":".trellis/spec/shared/code-quality.md","reason":"New shared package/API/frontend code must follow project code quality rules."}
+{"file":".trellis/spec/shared/typescript.md","reason":"New schemas and service contracts must be type-safe with Zod boundaries."}
+{"file":".trellis/spec/testing/strategy.md","reason":"Feature requires service, API, hook, and UI tests."}

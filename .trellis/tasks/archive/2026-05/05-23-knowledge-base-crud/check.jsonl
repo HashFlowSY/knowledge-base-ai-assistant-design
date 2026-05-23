@@ -1,0 +1,12 @@
+{"file":".trellis/spec/backend/database.md","reason":"Verify transactional persistence and tenant/member filters follow database rules."}
+{"file":".trellis/spec/backend/api-module.md","reason":"Verify new routes are organized consistently with API module conventions."}
+{"file":".trellis/spec/backend/api-contract.md","reason":"Verify validation, response envelopes, and error mapping match API contract rules."}
+{"file":".trellis/spec/backend/performance.md","reason":"Verify rate limiting and concurrency handling satisfy performance requirements."}
+{"file":".trellis/spec/backend/security.md","reason":"Verify admin/member authorization and tenant isolation."}
+{"file":".trellis/spec/frontend/state-management.md","reason":"Verify URL query state and TanStack Query usage."}
+{"file":".trellis/spec/frontend/hook-guidelines.md","reason":"Verify knowledge-base hooks follow query/mutation conventions."}
+{"file":".trellis/spec/frontend/lists.md","reason":"Verify list pagination, search, and sort behavior."}
+{"file":".trellis/spec/frontend/quality-guidelines.md","reason":"Verify workspace UI accessibility, pending, empty, and error states."}
+{"file":".trellis/spec/shared/code-quality.md","reason":"Verify no broad types, dead code, or production console output."}
+{"file":".trellis/spec/shared/typescript.md","reason":"Verify schemas and shared types are owned by the right package."}
+{"file":".trellis/spec/testing/strategy.md","reason":"Verify tests cover service, API, hooks, and workspace UI behavior."}
