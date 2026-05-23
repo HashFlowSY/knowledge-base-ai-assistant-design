@@ -127,7 +127,13 @@ type ApiRouteSchema = {
   };
   "/api/knowledge-bases/:knowledgeBaseId/documents/upload": {
     $post: JsonEndpoint<
-      { form: FormData; param: { knowledgeBaseId: string } },
+      {
+        form: {
+          file: File;
+          title?: string;
+        };
+        param: { knowledgeBaseId: string };
+      },
       ApiSuccessResponse<DocumentFileUploadResult> | ApiErrorResponse,
       200 | 201 | 400 | 401 | 403 | 404 | 409 | 413 | 415 | 429 | 500
     >;

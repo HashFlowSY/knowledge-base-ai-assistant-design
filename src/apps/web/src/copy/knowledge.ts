@@ -15,7 +15,11 @@ export const knowledgeCopy = {
   cancel: "取消",
   openChat: "进入问答",
   uploadFile: "上传文件",
-  uploadFileDescription: "提交后会创建文档、任务和处理日志。",
+  uploadFileDescription: "选择 PDF、Markdown 或 TXT 文件，提交后会创建文档和处理任务。",
+  uploadFileHelp: "支持 PDF、Markdown、TXT，单个文件不超过 8 MB。",
+  uploadFileLabel: "文件",
+  uploadTitleLabel: "文档标题（可选）",
+  uploadTitlePlaceholder: "留空时使用文件名",
   importUrl: "导入网页",
   importUrlDescription: "粘贴 URL 后创建抓取和切分任务。",
   documentsTitle: "文档",
@@ -45,8 +49,13 @@ export const knowledgeCopy = {
     selectionLabel: "已选成员",
   },
   validation: {
+    emptyFile: "上传文件不能为空。",
     nameRequired: "请输入知识库名称。",
-    fileRequired: "请输入文件名。",
+    fileRequired: "请选择一个文件。",
+    fileTooLarge: "文件超过大小限制，请选择 8 MB 以内的文件。",
+    singleFileOnly: "每次只能上传一个文件。",
+    unsupportedUploadFileType: "仅支持上传 PDF、Markdown 或 TXT 文件。",
+    uploadTitleTooLong: "文档标题不能超过 500 个字符。",
     urlRequired: "请输入有效网页地址。",
   },
   pending: {
@@ -55,6 +64,7 @@ export const knowledgeCopy = {
     memberList: "正在加载成员列表。",
     moreKnowledgeBases: "正在加载更多知识库。",
     savingKnowledgeBase: "正在保存知识库。",
+    uploadingFile: "正在上传文件。",
   },
   empty: {
     documentsPending: "文档数据将在接入真实文档 API 后显示，当前页面不再使用前端 mock 文档。",
@@ -74,6 +84,22 @@ export const knowledgeCopy = {
   success: {
     created: "知识库已创建。",
     updated: "知识库已更新。",
+  },
+  uploadSuccess: {
+    duplicate: (title: string) => `相同内容已存在，已使用文档「${title}」。`,
+    queued: (title: string) => `文档「${title}」已上传，处理任务已排队。`,
+    uploaded: (title: string) => `文档「${title}」已上传。`,
+  },
+  uploadErrors: {
+    conflict: "上传内容存在冲突，请刷新后重试。",
+    forbidden: "你没有权限向该知识库上传文件。",
+    generic: "文件上传失败，请稍后重试。",
+    notFound: "知识库不存在或已被删除。",
+    payloadTooLarge: "文件超过大小限制，请选择 8 MB 以内的文件。",
+    rateLimited: "上传请求过于频繁，请稍后重试。",
+    unauthorized: "登录状态已失效，请重新登录后再上传。",
+    unsupportedMediaType: "仅支持上传 PDF、Markdown 或 TXT 文件。",
+    validation: "请检查文件和标题后重试。",
   },
   disabled: {
     createKnowledgeBase: "只有 admin 用户可以新建知识库，避免重复创建。",

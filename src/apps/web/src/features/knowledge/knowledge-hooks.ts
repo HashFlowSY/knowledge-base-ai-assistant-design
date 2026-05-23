@@ -1,14 +1,22 @@
 "use client";
 
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type InfiniteData,
+} from "@tanstack/react-query";
 
 import {
   createKnowledgeBaseInputSchema,
+  documentFileUploadResultSchema,
   knowledgeBaseDetailSchema,
   knowledgeBasesPageSchema,
   knowledgeBaseSummarySchema,
   updateKnowledgeBaseInputSchema,
   type CreateKnowledgeBaseInput,
+  type DocumentFileUploadResult,
   type KnowledgeBaseDetail,
   type KnowledgeBaseListQuery,
   type KnowledgeBasesPage,
@@ -19,6 +27,12 @@ import {
 import { apiClient, parseApiClientResponse } from "../api/client";
 
 export type KnowledgeBaseInfiniteListQuery = Omit<KnowledgeBaseListQuery, "page">;
+
+export interface UploadDocumentFileInput {
+  file: File;
+  knowledgeBaseId: string;
+  title: string;
+}
 
 export const knowledgeBasesQueryKey = (input: KnowledgeBaseListQuery) =>
   ["knowledge-bases", input] as const;
@@ -139,6 +153,38 @@ export function useUpdateKnowledgeBase(knowledgeBaseId: string | null) {
           queryKey: knowledgeBaseQueryKey(knowledgeBaseId),
         });
       }
+    },
+  });
+}
+
+export function useUploadDocumentFile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      input: UploadDocumentFileInput,
+    ): Promise<DocumentFileUploadResult> => {
+      const title = input.title.trim();
+      const response = await parseApiClientResponse<DocumentFileUploadResult>({
+        dataSchema: documentFileUploadResultSchema,
+        response: await apiClient.api["knowledge-bases"][
+          ":knowledgeBaseId"
+        ].documents.upload.$post({
+          form:
+            title.length === 0
+              ? { file: input.file }
+              : { file: input.file, title },
+          param: { knowledgeBaseId: input.knowledgeBaseId },
+        }),
+      });
+
+      return response.data;
+    },
+    onSuccess: (_result, input) => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge-bases"] });
+      queryClient.invalidateQueries({
+        queryKey: knowledgeBaseQueryKey(input.knowledgeBaseId),
+      });
     },
   });
 }

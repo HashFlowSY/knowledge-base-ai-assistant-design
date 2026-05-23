@@ -5,6 +5,7 @@ import {
   infiniteKnowledgeBasesQueryKey,
   knowledgeBaseQueryKey,
   knowledgeBasesQueryKey,
+  useUploadDocumentFile,
 } from "./knowledge-hooks";
 
 describe("knowledge hooks", () => {
@@ -33,5 +34,10 @@ describe("knowledge hooks", () => {
     expect(apiClient.api["knowledge-bases"].$post).toBeTypeOf("function");
     expect(apiClient.api["knowledge-bases"][":knowledgeBaseId"].$get).toBeTypeOf("function");
     expect(apiClient.api["knowledge-bases"][":knowledgeBaseId"].$patch).toBeTypeOf("function");
+    expect(apiClient.api["knowledge-bases"][":knowledgeBaseId"].documents.upload.$post).toBeTypeOf("function");
+  });
+
+  it("exports the document upload mutation hook", () => {
+    expect(useUploadDocumentFile).toBeTypeOf("function");
   });
 });

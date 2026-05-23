@@ -2,7 +2,14 @@
 
 import { FileUp, Globe2, Pencil, Plus, Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactElement, type UIEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type ReactElement,
+  type UIEvent,
+} from "react";
 
 import {
   knowledgeBaseListQuerySchema,
@@ -16,7 +23,13 @@ import { knowledgeCopy } from "../../copy/knowledge";
 import { useSessionQuery } from "../auth/auth-hooks";
 import { useUsers } from "../admin/user-hooks";
 import { ApiClientError } from "../api/client";
-import { useCreateKnowledgeBase, useInfiniteKnowledgeBases, useKnowledgeBase, useUpdateKnowledgeBase } from "../knowledge/knowledge-hooks";
+import {
+  useCreateKnowledgeBase,
+  useInfiniteKnowledgeBases,
+  useKnowledgeBase,
+  useUpdateKnowledgeBase,
+  useUploadDocumentFile,
+} from "../knowledge/knowledge-hooks";
 import { ProtectedPage } from "../shell/protected-page";
 import { Button, ButtonLink } from "../ui/button";
 import { DialogFrame } from "../ui/dialog";
@@ -35,10 +48,17 @@ import {
   workspaceSummaryGridClassName,
   workspaceSummaryListClassName,
 } from "./workspace-layout";
+import {
+  documentUploadAcceptedFileTypes,
+  formatDocumentUploadSuccessNotice,
+  toDocumentUploadApiErrorMessage,
+  validateDocumentUploadInput,
+} from "./workspace-upload-helpers";
 
 type DialogState =
   | { mode: "create" }
   | { knowledgeBaseId: string; mode: "edit" }
+  | { knowledgeBaseId: string; mode: "upload" }
   | null;
 
 interface MemberOption {
@@ -194,8 +214,16 @@ export function WorkspaceMvpPage(): ReactElement {
                     </Button>
                   ) : null}
                   <Button
-                    disabled={true}
-                    disabledReason={knowledgeCopy.disabled.uploadPending}
+                    disabled={selectedKnowledgeBaseId === null}
+                    disabledReason={knowledgeCopy.disabled.upload}
+                    onClick={() => {
+                      if (selectedKnowledgeBaseId !== null) {
+                        setDialog({
+                          knowledgeBaseId: selectedKnowledgeBaseId,
+                          mode: "upload",
+                        });
+                      }
+                    }}
                     variant="primary"
                   >
                     <FileUp aria-hidden="true" className="h-4 w-4" />
@@ -257,7 +285,13 @@ export function WorkspaceMvpPage(): ReactElement {
         </section>
       </div>
 
-      {dialog === null ? null : (
+      {dialog === null ? null : dialog.mode === "upload" ? (
+        <UploadDocumentDialog
+          knowledgeBaseId={dialog.knowledgeBaseId}
+          onClose={() => setDialog(null)}
+          onNotice={setNotice}
+        />
+      ) : (
         <KnowledgeBaseDialog
           knowledgeBaseId={dialog.mode === "edit" ? dialog.knowledgeBaseId : null}
           mode={dialog.mode}
@@ -369,6 +403,101 @@ function WorkspaceSummaryEmptyState({ message }: { message: string }): ReactElem
     <div className={workspaceSummaryEmptyClassName()}>
       <Notice>{message}</Notice>
     </div>
+  );
+}
+
+function UploadDocumentDialog({
+  knowledgeBaseId,
+  onClose,
+  onNotice,
+}: {
+  knowledgeBaseId: string;
+  onClose: () => void;
+  onNotice: (notice: string) => void;
+}): ReactElement {
+  const uploadDocumentFile = useUploadDocumentFile();
+  const [files, setFiles] = useState<File[]>([]);
+  const [title, setTitle] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>): void {
+    setFiles(Array.from(event.currentTarget.files ?? []));
+    setError(null);
+  }
+
+  const handleSubmit: FormSubmitHandler = async (event) => {
+    event.preventDefault();
+    setError(null);
+
+    const validation = validateDocumentUploadInput({ files, title });
+    if (!validation.ok) {
+      setError(validation.message);
+      return;
+    }
+
+    try {
+      const result = await uploadDocumentFile.mutateAsync({
+        file: validation.file,
+        knowledgeBaseId,
+        title: validation.title,
+      });
+      onNotice(formatDocumentUploadSuccessNotice(result));
+      onClose();
+    } catch (caught) {
+      setError(
+        caught instanceof ApiClientError
+          ? toDocumentUploadApiErrorMessage(caught.response.code)
+          : knowledgeCopy.uploadErrors.generic,
+      );
+    }
+  };
+
+  return (
+    <DialogFrame
+      description={knowledgeCopy.uploadFileDescription}
+      onClose={onClose}
+      onSubmit={handleSubmit}
+      title={knowledgeCopy.uploadFile}
+    >
+      <div className="space-y-4">
+        {error === null ? null : <Notice tone="error">{error}</Notice>}
+        <div>
+          <label className="block text-sm font-medium text-slate-700" htmlFor="document-upload-file">
+            {knowledgeCopy.uploadFileLabel}
+          </label>
+          <p className="mt-1 text-xs leading-5 text-slate-500">{knowledgeCopy.uploadFileHelp}</p>
+          <input
+            accept={documentUploadAcceptedFileTypes}
+            className="mt-2 block min-h-11 w-full rounded-md border border-slate-200 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700"
+            disabled={uploadDocumentFile.isPending}
+            id="document-upload-file"
+            onChange={handleFileChange}
+            type="file"
+          />
+        </div>
+        <TextField
+          disabled={uploadDocumentFile.isPending}
+          id="document-upload-title"
+          label={knowledgeCopy.uploadTitleLabel}
+          onChange={setTitle}
+          placeholder={knowledgeCopy.uploadTitlePlaceholder}
+          value={title}
+        />
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button disabled={uploadDocumentFile.isPending} onClick={onClose}>
+            {knowledgeCopy.cancel}
+          </Button>
+          <Button
+            disabled={uploadDocumentFile.isPending}
+            disabledReason={knowledgeCopy.pending.uploadingFile}
+            type="submit"
+            variant="primary"
+          >
+            {knowledgeCopy.uploadFile}
+          </Button>
+        </div>
+      </div>
+    </DialogFrame>
   );
 }
 
@@ -615,12 +744,14 @@ function TextField({
   id,
   label,
   onChange,
+  placeholder,
   value,
 }: {
   disabled: boolean;
   id: string;
   label: string;
   onChange: (value: string) => void;
+  placeholder?: string;
   value: string;
 }): ReactElement {
   return (
@@ -633,6 +764,7 @@ function TextField({
         disabled={disabled}
         id={id}
         onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
         value={value}
       />
     </div>

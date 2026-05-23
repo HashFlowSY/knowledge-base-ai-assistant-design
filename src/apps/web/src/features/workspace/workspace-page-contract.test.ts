@@ -77,4 +77,22 @@ describe("workspace page executable contract", () => {
     expect(knowledgeCopy.members.searchLabel).toBe("成员");
     expect(knowledgeCopy.members.empty).toBe("未分配成员，默认仅管理员可见。");
   });
+
+  it("connects workspace file upload to the real document upload workflow", () => {
+    const workspaceSource = readProjectFile(
+      "src/apps/web/src/features/workspace/workspace-mvp-page.tsx",
+    );
+    const knowledgeHookSource = readProjectFile("src/apps/web/src/features/knowledge/knowledge-hooks.ts");
+    const knowledgeCopySource = readProjectFile("src/apps/web/src/copy/knowledge.ts");
+
+    expect(workspaceSource).toContain("UploadDocumentDialog");
+    expect(workspaceSource).toContain("mode: \"upload\"");
+    expect(workspaceSource).toContain("validateDocumentUploadInput");
+    expect(workspaceSource).toContain("formatDocumentUploadSuccessNotice");
+    expect(workspaceSource).not.toContain("disabledReason={knowledgeCopy.disabled.uploadPending}");
+    expect(knowledgeHookSource).toContain("useUploadDocumentFile");
+    expect(knowledgeHookSource).toContain("documentFileUploadResultSchema");
+    expect(knowledgeCopySource).toContain("uploadErrors");
+    expect(knowledgeCopySource).toContain("uploadSuccess");
+  });
 });
