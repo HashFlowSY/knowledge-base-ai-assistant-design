@@ -3,6 +3,13 @@ import type { Endpoint } from "hono/types";
 
 import type { SessionPayload } from "@kb/auth";
 import type {
+  CreateKnowledgeBaseInput,
+  KnowledgeBaseDetail,
+  KnowledgeBaseSummary,
+  KnowledgeBasesPage,
+  UpdateKnowledgeBaseInput,
+} from "@kb/knowledge";
+import type {
   ApiErrorResponse,
   ApiSuccessResponse,
   EmptyPayload,
@@ -84,6 +91,37 @@ type ApiRouteSchema = {
       { param: { userId: string } },
       ApiSuccessResponse<EmptyPayload> | ApiErrorResponse,
       200 | 400 | 401 | 403 | 404 | 429 | 500
+    >;
+  };
+  "/api/knowledge-bases": {
+    $get: JsonEndpoint<
+      {
+        query?: {
+          page?: string;
+          pageSize?: string;
+          search?: string;
+          sort?: string;
+        };
+      },
+      ApiSuccessResponse<KnowledgeBasesPage> | ApiErrorResponse,
+      200 | 401 | 403 | 429 | 500
+    >;
+    $post: JsonEndpoint<
+      { json: CreateKnowledgeBaseInput },
+      ApiSuccessResponse<KnowledgeBaseSummary> | ApiErrorResponse,
+      201 | 400 | 401 | 403 | 409 | 429 | 500
+    >;
+  };
+  "/api/knowledge-bases/:knowledgeBaseId": {
+    $get: JsonEndpoint<
+      { param: { knowledgeBaseId: string } },
+      ApiSuccessResponse<KnowledgeBaseDetail> | ApiErrorResponse,
+      200 | 401 | 403 | 404 | 429 | 500
+    >;
+    $patch: JsonEndpoint<
+      { json: UpdateKnowledgeBaseInput; param: { knowledgeBaseId: string } },
+      ApiSuccessResponse<KnowledgeBaseDetail> | ApiErrorResponse,
+      200 | 400 | 401 | 403 | 404 | 409 | 429 | 500
     >;
   };
 };

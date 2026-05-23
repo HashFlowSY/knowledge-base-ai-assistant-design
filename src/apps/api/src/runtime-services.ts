@@ -5,6 +5,7 @@ import {
   auditLogs,
   type ProjectDbRuntime,
 } from "@kb/db";
+import { createKnowledgeBaseService } from "@kb/knowledge/service";
 import { createUserManagementService } from "@kb/users/service";
 
 import { createBetterAuthService } from "./auth-service";
@@ -18,6 +19,7 @@ import type {
   ApiRateLimiter,
   AuditService,
   AuthService,
+  KnowledgeBaseService,
   UserService,
 } from "./contracts";
 
@@ -44,6 +46,7 @@ export function createApiRuntimeServices(
   const rateLimiter = createRateLimiter({
     store: createRedisRateLimitStore(redis),
   });
+  const knowledgeBaseService = createKnowledgeBaseService({ db: dbRuntime.db });
   const userService = createUserManagementService({ db: dbRuntime.db });
   const auditService: AuditService = {
     async recordForbiddenAdminAttempt(event) {
@@ -74,6 +77,7 @@ export function createApiRuntimeServices(
       betterAuthSecret: input.betterAuthSecret,
       db: dbRuntime.db,
     }),
+    knowledgeBaseService: knowledgeBaseService as KnowledgeBaseService,
     rateLimiter,
     userService: userService as UserService,
     async close() {
@@ -100,6 +104,7 @@ export type {
   ApiRateLimiter,
   AuditService,
   AuthService,
+  KnowledgeBaseService,
   ProjectDbRuntime,
   UserService,
 };

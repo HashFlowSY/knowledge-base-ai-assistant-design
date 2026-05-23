@@ -114,6 +114,123 @@ export async function respondAfterUnresolvedUserManagementRateLimit(
   return rateLimitResponse ?? fallbackResponse;
 }
 
+export async function requireKnowledgeBaseSession(
+  context: Context<ApiEnv>,
+  authService: AuthService,
+  rateLimiter: ApiRateLimiter,
+): Promise<{ ok: true; actor: SessionPayload } | { ok: false; response: Response }> {
+  const sessionResult = await authService.getSession({
+    cookieHeader: context.req.header("cookie") ?? null,
+  });
+  if (!sessionResult.ok) {
+    appendSetCookieHeaders(context, sessionResult.setCookieHeaders);
+    const rateLimitResponse = await rateLimitUnresolvedKnowledgeBase(
+      context,
+      rateLimiter,
+    );
+    if (rateLimitResponse !== null) {
+      return {
+        ok: false,
+        response: rateLimitResponse,
+      };
+    }
+
+    return {
+      ok: false,
+      response: respondWithError(context, {
+        code: sessionResult.code,
+        httpStatus: sessionResult.httpStatus,
+        message: sessionResult.message,
+      }),
+    };
+  }
+
+  const rateLimitResponse = await rateLimitKnowledgeBase(
+    context,
+    rateLimiter,
+    sessionResult.payload,
+  );
+  if (rateLimitResponse !== null) {
+    return {
+      ok: false,
+      response: rateLimitResponse,
+    };
+  }
+
+  return {
+    actor: sessionResult.payload,
+    ok: true,
+  };
+}
+
+export async function requireAdminKnowledgeBaseSession(
+  context: Context<ApiEnv>,
+  auditService: AuditService,
+  authService: AuthService,
+  rateLimiter: ApiRateLimiter,
+): Promise<{ ok: true; actor: SessionPayload } | { ok: false; response: Response }> {
+  const authResult = await requireKnowledgeBaseSession(
+    context,
+    authService,
+    rateLimiter,
+  );
+  if (!authResult.ok) {
+    return authResult;
+  }
+
+  if (authResult.actor.role === "admin") {
+    return authResult;
+  }
+
+  try {
+    await auditService.recordForbiddenAdminAttempt({
+      action: "auth.forbidden",
+      actor: authResult.actor,
+      ipSummary: getIpSummary(context),
+      method: context.req.method,
+      path: context.req.path,
+      requestId: context.get("requestId"),
+      targetId: context.req.path,
+      targetType: "api_route",
+      userAgentSummary: context.req.header("user-agent") ?? null,
+    });
+  } catch (error) {
+    createLogger({ service: "api" }).error("auth_forbidden_audit_failed", {
+      error: error instanceof Error ? error.message : String(error),
+      requestId: context.get("requestId"),
+    });
+    return {
+      ok: false,
+      response: respondWithError(context, {
+        code: "INTERNAL_ERROR",
+        httpStatus: 500,
+        message: "操作失败，请稍后重试。",
+      }),
+    };
+  }
+
+  return {
+    ok: false,
+    response: respondWithError(context, {
+      code: "FORBIDDEN",
+      httpStatus: 403,
+      message: "你没有权限执行此操作。",
+    }),
+  };
+}
+
+export async function respondAfterUnresolvedKnowledgeBaseRateLimit(
+  context: Context<ApiEnv>,
+  rateLimiter: ApiRateLimiter,
+  fallbackResponse: Response,
+): Promise<Response> {
+  const rateLimitResponse = await rateLimitUnresolvedKnowledgeBase(
+    context,
+    rateLimiter,
+  );
+  return rateLimitResponse ?? fallbackResponse;
+}
+
 export async function rateLimitLogin(
   context: Context<ApiEnv>,
   rateLimiter: ApiRateLimiter,
@@ -181,6 +298,26 @@ async function rateLimitUserManagement(
   });
 }
 
+async function rateLimitKnowledgeBase(
+  context: Context<ApiEnv>,
+  rateLimiter: ApiRateLimiter,
+  actor: SessionPayload,
+): Promise<Response | null> {
+  const identity = await createRateLimitIdentity({
+    kind: "actor",
+    actorId: actor.user.id,
+    tenantId: actor.tenant.id,
+  });
+
+  return consumeRateLimit(context, rateLimiter, {
+    identity,
+    limit: 120,
+    scope: "knowledge-base",
+    windowLabel: "1m",
+    windowMs: 60_000,
+  });
+}
+
 async function rateLimitUnresolvedUserManagement(
   context: Context<ApiEnv>,
   rateLimiter: ApiRateLimiter,
@@ -194,6 +331,24 @@ async function rateLimitUnresolvedUserManagement(
     identity,
     limit: 60,
     scope: "user-management",
+    windowLabel: "1m",
+    windowMs: 60_000,
+  });
+}
+
+async function rateLimitUnresolvedKnowledgeBase(
+  context: Context<ApiEnv>,
+  rateLimiter: ApiRateLimiter,
+): Promise<Response | null> {
+  const identity = await createRateLimitIdentity({
+    kind: "ip",
+    ipSummary: getIpSummary(context),
+  });
+
+  return consumeRateLimit(context, rateLimiter, {
+    identity,
+    limit: 60,
+    scope: "knowledge-base",
     windowLabel: "1m",
     windowMs: 60_000,
   });

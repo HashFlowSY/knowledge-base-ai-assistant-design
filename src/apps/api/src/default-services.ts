@@ -2,6 +2,7 @@ import type {
   ApiServiceError,
   AuditService,
   AuthService,
+  KnowledgeBaseService,
   UserService,
 } from "./contracts";
 
@@ -60,6 +61,31 @@ export function createEmptyUserService(): UserService {
       return createNotImplementedServiceError();
     },
     async removeUserAccess() {
+      return createNotImplementedServiceError();
+    },
+  };
+}
+
+export function createEmptyKnowledgeBaseService(): KnowledgeBaseService {
+  return {
+    async listKnowledgeBases() {
+      return {
+        ok: true,
+        page: {
+          items: [],
+          page: 1,
+          pageSize: 8,
+          total: 0,
+        },
+      };
+    },
+    async getKnowledgeBase() {
+      return createNotImplementedServiceError();
+    },
+    async createKnowledgeBase() {
+      return createNotImplementedServiceError();
+    },
+    async updateKnowledgeBase() {
       return createNotImplementedServiceError();
     },
   };

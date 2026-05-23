@@ -19,6 +19,7 @@
     "@kb/auth": "workspace:*",
     "@kb/config": "workspace:*",
     "@kb/db": "workspace:*",
+    "@kb/knowledge": "workspace:*",
     "@kb/observability": "workspace:*",
     "@kb/security": "workspace:*",
     "@kb/shared": "workspace:*",

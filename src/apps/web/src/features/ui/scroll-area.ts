@@ -1,4 +1,4 @@
-import { createElement, type ReactElement, type ReactNode } from "react";
+import { createElement, type HTMLAttributes, type ReactElement, type ReactNode } from "react";
 
 type ScrollAreaSize = "fill" | "sm" | "md" | "lg" | "xl";
 
@@ -15,18 +15,20 @@ export function ScrollArea({
   children,
   className = "",
   size = "md",
+  ...props
 }: {
   "aria-label"?: string;
   children: ReactNode;
   className?: string;
   size?: ScrollAreaSize;
-}): ReactElement {
+} & Omit<HTMLAttributes<HTMLDivElement>, "aria-label" | "children" | "className">): ReactElement {
   return createElement(
     "div",
     {
+      ...props,
       "aria-label": ariaLabel,
       className: scrollAreaClassName(size, className),
-      role: ariaLabel === undefined ? undefined : "region",
+      role: props.role ?? (ariaLabel === undefined ? undefined : "region"),
     },
     children,
   );

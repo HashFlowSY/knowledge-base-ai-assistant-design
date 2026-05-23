@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 30_000,
   retries: 0,
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: "http://localhost:3000",
     trace: "on-first-retry",
   },
   projects: [
@@ -14,10 +14,18 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "pnpm --filter @kb/web dev",
-    url: "http://127.0.0.1:3000",
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: "APP_BASE_URL=http://localhost:3000 pnpm --filter @kb/api dev",
+      url: "http://localhost:4000/health",
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+    {
+      command: "pnpm --filter @kb/web dev",
+      url: "http://localhost:3000",
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+  ],
 });

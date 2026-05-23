@@ -2,7 +2,12 @@ import { Hono } from "hono";
 
 import { createLogger } from "@kb/observability";
 
-import type { ApiAppOptions, ApiEnv, UserService } from "./contracts";
+import type {
+  ApiAppOptions,
+  ApiEnv,
+  KnowledgeBaseService,
+  UserService,
+} from "./contracts";
 export type {
   ApiApp,
   ApiAppOptions,
@@ -13,9 +18,11 @@ export type {
   ApiServiceError,
   AuditService,
   AuthService,
+  KnowledgeBaseService,
   UserService,
 } from "./contracts";
 import {
+  createEmptyKnowledgeBaseService,
   createEmptyUserService,
   createNoopAuditService,
   createUnauthenticatedAuthService,
@@ -27,6 +34,7 @@ import {
 import { createApiRuntimeServicesFromEnv } from "./runtime-services";
 import { createAuthRouter } from "./modules/auth/router";
 import { createHealthRouter } from "./modules/health/router";
+import { createKnowledgeBasesRouter } from "./modules/knowledge-bases/router";
 export { healthResponseSchema } from "./modules/health/types";
 export type { HealthResponse } from "./modules/health/types";
 import { registerUserRoutes } from "./user-routes";
@@ -45,6 +53,10 @@ export function createApiApp(options: ApiAppOptions = {}) {
   const userService: UserService = {
     ...createEmptyUserService(),
     ...options.userService,
+  };
+  const knowledgeBaseService: KnowledgeBaseService = {
+    ...createEmptyKnowledgeBaseService(),
+    ...options.knowledgeBaseService,
   };
 
   app.use("*", async (context, next) => {
@@ -84,6 +96,16 @@ export function createApiApp(options: ApiAppOptions = {}) {
     rateLimiter,
     userService,
   });
+  app.route(
+    "/",
+    createKnowledgeBasesRouter({
+      allowedOrigins,
+      auditService,
+      authService,
+      knowledgeBaseService,
+      rateLimiter,
+    }),
+  );
 
   return app;
 }

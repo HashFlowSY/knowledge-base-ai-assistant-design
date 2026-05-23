@@ -1,5 +1,13 @@
 import type { SessionPayload } from "@kb/auth";
 import type {
+  CreateKnowledgeBaseInput,
+  KnowledgeBaseDetail,
+  KnowledgeBaseListQuery,
+  KnowledgeBaseSummary,
+  KnowledgeBasesPage,
+  UpdateKnowledgeBaseInput,
+} from "@kb/knowledge";
+import type {
   CreateUserInput,
   UpdateUserInput,
   UsersPage,
@@ -86,6 +94,50 @@ export interface UserService {
   }): Promise<{ ok: true } | ApiServiceError>;
 }
 
+export interface KnowledgeBaseService {
+  listKnowledgeBases(input: {
+    actor: SessionPayload;
+    query: KnowledgeBaseListQuery;
+  }): Promise<
+    | {
+        ok: true;
+        page: KnowledgeBasesPage;
+      }
+    | ApiServiceError
+  >;
+  getKnowledgeBase(input: {
+    actor: SessionPayload;
+    knowledgeBaseId: string;
+  }): Promise<
+    | {
+        ok: true;
+        knowledgeBase: KnowledgeBaseDetail;
+      }
+    | ApiServiceError
+  >;
+  createKnowledgeBase(input: {
+    actor: SessionPayload;
+    body: CreateKnowledgeBaseInput;
+  }): Promise<
+    | {
+        ok: true;
+        knowledgeBase: KnowledgeBaseSummary;
+      }
+    | ApiServiceError
+  >;
+  updateKnowledgeBase(input: {
+    actor: SessionPayload;
+    body: UpdateKnowledgeBaseInput;
+    knowledgeBaseId: string;
+  }): Promise<
+    | {
+        ok: true;
+        knowledgeBase: KnowledgeBaseDetail;
+      }
+    | ApiServiceError
+  >;
+}
+
 export interface ApiRateLimiter {
   consume(input: RateLimitConsumeInput): Promise<{
     allowed: boolean;
@@ -111,6 +163,7 @@ export interface ApiAppOptions {
   allowedOrigins?: string[];
   auditService?: AuditService;
   authService?: AuthService;
+  knowledgeBaseService?: Partial<KnowledgeBaseService>;
   rateLimiter?: ApiRateLimiter;
   userService?: Partial<UserService>;
 }

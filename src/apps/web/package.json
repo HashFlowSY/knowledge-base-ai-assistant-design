@@ -13,6 +13,7 @@
   "dependencies": {
     "@kb/auth": "workspace:*",
     "@kb/api": "workspace:*",
+    "@kb/knowledge": "workspace:*",
     "@kb/shared": "workspace:*",
     "@kb/users": "workspace:*",
     "@tanstack/react-query": "^5.62.0",

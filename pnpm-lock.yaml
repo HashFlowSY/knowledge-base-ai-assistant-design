@@ -87,6 +87,9 @@ importers:
       '@kb/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@kb/knowledge':
+        specifier: workspace:*
+        version: link:../../packages/knowledge
       '@kb/observability':
         specifier: workspace:*
         version: link:../../packages/observability
@@ -120,6 +123,9 @@ importers:
       '@kb/auth':
         specifier: workspace:*
         version: link:../../packages/auth
+      '@kb/knowledge':
+        specifier: workspace:*
+        version: link:../../packages/knowledge
       '@kb/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -242,6 +248,18 @@ importers:
 
   src/packages/knowledge:
     dependencies:
+      '@kb/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@kb/db':
+        specifier: workspace:*
+        version: link:../db
+      '@kb/shared':
+        specifier: workspace:*
+        version: link:../shared
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/pg@8.20.0)(kysely@0.28.17)(pg@8.20.0)
       zod:
         specifier: ^3.24.0
         version: 3.25.76

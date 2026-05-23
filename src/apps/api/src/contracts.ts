@@ -6,6 +6,7 @@ export type {
   ApiServiceError,
   AuditService,
   AuthService,
+  KnowledgeBaseService,
   UserService,
 } from "./contracts/services";
 export type { ApiApp } from "./contracts/rpc";
