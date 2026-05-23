@@ -6,7 +6,13 @@ export type {
   ApiServiceError,
   AuditService,
   AuthService,
+  DocumentFileUploadResult,
+  DocumentFileUploadServiceInput,
+  DocumentService,
   KnowledgeBaseService,
+  UploadConcurrencyLimiter,
+  UploadConcurrencyReservation,
+  UploadConfig,
   UserService,
 } from "./contracts/services";
 export type { ApiApp } from "./contracts/rpc";

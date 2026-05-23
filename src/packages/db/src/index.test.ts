@@ -4,6 +4,11 @@ import {
   auditLogs,
   databaseConfigSchema,
   databaseMigrationConfigSchema,
+  documentSources,
+  documentSourceObjectCleanupStatusEnum,
+  documentSourceScanStatusEnum,
+  documentSourceUploadStatusEnum,
+  ingestionJobStatusEnum,
   knowledgeBases,
   migrationStatusSchema,
   shouldLoadExampleEnv,
@@ -28,6 +33,41 @@ describe("@kb/db", () => {
     expect(schema.chunkEmbeddings).toBeDefined();
     expect(schema.auditLogs).toBe(auditLogs);
     expect(knowledgeBases).toBe(schema.knowledgeBases);
+    expect(documentSources).toBe(schema.documentSources);
+  });
+
+  it("exports document upload state columns for source lifecycle tracking", () => {
+    expect(documentSources.bucket).toBeDefined();
+    expect(documentSources.uploadStatus).toBeDefined();
+    expect(documentSources.scanStatus).toBeDefined();
+    expect(documentSources.uploadedAt).toBeDefined();
+    expect(documentSources.uploadErrorCode).toBeDefined();
+    expect(documentSources.uploadErrorMessage).toBeDefined();
+    expect(documentSources.objectCleanupStatus).toBeDefined();
+    expect(documentSources.objectCleanupErrorCode).toBeDefined();
+    expect(documentSources.objectCleanupErrorMessage).toBeDefined();
+  });
+
+  it("exports upload, scan, cleanup, and pending-source job enums", () => {
+    expect(documentSourceUploadStatusEnum.enumValues).toEqual([
+      "pending_upload",
+      "available",
+      "upload_failed",
+    ]);
+    expect(documentSourceScanStatusEnum.enumValues).toEqual([
+      "not_scanned",
+      "pending",
+      "clean",
+      "infected",
+      "scan_failed",
+    ]);
+    expect(documentSourceObjectCleanupStatusEnum.enumValues).toEqual([
+      "not_required",
+      "pending_cleanup",
+      "cleanup_succeeded",
+      "cleanup_failed",
+    ]);
+    expect(ingestionJobStatusEnum.enumValues).toContain("pending_source");
   });
 
   it("uses the initial embedding vector dimension", () => {

@@ -21,6 +21,10 @@ describe("@kb/config", () => {
 
     expect(config.SERVICE_NAME).toBe("api");
     expect(config.WORKER_CONCURRENCY).toBe(2);
+    expect(config.UPLOAD_MAX_FILE_BYTES).toBe(8 * 1024 * 1024);
+    expect(config.UPLOAD_RATE_LIMIT_PER_MINUTE).toBe(20);
+    expect(config.UPLOAD_CONCURRENCY_PER_ACTOR).toBe(2);
+    expect(config.UPLOAD_CONCURRENCY_PER_TENANT).toBe(10);
   });
 
   it("redacts secrets from config dumps", () => {
@@ -28,5 +32,25 @@ describe("@kb/config", () => {
 
     expect(redacted).toMatchObject({ secrets: "[REDACTED]" });
     expect("DATABASE_URL" in redacted).toBe(false);
+    expect(redacted.UPLOAD_MAX_FILE_BYTES).toBe(8 * 1024 * 1024);
+  });
+
+  it("allows upload limits to be configured from environment", () => {
+    const config = loadRuntimeConfig({
+      ...validEnv,
+      UPLOAD_CONCURRENCY_PER_ACTOR: "3",
+      UPLOAD_CONCURRENCY_PER_TENANT: "12",
+      UPLOAD_MAX_FILE_BYTES: "1048576",
+      UPLOAD_RATE_LIMIT_PER_MINUTE: "25",
+      UPLOAD_REQUEST_OVERHEAD_BYTES: "32768",
+    });
+
+    expect(config).toMatchObject({
+      UPLOAD_CONCURRENCY_PER_ACTOR: 3,
+      UPLOAD_CONCURRENCY_PER_TENANT: 12,
+      UPLOAD_MAX_FILE_BYTES: 1_048_576,
+      UPLOAD_RATE_LIMIT_PER_MINUTE: 25,
+      UPLOAD_REQUEST_OVERHEAD_BYTES: 32_768,
+    });
   });
 });

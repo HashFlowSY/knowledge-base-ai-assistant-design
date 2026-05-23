@@ -2,6 +2,7 @@ import type {
   ApiServiceError,
   AuditService,
   AuthService,
+  DocumentService,
   KnowledgeBaseService,
   UserService,
 } from "./contracts";
@@ -32,6 +33,9 @@ export function createUnauthenticatedAuthService(): AuthService {
 
 export function createNoopAuditService(): AuditService {
   return {
+    async recordDocumentUploadSecurityFailure() {
+      return undefined;
+    },
     async recordForbiddenAdminAttempt() {
       return undefined;
     },
@@ -61,6 +65,14 @@ export function createEmptyUserService(): UserService {
       return createNotImplementedServiceError();
     },
     async removeUserAccess() {
+      return createNotImplementedServiceError();
+    },
+  };
+}
+
+export function createEmptyDocumentService(): DocumentService {
+  return {
+    async uploadDocumentFile() {
       return createNotImplementedServiceError();
     },
   };

@@ -137,3 +137,128 @@ Never log:
 
 Object storage credentials must be loaded from validated configuration and redacted from config dumps and logs.
 
+## Scenario: Document File Upload Save State Machine
+
+### 1. Scope / Trigger
+
+- Trigger: implementing or changing backend file upload save paths for `documents`, `document_sources`, `ingestion_jobs`, object storage, upload audit logs, or upload validation.
+- Owner split: `src/apps/api` owns HTTP auth, multipart parsing, request-size gates, file validation, rate limits, and response mapping; `src/packages/knowledge` owns DB reservation/finalization, knowledge-base authorization, duplicate handling, and transactional audit writes; `src/packages/storage` owns object key generation and S3-compatible put/delete helpers.
+
+### 2. Signatures
+
+- API route: `POST /api/knowledge-bases/:knowledgeBaseId/documents/upload`.
+- Multipart fields:
+  - exactly one file part;
+  - optional `title: string`.
+- Service input must include `actor`, `knowledgeBaseId`, `title`, `originalFilename`, `mimeType`, `sizeBytes`, `checksum`, `content`, `requestId`, `ipSummary`, and `userAgentSummary`.
+- `document_sources` upload fields:
+  - `bucket`;
+  - `upload_status: pending_upload | available | upload_failed`;
+  - `scan_status: not_scanned | pending | clean | infected | scan_failed`;
+  - `uploaded_at`;
+  - `upload_error_code`;
+  - `upload_error_message`;
+  - `object_cleanup_status: not_required | pending_cleanup | cleanup_succeeded | cleanup_failed`;
+  - `object_cleanup_error_code`;
+  - `object_cleanup_error_message`.
+- `ingestion_jobs.status` includes `pending_source`. Workers must process only `queued` jobs.
+- Active upload dedupe index:
+
+```sql
+CREATE UNIQUE INDEX "document_sources_active_source_hash_idx"
+  ON "document_sources" ("tenant_id", "knowledge_base_id", "source_type", "source_hash")
+  WHERE "upload_status" in ('pending_upload', 'available');
+```
+
+### 3. Contracts
+
+- Runtime config keys:
+  - `UPLOAD_MAX_FILE_BYTES`, default `8388608`;
+  - `UPLOAD_REQUEST_OVERHEAD_BYTES`, default `65536`;
+  - `UPLOAD_RATE_LIMIT_PER_MINUTE`, default `20`;
+  - `UPLOAD_CONCURRENCY_PER_ACTOR`, default `2`;
+  - `UPLOAD_CONCURRENCY_PER_TENANT`, default `10`;
+  - object storage endpoint, bucket, access key, and secret come from validated runtime config.
+- Object keys must use:
+
+```text
+tenants/{tenantId}/knowledge-bases/{knowledgeBaseId}/documents/{documentId}/versions/{documentVersion}/source/{filename}
+```
+
+- New upload flow:
+  1. authenticate actor and enforce route rate/concurrency limits;
+  2. require valid `Content-Length` before multipart parsing;
+  3. validate exactly one file, size, MIME/extension, and lightweight signature;
+  4. compute checksum from bytes;
+  5. check tenant and knowledge-base authorization;
+  6. return existing document/job for active duplicate checksum;
+  7. reserve document/source/job in a DB transaction with source `pending_upload` and job `pending_source`;
+  8. upload object outside the DB transaction;
+  9. finalize source `available`, job `queued`, and `document.uploaded` audit in one DB transaction.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| Unauthenticated actor | `UNAUTHORIZED`; no multipart parsing, checksum, DB mutation, or object upload |
+| Missing/invalid/non-positive `Content-Length` | `VALIDATION_ERROR` before multipart parsing |
+| `Content-Length` over request limit | `PAYLOAD_TOO_LARGE` before multipart parsing; write security audit when actor exists |
+| Actual file bytes over `UPLOAD_MAX_FILE_BYTES` | `PAYLOAD_TOO_LARGE`; write security audit when actor exists |
+| Zero or multiple file parts | `VALIDATION_ERROR` |
+| Unsupported MIME/extension | `UNSUPPORTED_MEDIA_TYPE`; write security audit when actor exists |
+| Spoofed PDF/text signature | `VALIDATION_ERROR`; write security audit when actor exists |
+| Missing or unauthorized knowledge base | `NOT_FOUND` or `FORBIDDEN`; no reservation or object upload |
+| Active duplicate checksum | Return existing document/job, do not create DB rows or object, write `document.duplicate_upload_ignored` |
+| Object upload failure after reservation | Mark source `upload_failed`, job `failed`, document `failed`, return `INTERNAL_ERROR` |
+| Final DB transaction fails after object upload | Return `INTERNAL_ERROR`, attempt object deletion, mark source/job/document failed |
+| Object deletion after finalization failure also fails | Persist `object_cleanup_status = cleanup_failed` and write `document.upload_cleanup_failed` when DB is available |
+
+### 5. Good/Base/Bad Cases
+
+- Good: new upload inserts reservation rows, uploads to the configured bucket/key, then commits source availability, job queueing, and success audit together.
+- Good: repeated clicks with identical bytes collapse through checksum lookup or DB unique conflict handling.
+- Base: failed upload rows are retained for operations visibility but have `upload_status = upload_failed`, so they do not block retry.
+- Bad: holding a database transaction open while uploading to S3-compatible storage.
+- Bad: using filename/title for duplicate detection.
+- Bad: enqueueing BullMQ while the source is still `pending_upload`.
+
+### 6. Tests Required
+
+- DB tests assert upload/scan/cleanup enums, required `bucket`, `pending_source`, and the active-source dedupe index.
+- Config tests assert upload size, rate limit, and concurrency defaults plus env overrides.
+- Storage tests assert object key format and filename sanitization.
+- API tests assert auth-before-parse behavior, `Content-Length` gates, exactly-one-file validation, title fallback, allowed types, spoof detection, actor rate limit, upload concurrency, duplicate response status, and safe audit calls for sensitive failures.
+- Service or integration tests should assert reservation/finalization transactions, object upload failure retention, duplicate DB conflict behavior, and cleanup-failure metadata when a PostgreSQL/S3 test harness is available.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+await db.transaction(async (tx) => {
+  const document = await tx.insert(documents).values(row).returning();
+  await objectStorage.putObject({ bucket, key, body });
+  await tx.insert(ingestionJobs).values({ status: "queued" });
+});
+```
+
+This holds a DB transaction open across object storage I/O and can leave ambiguous state when storage or finalization fails.
+
+#### Correct
+
+```typescript
+const reservation = await reserveUploadMetadata({
+  sourceUploadStatus: "pending_upload",
+  jobStatus: "pending_source",
+});
+
+await objectStorage.putObject({ bucket, key, body });
+
+await finalizeUploadInTransaction({
+  sourceUploadStatus: "available",
+  jobStatus: "queued",
+  auditAction: "document.uploaded",
+});
+```
+
+This makes pending, available, and failed states explicit and gives compensation code a stable source/job record to update.

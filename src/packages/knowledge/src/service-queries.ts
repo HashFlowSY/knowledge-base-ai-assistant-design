@@ -153,6 +153,25 @@ export async function findTenantKnowledgeBaseRow(
   return rows[0] ?? null;
 }
 
+export async function actorIsKnowledgeBaseMember(
+  db: KnowledgeDb,
+  input: { actorId: string; knowledgeBaseId: string; tenantId: string },
+): Promise<boolean> {
+  const rows = await db
+    .select({ id: knowledgeBaseMembers.id })
+    .from(knowledgeBaseMembers)
+    .where(
+      and(
+        eq(knowledgeBaseMembers.tenantId, input.tenantId),
+        eq(knowledgeBaseMembers.knowledgeBaseId, input.knowledgeBaseId),
+        eq(knowledgeBaseMembers.userId, input.actorId),
+      ),
+    )
+    .limit(1);
+
+  return rows[0] !== undefined;
+}
+
 export async function findDuplicateKnowledgeBaseName(
   db: KnowledgeDb,
   input: { excludeKnowledgeBaseId?: string; normalizedName: string; tenantId: string },

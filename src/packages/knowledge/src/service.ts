@@ -1,6 +1,7 @@
 import { createKnowledgeBaseOperation } from "./operations/create-knowledge-base";
 import { getKnowledgeBaseOperation } from "./operations/get-knowledge-base";
 import { listKnowledgeBasesOperation } from "./operations/list-knowledge-bases";
+import { uploadDocumentFileOperation } from "./operations/upload-document-file";
 import { updateKnowledgeBaseOperation } from "./operations/update-knowledge-base";
 import type {
   KnowledgeBaseService,
@@ -20,6 +21,7 @@ export function createKnowledgeBaseService(
     createKnowledgeBase: (input) => createKnowledgeBaseOperation(options, input),
     getKnowledgeBase: (input) => getKnowledgeBaseOperation(options, input),
     listKnowledgeBases: (input) => listKnowledgeBasesOperation(options, input),
+    uploadDocumentFile: (input) => uploadDocumentFileOperation(options, input),
     updateKnowledgeBase: (input) => updateKnowledgeBaseOperation(options, input),
   };
 }

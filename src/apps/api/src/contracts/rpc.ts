@@ -4,6 +4,7 @@ import type { Endpoint } from "hono/types";
 import type { SessionPayload } from "@kb/auth";
 import type {
   CreateKnowledgeBaseInput,
+  DocumentFileUploadResult,
   KnowledgeBaseDetail,
   KnowledgeBaseSummary,
   KnowledgeBasesPage,
@@ -122,6 +123,13 @@ type ApiRouteSchema = {
       { json: UpdateKnowledgeBaseInput; param: { knowledgeBaseId: string } },
       ApiSuccessResponse<KnowledgeBaseDetail> | ApiErrorResponse,
       200 | 400 | 401 | 403 | 404 | 409 | 429 | 500
+    >;
+  };
+  "/api/knowledge-bases/:knowledgeBaseId/documents/upload": {
+    $post: JsonEndpoint<
+      { form: FormData; param: { knowledgeBaseId: string } },
+      ApiSuccessResponse<DocumentFileUploadResult> | ApiErrorResponse,
+      200 | 201 | 400 | 401 | 403 | 404 | 409 | 413 | 415 | 429 | 500
     >;
   };
 };

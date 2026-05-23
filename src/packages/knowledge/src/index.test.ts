@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createKnowledgeBaseInputSchema,
+  documentFileUploadResultSchema,
   documentStatusSchema,
   knowledgeBaseDetailSchema,
   knowledgeBaseListQuerySchema,
@@ -25,7 +26,58 @@ describe("@kb/knowledge", () => {
   });
 
   it("includes ingestion-facing document statuses", () => {
+    expect(documentStatusSchema.parse("pending")).toBe("pending");
     expect(documentStatusSchema.parse("processing")).toBe("processing");
+    expect(() => documentStatusSchema.parse("draft")).toThrow();
+  });
+
+  it("validates document file upload response contracts", () => {
+    const timestamp = "2026-05-23T06:00:00.000Z";
+
+    expect(
+      documentFileUploadResultSchema.parse({
+        document: {
+          createdAt: timestamp,
+          currentVersion: 1,
+          id: "doc_1",
+          knowledgeBaseId: "kb_1",
+          status: "pending",
+          title: "采购制度",
+          updatedAt: timestamp,
+        },
+        duplicate: false,
+        job: {
+          createdAt: timestamp,
+          documentId: "doc_1",
+          id: "job_1",
+          knowledgeBaseId: "kb_1",
+          queuedAt: timestamp,
+          sourceHash: "sha256:abc",
+          sourceType: "file",
+          status: "queued",
+          updatedAt: timestamp,
+        },
+        source: {
+          bucket: "kb-source",
+          documentId: "doc_1",
+          id: "source_1",
+          mimeType: "application/pdf",
+          objectKey:
+            "tenants/tenant_1/knowledge-bases/kb_1/documents/doc_1/versions/1/source/file.pdf",
+          scanStatus: "not_scanned",
+          sizeBytes: 12,
+          sourceHash: "sha256:abc",
+          sourceType: "file",
+          sourceUri: "file.pdf",
+          uploadedAt: timestamp,
+          uploadStatus: "available",
+        },
+      }),
+    ).toMatchObject({
+      document: { status: "pending" },
+      job: { status: "queued" },
+      source: { uploadStatus: "available" },
+    });
   });
 
   it("normalizes list query defaults and allowed page sizes", () => {

@@ -1,6 +1,7 @@
 import type { SessionPayload } from "@kb/auth";
 import type {
   CreateKnowledgeBaseInput,
+  DocumentFileUploadResult,
   KnowledgeBaseDetail,
   KnowledgeBaseListQuery,
   KnowledgeBaseSummary,
@@ -16,6 +17,8 @@ import type {
 } from "@kb/users";
 
 import type { RateLimitConsumeInput } from "../rate-limit";
+
+export type { DocumentFileUploadResult } from "@kb/knowledge";
 
 export interface ApiServiceError {
   ok: false;
@@ -138,6 +141,30 @@ export interface KnowledgeBaseService {
   >;
 }
 
+export interface DocumentFileUploadServiceInput {
+  actor: SessionPayload;
+  checksum: string;
+  content: Uint8Array;
+  ipSummary: string;
+  knowledgeBaseId: string;
+  mimeType: string;
+  originalFilename: string;
+  requestId: string;
+  sizeBytes: number;
+  title: string;
+  userAgentSummary: string | null;
+}
+
+export interface DocumentService {
+  uploadDocumentFile(input: DocumentFileUploadServiceInput): Promise<
+    | {
+        ok: true;
+        result: DocumentFileUploadResult;
+      }
+    | ApiServiceError
+  >;
+}
+
 export interface ApiRateLimiter {
   consume(input: RateLimitConsumeInput): Promise<{
     allowed: boolean;
@@ -157,14 +184,58 @@ export interface AuditService {
     targetType: "api_route";
     userAgentSummary: string | null;
   }): Promise<void>;
+  recordDocumentUploadSecurityFailure(input: {
+    actor: SessionPayload;
+    ipSummary: string;
+    knowledgeBaseId: string;
+    metadata: Record<string, unknown>;
+    reason:
+      | "oversized_file"
+      | "spoofed_file_signature"
+      | "unsupported_file_type";
+    requestId: string;
+    userAgentSummary: string | null;
+  }): Promise<void>;
+}
+
+export interface UploadConfig {
+  concurrencyPerActor: number;
+  concurrencyPerTenant: number;
+  maxFileBytes: number;
+  rateLimitPerMinute: number;
+  requestOverheadBytes: number;
+}
+
+export interface UploadConcurrencyReservation {
+  release(): void;
+}
+
+export interface UploadConcurrencyLimiter {
+  acquire(input: {
+    actorKey: string;
+    actorLimit: number;
+    tenantKey: string;
+    tenantLimit: number;
+  }):
+    | {
+        ok: true;
+        reservation: UploadConcurrencyReservation;
+      }
+    | {
+        ok: false;
+        scope: "actor" | "tenant";
+      };
 }
 
 export interface ApiAppOptions {
   allowedOrigins?: string[];
   auditService?: AuditService;
   authService?: AuthService;
+  documentService?: Partial<DocumentService>;
   knowledgeBaseService?: Partial<KnowledgeBaseService>;
   rateLimiter?: ApiRateLimiter;
+  uploadConcurrencyLimiter?: UploadConcurrencyLimiter;
+  uploadConfig?: UploadConfig;
   userService?: Partial<UserService>;
 }
 

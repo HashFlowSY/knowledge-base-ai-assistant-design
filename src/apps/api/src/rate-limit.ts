@@ -3,7 +3,11 @@ import Redis from "ioredis";
 import { normalizeEmail, getSessionCookieValue } from "@kb/auth";
 import { sha256Hex } from "@kb/security";
 
-export type RateLimitScope = "auth" | "knowledge-base" | "user-management";
+export type RateLimitScope =
+  | "auth"
+  | "document-upload"
+  | "knowledge-base"
+  | "user-management";
 
 export interface RateLimitKeyInput {
   scope: RateLimitScope;

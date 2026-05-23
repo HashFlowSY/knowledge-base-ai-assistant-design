@@ -12,6 +12,7 @@ import {
   varchar,
   vector,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 import { authUsers } from "./auth";
 import { emptyJsonObject, vectorDimensions } from "./common";
@@ -35,6 +36,24 @@ export const documentSourceTypeEnum = pgEnum("document_source_type", [
   "file",
   "url",
 ]);
+
+export const documentSourceUploadStatusEnum = pgEnum(
+  "document_source_upload_status",
+  ["pending_upload", "available", "upload_failed"],
+);
+
+export const documentSourceScanStatusEnum = pgEnum("document_source_scan_status", [
+  "not_scanned",
+  "pending",
+  "clean",
+  "infected",
+  "scan_failed",
+]);
+
+export const documentSourceObjectCleanupStatusEnum = pgEnum(
+  "document_source_object_cleanup_status",
+  ["not_required", "pending_cleanup", "cleanup_succeeded", "cleanup_failed"],
+);
 
 export const knowledgeBases = pgTable(
   "knowledge_bases",
@@ -169,7 +188,26 @@ export const documentSources = pgTable(
     sourceHash: varchar("source_hash", { length: 128 }).notNull(),
     mimeType: varchar("mime_type", { length: 200 }),
     sizeBytes: integer("size_bytes"),
+    bucket: varchar("bucket", { length: 255 }).notNull(),
     objectKey: text("object_key"),
+    uploadStatus: documentSourceUploadStatusEnum("upload_status")
+      .notNull()
+      .default("available"),
+    scanStatus: documentSourceScanStatusEnum("scan_status")
+      .notNull()
+      .default("not_scanned"),
+    uploadedAt: timestamp("uploaded_at", { withTimezone: true }),
+    uploadErrorCode: varchar("upload_error_code", { length: 120 }),
+    uploadErrorMessage: text("upload_error_message"),
+    objectCleanupStatus: documentSourceObjectCleanupStatusEnum(
+      "object_cleanup_status",
+    )
+      .notNull()
+      .default("not_required"),
+    objectCleanupErrorCode: varchar("object_cleanup_error_code", {
+      length: 120,
+    }),
+    objectCleanupErrorMessage: text("object_cleanup_error_message"),
     metadata: jsonb("metadata").$type<Record<string, unknown>>()
       .notNull()
       .default(emptyJsonObject),
@@ -185,6 +223,14 @@ export const documentSources = pgTable(
       table.documentId,
       table.sourceHash,
     ),
+    uniqueIndex("document_sources_active_source_hash_idx")
+      .on(
+        table.tenantId,
+        table.knowledgeBaseId,
+        table.sourceType,
+        table.sourceHash,
+      )
+      .where(sql`${table.uploadStatus} in ('pending_upload', 'available')`),
     index("document_sources_tenant_idx").on(table.tenantId),
     foreignKey({
       name: "document_sources_tenant_kb_fk",

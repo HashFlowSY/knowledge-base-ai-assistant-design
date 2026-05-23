@@ -2,6 +2,12 @@ import { z } from "zod";
 
 import { serviceNameSchema } from "@kb/shared";
 
+export const defaultUploadMaxFileBytes = 8 * 1024 * 1024;
+export const defaultUploadRequestOverheadBytes = 64 * 1024;
+export const defaultUploadRateLimitPerMinute = 20;
+export const defaultUploadConcurrencyPerActor = 2;
+export const defaultUploadConcurrencyPerTenant = 10;
+
 const envSchema = z.object({
   SERVICE_NAME: serviceNameSchema.default("api"),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -19,6 +25,36 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(16),
   APP_ENCRYPTION_KEY: z.string().min(32),
   WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(50).default(2),
+  UPLOAD_MAX_FILE_BYTES: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100 * 1024 * 1024)
+    .default(defaultUploadMaxFileBytes),
+  UPLOAD_REQUEST_OVERHEAD_BYTES: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(1024 * 1024)
+    .default(defaultUploadRequestOverheadBytes),
+  UPLOAD_RATE_LIMIT_PER_MINUTE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(1_000)
+    .default(defaultUploadRateLimitPerMinute),
+  UPLOAD_CONCURRENCY_PER_ACTOR: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(50)
+    .default(defaultUploadConcurrencyPerActor),
+  UPLOAD_CONCURRENCY_PER_TENANT: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(500)
+    .default(defaultUploadConcurrencyPerTenant),
 });
 
 export type RuntimeConfig = z.infer<typeof envSchema>;
@@ -49,6 +85,11 @@ export function redactRuntimeConfig(config: RuntimeConfig): Omit<
     S3_ENDPOINT: config.S3_ENDPOINT,
     S3_BUCKET: config.S3_BUCKET,
     WORKER_CONCURRENCY: config.WORKER_CONCURRENCY,
+    UPLOAD_MAX_FILE_BYTES: config.UPLOAD_MAX_FILE_BYTES,
+    UPLOAD_REQUEST_OVERHEAD_BYTES: config.UPLOAD_REQUEST_OVERHEAD_BYTES,
+    UPLOAD_RATE_LIMIT_PER_MINUTE: config.UPLOAD_RATE_LIMIT_PER_MINUTE,
+    UPLOAD_CONCURRENCY_PER_ACTOR: config.UPLOAD_CONCURRENCY_PER_ACTOR,
+    UPLOAD_CONCURRENCY_PER_TENANT: config.UPLOAD_CONCURRENCY_PER_TENANT,
   };
 
   return {

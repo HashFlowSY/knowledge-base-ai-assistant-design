@@ -1,11 +1,20 @@
 import { Hono } from "hono";
 
+import {
+  defaultUploadConcurrencyPerActor,
+  defaultUploadConcurrencyPerTenant,
+  defaultUploadMaxFileBytes,
+  defaultUploadRateLimitPerMinute,
+  defaultUploadRequestOverheadBytes,
+} from "@kb/config";
 import { createLogger } from "@kb/observability";
 
 import type {
   ApiAppOptions,
   ApiEnv,
+  DocumentService,
   KnowledgeBaseService,
+  UploadConfig,
   UserService,
 } from "./contracts";
 export type {
@@ -18,10 +27,17 @@ export type {
   ApiServiceError,
   AuditService,
   AuthService,
+  DocumentFileUploadResult,
+  DocumentFileUploadServiceInput,
+  DocumentService,
   KnowledgeBaseService,
+  UploadConcurrencyLimiter,
+  UploadConcurrencyReservation,
+  UploadConfig,
   UserService,
 } from "./contracts";
 import {
+  createEmptyDocumentService,
   createEmptyKnowledgeBaseService,
   createEmptyUserService,
   createNoopAuditService,
@@ -35,9 +51,19 @@ import { createApiRuntimeServicesFromEnv } from "./runtime-services";
 import { createAuthRouter } from "./modules/auth/router";
 import { createHealthRouter } from "./modules/health/router";
 import { createKnowledgeBasesRouter } from "./modules/knowledge-bases/router";
+import { createDocumentsRouter } from "./modules/documents/router";
 export { healthResponseSchema } from "./modules/health/types";
 export type { HealthResponse } from "./modules/health/types";
 import { registerUserRoutes } from "./user-routes";
+import { createInMemoryUploadConcurrencyLimiter } from "./upload-concurrency";
+
+const defaultUploadConfig: UploadConfig = {
+  concurrencyPerActor: defaultUploadConcurrencyPerActor,
+  concurrencyPerTenant: defaultUploadConcurrencyPerTenant,
+  maxFileBytes: defaultUploadMaxFileBytes,
+  rateLimitPerMinute: defaultUploadRateLimitPerMinute,
+  requestOverheadBytes: defaultUploadRequestOverheadBytes,
+};
 
 export function createApiApp(options: ApiAppOptions = {}) {
   const app = new Hono<ApiEnv>();
@@ -54,10 +80,17 @@ export function createApiApp(options: ApiAppOptions = {}) {
     ...createEmptyUserService(),
     ...options.userService,
   };
+  const documentService: DocumentService = {
+    ...createEmptyDocumentService(),
+    ...options.documentService,
+  };
   const knowledgeBaseService: KnowledgeBaseService = {
     ...createEmptyKnowledgeBaseService(),
     ...options.knowledgeBaseService,
   };
+  const uploadConcurrencyLimiter =
+    options.uploadConcurrencyLimiter ?? createInMemoryUploadConcurrencyLimiter();
+  const uploadConfig = options.uploadConfig ?? defaultUploadConfig;
 
   app.use("*", async (context, next) => {
     const existingRequestId = context.req.header("x-request-id");
@@ -104,6 +137,18 @@ export function createApiApp(options: ApiAppOptions = {}) {
       authService,
       knowledgeBaseService,
       rateLimiter,
+    }),
+  );
+  app.route(
+    "/",
+    createDocumentsRouter({
+      allowedOrigins,
+      auditService,
+      authService,
+      documentService,
+      rateLimiter,
+      uploadConcurrencyLimiter,
+      uploadConfig,
     }),
   );
 

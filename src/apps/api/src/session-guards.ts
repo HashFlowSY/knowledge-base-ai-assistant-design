@@ -66,7 +66,7 @@ export async function requireAdminUserManagementSession(
       await auditService.recordForbiddenAdminAttempt({
         action: "auth.forbidden",
         actor: sessionResult.payload,
-        ipSummary: getIpSummary(context),
+        ipSummary: getRequestIpSummary(context),
         method: context.req.method,
         path: context.req.path,
         requestId: context.get("requestId"),
@@ -186,7 +186,7 @@ export async function requireAdminKnowledgeBaseSession(
     await auditService.recordForbiddenAdminAttempt({
       action: "auth.forbidden",
       actor: authResult.actor,
-      ipSummary: getIpSummary(context),
+      ipSummary: getRequestIpSummary(context),
       method: context.req.method,
       path: context.req.path,
       requestId: context.get("requestId"),
@@ -239,7 +239,7 @@ export async function rateLimitLogin(
   const identity = await createRateLimitIdentity({
     kind: "login",
     email,
-    ipSummary: getIpSummary(context),
+    ipSummary: getRequestIpSummary(context),
   });
 
   return consumeRateLimit(context, rateLimiter, {
@@ -266,13 +266,34 @@ export async function rateLimitAuthSession(
 ): Promise<Response | null> {
   const identity = await createSessionRateLimitIdentity({
     cookieHeader: context.req.header("cookie") ?? null,
-    ipSummary: getIpSummary(context),
+    ipSummary: getRequestIpSummary(context),
   });
 
   return consumeRateLimit(context, rateLimiter, {
     identity,
     limit: 120,
     scope: "auth",
+    windowLabel: "1m",
+    windowMs: 60_000,
+  });
+}
+
+export async function rateLimitDocumentUpload(
+  context: Context<ApiEnv>,
+  rateLimiter: ApiRateLimiter,
+  actor: SessionPayload,
+  limit: number,
+): Promise<Response | null> {
+  const identity = await createRateLimitIdentity({
+    kind: "actor",
+    actorId: actor.user.id,
+    tenantId: actor.tenant.id,
+  });
+
+  return consumeRateLimit(context, rateLimiter, {
+    identity,
+    limit,
+    scope: "document-upload",
     windowLabel: "1m",
     windowMs: 60_000,
   });
@@ -324,7 +345,7 @@ async function rateLimitUnresolvedUserManagement(
 ): Promise<Response | null> {
   const identity = await createRateLimitIdentity({
     kind: "ip",
-    ipSummary: getIpSummary(context),
+    ipSummary: getRequestIpSummary(context),
   });
 
   return consumeRateLimit(context, rateLimiter, {
@@ -342,7 +363,7 @@ async function rateLimitUnresolvedKnowledgeBase(
 ): Promise<Response | null> {
   const identity = await createRateLimitIdentity({
     kind: "ip",
-    ipSummary: getIpSummary(context),
+    ipSummary: getRequestIpSummary(context),
   });
 
   return consumeRateLimit(context, rateLimiter, {
@@ -373,7 +394,7 @@ async function consumeRateLimit(
   });
 }
 
-function getIpSummary(context: Context<ApiEnv>): string {
+export function getRequestIpSummary(context: Context<ApiEnv>): string {
   const forwardedFor = context.req.header("x-forwarded-for");
   const firstForwardedIp = forwardedFor?.split(",")[0]?.trim();
 

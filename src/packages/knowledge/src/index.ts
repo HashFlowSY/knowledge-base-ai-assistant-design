@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export {
   createKnowledgeBaseInputSchema,
+  documentFileUploadResultSchema,
   knowledgeBaseDetailSchema,
   knowledgeBaseListQuerySchema,
   knowledgeBaseMemberSummarySchema,
@@ -13,6 +14,7 @@ export {
 } from "./schemas";
 export type {
   CreateKnowledgeBaseInput,
+  DocumentFileUploadResult,
   KnowledgeBaseDetail,
   KnowledgeBaseListQuery,
   KnowledgeBaseMemberSummary,
@@ -29,11 +31,11 @@ export const knowledgeBaseScopeSchema = z.object({
 export type KnowledgeBaseScope = z.infer<typeof knowledgeBaseScopeSchema>;
 
 export const documentStatusSchema = z.enum([
-  "draft",
-  "queued",
+  "pending",
   "processing",
   "ready",
   "failed",
+  "archived",
 ]);
 
 export type DocumentStatus = z.infer<typeof documentStatusSchema>;

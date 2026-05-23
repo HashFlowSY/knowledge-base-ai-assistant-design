@@ -124,6 +124,88 @@ export type UpdateKnowledgeBaseInput = z.infer<
   typeof updateKnowledgeBaseInputSchema
 >;
 
+const documentUploadStatusSchema = z.enum([
+  "pending",
+  "processing",
+  "ready",
+  "failed",
+  "archived",
+]);
+
+const documentSourceUploadStatusSchema = z.enum([
+  "pending_upload",
+  "available",
+  "upload_failed",
+]);
+
+const documentSourceScanStatusSchema = z.enum([
+  "not_scanned",
+  "pending",
+  "clean",
+  "infected",
+  "scan_failed",
+]);
+
+const ingestionJobStatusSchema = z.enum([
+  "pending_source",
+  "queued",
+  "running",
+  "retrying",
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+export const documentFileUploadResultSchema = z
+  .object({
+    document: z
+      .object({
+        createdAt: isoTimestampSchema,
+        currentVersion: z.number().int().min(1),
+        id: z.string().min(1),
+        knowledgeBaseId: z.string().min(1),
+        status: documentUploadStatusSchema,
+        title: z.string().min(1),
+        updatedAt: isoTimestampSchema,
+      })
+      .strict(),
+    duplicate: z.boolean(),
+    job: z
+      .object({
+        createdAt: isoTimestampSchema,
+        documentId: z.string().min(1),
+        id: z.string().min(1),
+        knowledgeBaseId: z.string().min(1),
+        queuedAt: isoTimestampSchema,
+        sourceHash: z.string().min(1),
+        sourceType: z.literal("file"),
+        status: ingestionJobStatusSchema,
+        updatedAt: isoTimestampSchema,
+      })
+      .strict(),
+    source: z
+      .object({
+        bucket: z.string().min(1),
+        documentId: z.string().min(1),
+        id: z.string().min(1),
+        mimeType: z.string().min(1),
+        objectKey: z.string().min(1),
+        scanStatus: documentSourceScanStatusSchema,
+        sizeBytes: z.number().int().min(0),
+        sourceHash: z.string().min(1),
+        sourceType: z.literal("file"),
+        sourceUri: z.string().min(1),
+        uploadedAt: isoTimestampSchema.nullable(),
+        uploadStatus: documentSourceUploadStatusSchema,
+      })
+      .strict(),
+  })
+  .strict();
+
+export type DocumentFileUploadResult = z.infer<
+  typeof documentFileUploadResultSchema
+>;
+
 export function normalizeKnowledgeBaseMemberIds(memberIds: string[]): string[] {
   const normalized = new Set<string>();
 

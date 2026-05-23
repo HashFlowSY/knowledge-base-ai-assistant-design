@@ -21,6 +21,7 @@ import {
 import { tenants } from "./tenant";
 
 export const ingestionJobStatusEnum = pgEnum("ingestion_job_status", [
+  "pending_source",
   "queued",
   "running",
   "retrying",

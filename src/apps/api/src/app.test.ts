@@ -789,6 +789,9 @@ describe("@kb/api", () => {
     const consumedInputs: RateLimitConsumeInput[] = [];
     const app = createApiApp({
       auditService: {
+        async recordDocumentUploadSecurityFailure() {
+          return undefined;
+        },
         async recordForbiddenAdminAttempt(input) {
           forbiddenAuditCalls.push(input);
         },

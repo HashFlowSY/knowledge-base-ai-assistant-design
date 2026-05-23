@@ -23,6 +23,7 @@
     "@kb/observability": "workspace:*",
     "@kb/security": "workspace:*",
     "@kb/shared": "workspace:*",
+    "@kb/storage": "workspace:*",
     "@kb/users": "workspace:*",
     "dotenv": "^16.6.1",
     "hono": "^4.6.0",

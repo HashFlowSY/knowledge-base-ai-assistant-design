@@ -1,43 +1,57 @@
 import { describe, expect, it } from "vitest";
 
-import { createDocumentObjectKey } from "./index";
+import { createDocumentObjectKey, objectStorageConfigSchema } from "./index";
 
 describe("@kb/storage", () => {
   it("creates server-owned document object keys", () => {
     expect(
       createDocumentObjectKey({
         tenantId: "tenant_1",
+        knowledgeBaseId: "kb_1",
         documentId: "doc_1",
+        documentVersion: 1,
         fileName: "source.pdf",
       }),
-    ).toBe("tenants/tenant_1/documents/doc_1/source.pdf");
+    ).toBe(
+      "tenants/tenant_1/knowledge-bases/kb_1/documents/doc_1/versions/1/source/source.pdf",
+    );
   });
 
   it("normalizes unsafe filenames to a single object key segment", () => {
     expect(
       createDocumentObjectKey({
         tenantId: "tenant_1",
+        knowledgeBaseId: "kb_1",
         documentId: "doc_1",
+        documentVersion: 1,
         fileName: "../../secrets/source report.pdf",
       }),
-    ).toBe("tenants/tenant_1/documents/doc_1/source-report.pdf");
+    ).toBe(
+      "tenants/tenant_1/knowledge-bases/kb_1/documents/doc_1/versions/1/source/source-report.pdf",
+    );
   });
 
   it("normalizes Windows-style paths and unicode compatibility characters", () => {
     expect(
       createDocumentObjectKey({
         tenantId: "tenant_1",
+        knowledgeBaseId: "kb_1",
         documentId: "doc_1",
+        documentVersion: 1,
         fileName: String.raw`C:\uploads\ＦＩＮＡＬ report.md`,
       }),
-    ).toBe("tenants/tenant_1/documents/doc_1/FINAL-report.md");
+    ).toBe(
+      "tenants/tenant_1/knowledge-bases/kb_1/documents/doc_1/versions/1/source/FINAL-report.md",
+    );
   });
 
   it("rejects filenames that cannot produce a safe object key segment", () => {
     expect(() =>
       createDocumentObjectKey({
         tenantId: "tenant_1",
+        knowledgeBaseId: "kb_1",
         documentId: "doc_1",
+        documentVersion: 1,
         fileName: "\u0000",
       }),
     ).toThrow("Invalid object filename");
@@ -47,9 +61,26 @@ describe("@kb/storage", () => {
     expect(() =>
       createDocumentObjectKey({
         tenantId: "tenant_1",
+        knowledgeBaseId: "kb_1",
         documentId: "doc_1",
+        documentVersion: 1,
         fileName: "../...",
       }),
     ).toThrow("Invalid object filename");
+  });
+
+  it("validates S3-compatible object storage configuration", () => {
+    expect(
+      objectStorageConfigSchema.parse({
+        accessKeyId: "minioadmin",
+        bucket: "kb-source",
+        endpoint: "http://localhost:9000",
+        secretAccessKey: "minioadmin",
+      }),
+    ).toMatchObject({
+      bucket: "kb-source",
+      forcePathStyle: true,
+      region: "local",
+    });
   });
 });
