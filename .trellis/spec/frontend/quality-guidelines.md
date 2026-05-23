@@ -58,6 +58,21 @@ Run applicable checks:
 If a listed script has not been scaffolded yet, mark the frontend quality gate as
 blocked or add the script. A missing script is not a successful check.
 
+## Next App Router Route Removal
+
+When deleting or disabling an App Router `page.tsx`, rerun type-check after
+clearing stale generated Next metadata if the failure references a deleted route
+from `.next/types/validator.ts`.
+
+```bash
+rm -rf src/apps/web/.next
+pnpm --filter @kb/web typecheck
+```
+
+The source of truth is the route files under `src/apps/web/src/app`; `.next/` is
+ignored generated output and can retain validators for routes that no longer
+exist.
+
 ## PRD Drift Checks
 
 When frontend implementation intentionally narrows or revises a PRD decision,

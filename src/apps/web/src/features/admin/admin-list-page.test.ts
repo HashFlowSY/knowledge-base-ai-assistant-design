@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createSeedMockState } from "../mock/store";
+import { createSeedMockState, mockStoreReducer } from "../mock/store";
 import {
   canRetryIngestionJob,
   detailForRow,
@@ -27,7 +27,12 @@ describe("admin list page helpers", () => {
   });
 
   it("allows failed and cancelled task rows to expose retry while respecting max attempts", () => {
-    const job = createSeedMockState().jobs.find((item) => item.id === "job-support-001");
+    const state = mockStoreReducer(createSeedMockState(), {
+      fileName: "待处理文档.pdf",
+      knowledgeBaseId: "kb-finance",
+      type: "uploadFile",
+    });
+    const job = state.jobs[0];
 
     expect(job).toBeDefined();
     if (job === undefined) {
@@ -41,14 +46,16 @@ describe("admin list page helpers", () => {
   });
 
   it("routes each admin page kind to filtered and sorted mock rows", () => {
-    const state = createSeedMockState();
+    const state = mockStoreReducer(createSeedMockState(), {
+      fileName: "供应商准入规范.pdf",
+      knowledgeBaseId: "kb-finance",
+      type: "uploadFile",
+    });
+    const jobId = state.jobs[0]?.id;
+    const logId = state.logs[0]?.id;
 
-    expect(rowsForKind(state, "tasks", "travel", "all", "name").map((row) => row.id)).toEqual([
-      "job-import-001",
-    ]);
-    expect(rowsForKind(state, "logs", "解析", "info", "updated").map((row) => row.id)).toEqual([
-      "log-import-001",
-    ]);
+    expect(rowsForKind(state, "tasks", "供应商", "all", "name").map((row) => row.id)).toEqual([jobId]);
+    expect(rowsForKind(state, "logs", "已创建", "info", "updated").map((row) => row.id)).toEqual([logId]);
     expect(rowsForKind(state, "providers", "gpt-4.1", "enabled", "name").map((row) => row.id)).toEqual([
       "provider-openai-main",
     ]);
@@ -76,15 +83,21 @@ describe("admin list page helpers", () => {
   });
 
   it("formats drawer details for selected admin rows", () => {
-    const state = createSeedMockState();
+    const state = mockStoreReducer(createSeedMockState(), {
+      fileName: "供应商准入规范.pdf",
+      knowledgeBaseId: "kb-finance",
+      type: "uploadFile",
+    });
+    const jobId = state.jobs[0]?.id ?? "";
+    const logId = state.logs[0]?.id ?? "";
 
-    expect(detailForRow({ id: "job-import-001", kind: "tasks" }, state)).toContainEqual([
+    expect(detailForRow({ id: jobId, kind: "tasks" }, state)).toContainEqual([
       "文档",
-      "差旅报销管理办法 2026",
+      "供应商准入规范.pdf",
     ]);
-    expect(detailForRow({ id: "log-import-001", kind: "logs" }, state)).toContainEqual([
-      "requestId",
-      "req-import-001",
+    expect(detailForRow({ id: logId, kind: "logs" }, state)).toContainEqual([
+      "消息",
+      "已创建文件上传任务。",
     ]);
     expect(detailForRow({ id: "provider-openai-main", kind: "providers" }, state)).toContainEqual([
       "密钥",
@@ -139,14 +152,20 @@ describe("admin list page helpers", () => {
   });
 
   it("restores admin row detail selections from URL selectedId values", () => {
-    const state = createSeedMockState();
+    const state = mockStoreReducer(createSeedMockState(), {
+      fileName: "供应商准入规范.pdf",
+      knowledgeBaseId: "kb-finance",
+      type: "uploadFile",
+    });
+    const jobId = state.jobs[0]?.id ?? "";
+    const logId = state.logs[0]?.id ?? "";
 
-    expect(rowSelectionFromId("tasks", "job-import-001", state)).toEqual({
-      id: "job-import-001",
+    expect(rowSelectionFromId("tasks", jobId, state)).toEqual({
+      id: jobId,
       kind: "tasks",
     });
-    expect(rowSelectionFromId("logs", "log-import-001", state)).toEqual({
-      id: "log-import-001",
+    expect(rowSelectionFromId("logs", logId, state)).toEqual({
+      id: logId,
       kind: "logs",
     });
     expect(rowSelectionFromId("providers", "provider-openai-main", state)).toEqual({
@@ -172,6 +191,22 @@ describe("admin list page helpers", () => {
     if (providerEvent !== undefined) {
       expect(targetHrefForAuditEvent(providerEvent)).toBe("/providers");
     }
+
+    expect(
+      targetHrefForAuditEvent({
+        actorId: "user-admin-001",
+        actorType: "user",
+        action: "document.import",
+        createdAt: "2026-05-15T10:00:00.000Z",
+        id: "audit-document",
+        ipSummary: "10.0.0.12/24",
+        requestId: "req-document",
+        sanitizedMetadata: "target=doc-uploaded",
+        targetId: "doc-uploaded",
+        targetType: "document",
+        userAgentSummary: "Chrome Desktop",
+      }),
+    ).toBeNull();
 
     expect(
       targetHrefForAuditEvent({

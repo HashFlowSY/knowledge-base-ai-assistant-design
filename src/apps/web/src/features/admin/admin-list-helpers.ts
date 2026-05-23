@@ -226,7 +226,7 @@ export function rowSelectionFromId(
 
 export function targetHrefForAuditEvent(event: MockAuditEvent): string | null {
   if (event.targetType === "document") {
-    return `/documents/${event.targetId}`;
+    return null;
   }
   if (event.targetType === "provider") {
     return "/providers";

@@ -1,7 +1,6 @@
 import {
   Activity,
   BookOpen,
-  FileText,
   KeyRound,
   ListChecks,
   MessageSquareText,
@@ -26,13 +25,6 @@ export const navigationItems: NavigationItem[] = [
     label: "知识库",
     description: "管理文档与导入来源",
     icon: BookOpen,
-    adminOnly: false,
-  },
-  {
-    href: "/documents",
-    label: "文档",
-    description: "查看来源与片段",
-    icon: FileText,
     adminOnly: false,
   },
   {

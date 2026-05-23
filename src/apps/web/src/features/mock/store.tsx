@@ -49,7 +49,6 @@ const MEMBER_OPERATION_ROUTES = ["/tasks"] as const;
 const ADMIN_ROUTES = ["/logs", "/providers", "/users", "/audit"] as const;
 const PROTECTED_ROUTES = [
   "/workspace",
-  "/documents",
   "/chat",
   ...MEMBER_OPERATION_ROUTES,
   ...ADMIN_ROUTES,
@@ -130,7 +129,12 @@ export function hydrateMockState(rawValue: string | null): HydrateResult {
 }
 
 export function isInternalRedirect(value: string | null): value is string {
-  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//");
+  if (typeof value !== "string" || !value.startsWith("/") || value.startsWith("//")) {
+    return false;
+  }
+
+  const pathname = normalizeRoutePath(value);
+  return pathname !== "/documents" && !pathname.startsWith("/documents/");
 }
 
 export function sanitizeRedirectTo(value: string | null): string {
@@ -304,7 +308,7 @@ function isMockState(value: unknown): value is MockState {
   }
 
   return (
-    value.schemaVersion === 1 &&
+    value.schemaVersion === 2 &&
     Array.isArray(value.knowledgeBases) &&
     Array.isArray(value.documents) &&
     Array.isArray(value.sources) &&
@@ -1082,19 +1086,19 @@ function answerContentForMode(mode: ChatAnswerMode, question: string): string {
     return `已生成回答，但当前知识库没有可支撑“${question}”的引用来源，请谨慎使用。`;
   }
 
-  return `根据差旅报销管理办法，${question.includes("住宿") ? "一线城市住宿费标准为每晚 650 元以内，超出标准需补充审批。" : "相关制度要求先完成审批并保留票据。"} 可在右侧引用中核验来源。`;
+  return `根据当前知识库，${question.includes("审批") ? "相关事项需要先完成审批并保留必要记录。" : "建议先确认知识库范围、来源更新时间和引用内容。"} 可在右侧引用中核验来源。`;
 }
 
 function createCitationForAnswer(answerId: string, citationId: string): MockCitation {
   return {
     id: citationId,
     answerMessageId: answerId,
-    documentId: "doc-travel-policy",
-    chunkId: "chunk-travel-001",
-    title: "差旅报销管理办法 2026",
-    locator: "第 4 页",
-    excerpt: "一线城市住宿费标准为每晚 650 元以内。",
-    matchReason: "命中“住宿费标准”和“审批层级”。",
+    documentId: "runtime-citation-source",
+    chunkId: "runtime-citation-chunk",
+    title: "当前知识库片段",
+    locator: "引用片段",
+    excerpt: "相关事项需要先完成审批并保留必要记录。",
+    matchReason: "命中问题中的关键业务要求。",
   };
 }
 

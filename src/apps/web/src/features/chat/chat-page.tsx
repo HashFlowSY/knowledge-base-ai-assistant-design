@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MessageSquarePlus, RotateCcw, Send } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
@@ -278,7 +277,7 @@ function SessionList({
 }
 
 function StarterPrompts({ onPick }: { onPick: (value: string) => void }): ReactElement {
-  const prompts = ["差旅住宿标准是多少？", "付款超过 50 万需要谁审批？", "发票异常如何处理？"];
+  const prompts = ["如何开始使用知识库？", "哪些信息需要先入库？", "怎样核验回答引用？"];
 
   return (
     <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
@@ -399,7 +398,7 @@ function CitationPanel({
     <Panel className={chatPanelClassName()}>
       <PanelHeader
         className={chatPanelHeaderClassName()}
-        description="核验来源、跳转文档，并提交答案级反馈。"
+        description="核验来源，并提交答案级反馈。"
         title={chatCopy.citationPanel}
       />
       <ScrollArea aria-label="引用核验内容" className={chatCitationScrollClassName()} size="fill">
@@ -424,18 +423,6 @@ function CitationPanel({
             ))}
           </div>
         )}
-
-        <div className="border-t border-slate-200 pt-4">
-          {activeCitation === null ? null : (
-            <Link
-              className="inline-flex min-h-11 items-center justify-center rounded-md border border-teal-700 bg-teal-700 px-3 py-2 text-sm font-medium text-white"
-              href={`/documents/${activeCitation.documentId}?chunkId=${activeCitation.chunkId}&citationId=${activeCitation.id}`}
-            >
-              打开相关文档
-            </Link>
-          )}
-        </div>
-
         {answer === null || answer.role !== "assistant" ? null : (
           <div className="border-t border-slate-200 pt-4">
             <p className="text-sm font-semibold text-slate-950">{chatCopy.feedbackReason}</p>

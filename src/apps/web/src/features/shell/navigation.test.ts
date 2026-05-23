@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { commonCopy, domainTerms } from "../../copy/common";
@@ -31,7 +33,6 @@ describe("@kb/web frontend MVP static contracts", () => {
   it("hides admin navigation for member role", () => {
     expect(visibleNavigationItems("admin").map((item) => item.href)).toEqual([
       "/workspace",
-      "/documents",
       "/chat",
       "/tasks",
       "/logs",
@@ -41,20 +42,27 @@ describe("@kb/web frontend MVP static contracts", () => {
     ]);
     expect(visibleNavigationItems("member").map((item) => item.href)).toEqual([
       "/workspace",
-      "/documents",
       "/chat",
       "/tasks",
     ]);
   });
 
+  it("keeps standalone document routes unregistered while preserving feature code", () => {
+    expect(existsSync(new URL("../../app/documents/page.tsx", import.meta.url))).toBe(false);
+    expect(existsSync(new URL("../../app/documents/[documentId]/page.tsx", import.meta.url))).toBe(false);
+  });
+
+  it("does not keep chat links to removed document detail routes", () => {
+    const chatPageSource = readFileSync(new URL("../chat/chat-page.tsx", import.meta.url), "utf8");
+
+    expect(chatPageSource).not.toContain("/documents/");
+  });
+
   it("maps protected route gates to layout-shaped skeleton variants", () => {
     expect(shellSkeletonVariantForPath("/workspace")).toBe("workspace");
     expect(shellSkeletonVariantForPath("/chat?sessionId=session-finance-001")).toBe("chat");
-    expect(shellSkeletonVariantForPath("/documents")).toBe("table");
-    expect(shellSkeletonVariantForPath("/documents/doc-travel-policy")).toBe("document");
-    expect(shellSkeletonVariantForPath("/documents/doc-travel-policy?chunkId=chunk-travel-001")).toBe(
-      "document",
-    );
+    expect(shellSkeletonVariantForPath("/documents")).toBe("workspace");
+    expect(shellSkeletonVariantForPath("/documents/doc-travel-policy")).toBe("workspace");
     expect(shellSkeletonVariantForPath("/providers/provider-openai-main")).toBe("table");
   });
 });

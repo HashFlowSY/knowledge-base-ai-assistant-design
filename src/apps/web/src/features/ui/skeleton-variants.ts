@@ -7,12 +7,7 @@ export function shellSkeletonVariantForPath(path: string): AppShellSkeletonVaria
     return "chat";
   }
 
-  if (pathname?.startsWith("/documents/")) {
-    return "document";
-  }
-
   if (
-    pathname === "/documents" ||
     pathname === "/tasks" ||
     pathname === "/logs" ||
     pathname === "/providers" ||

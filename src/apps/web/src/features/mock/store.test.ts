@@ -14,15 +14,18 @@ describe("frontend mock store contract", () => {
   it("uses the PRD storage key and deterministic seed ids", () => {
     const state = createSeedMockState();
 
-    expect(MOCK_STORAGE_KEY).toBe("kbai.frontendMock.v1");
-    expect(state.schemaVersion).toBe(1);
+    expect(MOCK_STORAGE_KEY).toBe("kbai.frontendMock.v2");
+    expect(state.schemaVersion).toBe(2);
     expect(state.knowledgeBases.map((item) => item.id)).toContain("kb-finance");
-    expect(state.documents.map((item) => item.id)).toContain("doc-travel-policy");
-    expect(state.chunks.map((item) => item.id)).toContain("chunk-travel-001");
-    expect(state.jobs.map((item) => item.id)).toContain("job-import-001");
-    expect(state.logs.map((item) => item.id)).toContain("log-import-001");
+    expect(state.knowledgeBases.every((item) => item.documentIds.length === 0)).toBe(true);
+    expect(state.documents).toHaveLength(0);
+    expect(state.sources).toHaveLength(0);
+    expect(state.chunks).toHaveLength(0);
+    expect(state.jobs).toHaveLength(0);
+    expect(state.logs).toHaveLength(0);
     expect(state.chatSessions.map((item) => item.id)).toContain("session-finance-001");
-    expect(state.citations.map((item) => item.id)).toContain("citation-travel-001");
+    expect(state.chatSessions.every((item) => item.messages.length === 0)).toBe(true);
+    expect(state.citations).toHaveLength(0);
     expect(state.providerConfigs.map((item) => item.id)).toContain("provider-openai-main");
     expect(state.providerConfigs.map((item) => item.kind)).toEqual(["chat", "embedding", "rerank"]);
     expect(state.providerConfigs.some((item) => item.displayName.includes("备用"))).toBe(false);
@@ -37,9 +40,31 @@ describe("frontend mock store contract", () => {
       JSON.stringify({ ...createSeedMockState(), schemaVersion: 999 }),
     );
     const parsedFromMissingCollections = hydrateMockState(
-      JSON.stringify({ schemaVersion: 1, users: [] }),
+      JSON.stringify({ schemaVersion: 2, users: [] }),
     );
     const seed = createSeedMockState();
+    const parsedFromOldDocumentSeed = hydrateMockState(
+      JSON.stringify({
+        ...seed,
+        schemaVersion: 1,
+        documents: [
+          {
+            chunkIds: [],
+            createdAt: "2026-05-10T08:15:00.000Z",
+            createdBy: "林若宁",
+            id: "doc-travel-policy",
+            jobIds: [],
+            knowledgeBaseId: "kb-finance",
+            sourceId: "source-travel-policy",
+            sourceType: "file",
+            status: "ready",
+            title: "差旅报销管理办法 2026",
+            updatedAt: "2026-05-15T10:00:00.000Z",
+            version: "v18",
+          },
+        ],
+      }),
+    );
     const parsedFromMissingUserPassword = hydrateMockState(
       JSON.stringify({
         ...seed,
@@ -64,10 +89,12 @@ describe("frontend mock store contract", () => {
 
     expect(parsedFromBadJson.state.knowledgeBases[0]?.id).toBe("kb-finance");
     expect(parsedFromBadJson.notice).toBe("演示数据已恢复为初始状态。");
-    expect(parsedFromUnsupportedVersion.state.schemaVersion).toBe(1);
+    expect(parsedFromUnsupportedVersion.state.schemaVersion).toBe(2);
     expect(parsedFromUnsupportedVersion.notice).toBe("演示数据已恢复为初始状态。");
-    expect(parsedFromMissingCollections.state.documents[0]?.id).toBe("doc-travel-policy");
+    expect(parsedFromMissingCollections.state.documents).toHaveLength(0);
     expect(parsedFromMissingCollections.notice).toBe("演示数据已恢复为初始状态。");
+    expect(parsedFromOldDocumentSeed.state.documents).toHaveLength(0);
+    expect(parsedFromOldDocumentSeed.notice).toBe("演示数据已恢复为初始状态。");
     expect(parsedFromMissingUserPassword.state.users[0]?.password).toBe("password123");
     expect(parsedFromMissingUserPassword.notice).toBe("演示数据已恢复为初始状态。");
     expect(parsedFromValidState.state.selectedKnowledgeBaseId).toBe("kb-support");
@@ -76,10 +103,13 @@ describe("frontend mock store contract", () => {
 
   it("allows only internal redirectTo targets", () => {
     expect(isInternalRedirect("/workspace")).toBe(true);
-    expect(isInternalRedirect("/documents/doc-travel-policy?chunkId=chunk-travel-001")).toBe(true);
+    expect(isInternalRedirect("/documents/doc-travel-policy?chunkId=chunk-travel-001")).toBe(false);
     expect(isInternalRedirect("https://evil.example/workspace")).toBe(false);
     expect(isInternalRedirect("//evil.example/workspace")).toBe(false);
     expect(isInternalRedirect("workspace")).toBe(false);
+    expect(sanitizeRedirectTo("/documents/doc-travel-policy?chunkId=chunk-travel-001")).toBe(
+      "/workspace",
+    );
     expect(sanitizeRedirectTo("https://evil.example/workspace")).toBe("/workspace");
   });
 
@@ -91,6 +121,7 @@ describe("frontend mock store contract", () => {
       redirectTo: "/login?redirectTo=%2Fworkspace",
       reason: "login_required",
     });
+    expect(getRouteAccess(seed.session, "/documents")).toEqual({ allowed: true });
 
     const adminState = mockStoreReducer(seed, {
       email: "admin@example.com",
@@ -123,6 +154,7 @@ describe("frontend mock store contract", () => {
       reason: "forbidden",
     });
     expect(getRouteAccess(memberState.session, "/chat")).toEqual({ allowed: true });
+    expect(getRouteAccess(memberState.session, "/documents")).toEqual({ allowed: true });
 
     const expiredState = mockStoreReducer(adminState, {
       intendedRedirectTo: "/chat",
@@ -146,7 +178,7 @@ describe("frontend mock store contract", () => {
       type: "hydrateState",
     });
 
-    expect(hydrated.schemaVersion).toBe(1);
+    expect(hydrated.schemaVersion).toBe(2);
     expect(hydrated.selectedKnowledgeBaseId).toBe("kb-support");
   });
 
@@ -186,16 +218,33 @@ describe("frontend mock store contract", () => {
   });
 
   it("keeps processing log ids unique across repeated mutations at the fixed mock timestamp", () => {
-    const seed = createSeedMockState();
-    const withFirstRetry = mockStoreReducer(seed, {
-      jobId: "job-invoice-001",
+    const withUpload = mockStoreReducer(createSeedMockState(), {
+      fileName: "失败文档.pdf",
+      knowledgeBaseId: "kb-finance",
+      type: "uploadFile",
+    });
+    const jobId = withUpload.jobs[0]?.id ?? "";
+    const failedUpload = {
+      ...withUpload,
+      jobs: withUpload.jobs.map((job) =>
+        job.id === jobId
+          ? {
+              ...job,
+              attempts: 1,
+              status: "failed" as const,
+            }
+          : job,
+      ),
+    };
+    const withFirstRetry = mockStoreReducer(failedUpload, {
+      jobId,
       type: "retryJob",
     });
     const withSecondRetry = mockStoreReducer(
       {
         ...withFirstRetry,
         jobs: withFirstRetry.jobs.map((job) =>
-          job.id === "job-invoice-001"
+          job.id === jobId
             ? {
                 ...job,
                 attempts: 2,
@@ -205,29 +254,38 @@ describe("frontend mock store contract", () => {
         ),
       },
       {
-        jobId: "job-invoice-001",
+        jobId,
         type: "retryJob",
       },
     );
     const logIds = withSecondRetry.logs.map((log) => log.id);
+    const queuedLogIds = withSecondRetry.logs
+      .filter((log) => log.jobId === jobId && log.step === "queued")
+      .map((log) => log.id);
 
     expect(new Set(logIds).size).toBe(logIds.length);
-    expect(logIds.filter((id) => id.startsWith("log-job-invoice-001-queued-"))).toHaveLength(2);
+    expect(new Set(queuedLogIds).size).toBe(queuedLogIds.length);
+    expect(queuedLogIds).toHaveLength(3);
   });
 
   it("allows cancelled ingestion jobs to be retried", () => {
-    const seed = createSeedMockState();
-    const cancelled = mockStoreReducer(seed, {
-      jobId: "job-support-001",
+    const withUpload = mockStoreReducer(createSeedMockState(), {
+      fileName: "待取消文档.pdf",
+      knowledgeBaseId: "kb-support",
+      type: "uploadFile",
+    });
+    const jobId = withUpload.jobs[0]?.id ?? "";
+    const cancelled = mockStoreReducer(withUpload, {
+      jobId,
       type: "cancelJob",
     });
     const retried = mockStoreReducer(cancelled, {
-      jobId: "job-support-001",
+      jobId,
       type: "retryJob",
     });
-    const job = retried.jobs.find((item) => item.id === "job-support-001");
+    const job = retried.jobs.find((item) => item.id === jobId);
 
-    expect(cancelled.jobs.find((item) => item.id === "job-support-001")?.status).toBe("cancelled");
+    expect(cancelled.jobs.find((item) => item.id === jobId)?.status).toBe("cancelled");
     expect(job).toMatchObject({
       attempts: 1,
       currentStep: "queued",
@@ -237,7 +295,7 @@ describe("frontend mock store contract", () => {
     });
     expect(retried.auditEvents[0]).toMatchObject({
       action: "job.retry",
-      targetId: "job-support-001",
+      targetId: jobId,
       targetType: "ingestion_job",
     });
   });
@@ -371,16 +429,20 @@ describe("frontend mock store contract", () => {
     const withQuestion = mockStoreReducer(seed, {
       knowledgeBaseId: "kb-finance",
       mode: "with_citation",
-      question: "差旅住宿标准是多少？",
+      question: "知识库中有哪些审批要求？",
       sessionId: "session-finance-001",
       type: "submitChatQuestion",
     });
     const answer = withQuestion.chatSessions
       .find((item) => item.id === "session-finance-001")
-      ?.messages.find((message) => message.role === "assistant" && message.content.includes("差旅"));
+      ?.messages.find((message) => message.role === "assistant" && message.content.includes("审批"));
 
     expect(answer?.lifecycle).toBe("completed");
+    expect(answer?.content).not.toContain("差旅报销管理办法");
     expect(answer?.citationIds.length).toBeGreaterThan(0);
+    const citation = withQuestion.citations.find((item) => answer?.citationIds.includes(item.id));
+    expect(citation?.documentId).not.toBe("doc-travel-policy");
+    expect(citation?.title).not.toBe("差旅报销管理办法 2026");
 
     const answerId = answer?.id ?? "";
     const withFeedback = mockStoreReducer(withQuestion, {

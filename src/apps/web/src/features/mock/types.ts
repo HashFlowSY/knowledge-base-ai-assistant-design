@@ -1,5 +1,5 @@
-export const MOCK_STORAGE_KEY = "kbai.frontendMock.v1";
-export const MOCK_SCHEMA_VERSION = 1;
+export const MOCK_STORAGE_KEY = "kbai.frontendMock.v2";
+export const MOCK_SCHEMA_VERSION = 2;
 export const MOCK_NOW = "2026-05-15T10:00:00.000Z";
 
 export type MockRole = "admin" | "member";
@@ -237,7 +237,7 @@ export interface MockAuditEvent {
 }
 
 export interface MockState {
-  schemaVersion: 1;
+  schemaVersion: 2;
   session: MockSession;
   selectedKnowledgeBaseId: string;
   selectedChatSessionId: string;
