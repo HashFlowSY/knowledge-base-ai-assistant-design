@@ -412,3 +412,36 @@ Replaced deprecated frontend FormEvent usage with a shared React form submit han
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: Knowledge base management
+
+**Date**: 2026-05-23
+**Task**: Knowledge base management
+**Branch**: `main`
+
+### Summary
+
+Implemented tenant-scoped knowledge base list/detail/create/update APIs, @kb/knowledge service logic, workspace real API integration with member selection and infinite-scroll list display, plus tests and E2E coverage.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `72d7e61` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
