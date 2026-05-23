@@ -445,3 +445,36 @@ Implemented tenant-scoped knowledge base list/detail/create/update APIs, @kb/kno
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: Fix document upload unicode filename save
+
+**Date**: 2026-05-23
+**Task**: Fix document upload unicode filename save
+**Branch**: `main`
+
+### Summary
+
+Tested the real document upload flow with the local PDF, applied pending migration and MinIO bucket setup locally, fixed S3 metadata normalization for Unicode filenames, verified duplicate upload handling, and updated the storage spec.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `efdedb6` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
