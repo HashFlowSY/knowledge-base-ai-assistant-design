@@ -511,3 +511,36 @@ Removed standalone document routes and navigation, cleared seeded document mock 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 16: Model service provider configuration
+
+**Date**: 2026-05-24
+**Task**: Model service provider configuration
+**Branch**: `main`
+
+### Summary
+
+Implemented fixed model provider configuration APIs and provider-aware DeepSeek/DashScope API key validation, including encrypted transport/storage, frontend provider page integration, database migration, tests, and docs.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5645550` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
