@@ -12,10 +12,22 @@ export interface WorkerRuntime {
   stop(reason: string): Promise<WorkerRuntimeState>;
 }
 
+export interface WorkerManagedResource {
+  name: string;
+  close(): Promise<void>;
+}
+
+export interface WorkerRecoveryRunner {
+  intervalMs?: number;
+  run(): Promise<{ enqueued: number }>;
+}
+
 export async function startWorkerRuntime(
   options: {
     logger?: Logger;
     queues?: QueueName[];
+    recovery?: WorkerRecoveryRunner;
+    resources?: WorkerManagedResource[];
   } = {},
 ): Promise<WorkerRuntime> {
   const logger = options.logger ?? createLogger({ service: "worker" });
@@ -32,9 +44,28 @@ export async function startWorkerRuntime(
     queues,
   });
 
+  const resources = options.resources ?? [];
+  const recovery = options.recovery;
+  const recoveryInterval =
+    recovery === undefined
+      ? null
+      : setInterval(() => {
+          void runRecovery(recovery, logger);
+        }, recovery.intervalMs ?? 300_000);
+  if (recovery !== undefined) {
+    await runRecovery(recovery, logger);
+  }
+
   return {
     state,
     async stop(reason: string): Promise<WorkerRuntimeState> {
+      if (recoveryInterval !== null) {
+        clearInterval(recoveryInterval);
+      }
+      for (const resource of resources) {
+        await resource.close();
+      }
+
       const stoppedState: WorkerRuntimeState = {
         ...state,
         status: "stopped",
@@ -48,4 +79,14 @@ export async function startWorkerRuntime(
       return stoppedState;
     },
   };
+}
+
+async function runRecovery(
+  recovery: WorkerRecoveryRunner,
+  logger: Logger,
+): Promise<void> {
+  const result = await recovery.run();
+  logger.info("worker_recovery_completed", {
+    enqueued: result.enqueued,
+  });
 }

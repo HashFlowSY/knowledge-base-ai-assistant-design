@@ -1,5 +1,6 @@
 import type { SessionPayload } from "@kb/auth";
 import type { ProjectDb } from "@kb/db";
+import type { IngestionQueueProducer } from "@kb/queue/producer";
 import type { ObjectStorageClient } from "@kb/storage";
 
 import type {
@@ -15,6 +16,7 @@ import type { KnowledgeBaseServiceError } from "./service-errors";
 
 export interface KnowledgeBaseServiceOptions {
   db: ProjectDb;
+  ingestionQueueProducer?: IngestionQueueProducer;
   objectStorage?: ObjectStorageClient;
   sourceBucket?: string;
 }

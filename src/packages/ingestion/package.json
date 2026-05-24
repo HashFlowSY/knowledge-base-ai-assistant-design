@@ -13,7 +13,14 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@kb/ai-providers": "workspace:*",
+    "@kb/db": "workspace:*",
     "@kb/knowledge": "workspace:*",
+    "@kb/queue": "workspace:*",
+    "@kb/search": "workspace:*",
+    "@kb/storage": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "pdf-parse": "^2.4.5",
     "zod": "^3.24.0"
   }
 }

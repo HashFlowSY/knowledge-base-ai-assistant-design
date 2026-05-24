@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { createIngestionJobId, ingestionJobPayloadSchema } from "./index";
+import {
+  createIngestionJobId,
+  createIngestionJobOptions,
+  ingestionJobPayloadSchema,
+} from "./index";
 
 describe("@kb/queue", () => {
   it("creates stable ingestion job ids", () => {
     const payload = ingestionJobPayloadSchema.parse({
       type: "file_ingestion",
+      ingestionJobId: "job_1",
       tenantId: "tenant_1",
       knowledgeBaseId: "kb_1",
       documentId: "doc_1",
@@ -14,13 +19,48 @@ describe("@kb/queue", () => {
       requestedBy: "user_1",
     });
 
-    expect(createIngestionJobId(payload)).toBe("ingestion:tenant_1:doc_1:v1");
+    expect(createIngestionJobId(payload)).toBe("ingestion__tenant_1__doc_1__v1");
+    expect(createIngestionJobId(payload)).not.toContain(":");
+  });
+
+  it("creates bounded BullMQ options for ingestion jobs", () => {
+    const payload = ingestionJobPayloadSchema.parse({
+      type: "file_ingestion",
+      ingestionJobId: "job_1",
+      tenantId: "tenant_1",
+      knowledgeBaseId: "kb_1",
+      documentId: "doc_1",
+      documentVersion: "v1",
+      sourceObjectKey: "tenants/tenant_1/documents/doc_1/source.pdf",
+      requestedBy: "user_1",
+    });
+
+    expect(
+      createIngestionJobOptions(payload, {
+        attempts: 4,
+        backoffMs: 7_500,
+      }),
+    ).toEqual({
+      attempts: 4,
+      backoff: {
+        delay: 7_500,
+        type: "exponential",
+      },
+      jobId: "ingestion__tenant_1__doc_1__v1",
+      removeOnComplete: {
+        count: 1_000,
+      },
+      removeOnFail: {
+        count: 5_000,
+      },
+    });
   });
 
   it("accepts public HTTPS URL ingestion jobs", () => {
     expect(
       ingestionJobPayloadSchema.parse({
         type: "url_ingestion",
+        ingestionJobId: "job_1",
         tenantId: "tenant_1",
         knowledgeBaseId: "kb_1",
         documentId: "doc_1",
@@ -37,6 +77,7 @@ describe("@kb/queue", () => {
     expect(
       ingestionJobPayloadSchema.parse({
         type: "url_ingestion",
+        ingestionJobId: "job_1",
         tenantId: "tenant_1",
         knowledgeBaseId: "kb_1",
         documentId: "doc_1",
@@ -53,6 +94,7 @@ describe("@kb/queue", () => {
     expect(() =>
       ingestionJobPayloadSchema.parse({
         type: "url_ingestion",
+        ingestionJobId: "job_1",
         tenantId: "tenant_1",
         knowledgeBaseId: "kb_1",
         documentId: "doc_1",
@@ -73,6 +115,7 @@ describe("@kb/queue", () => {
       expect(() =>
         ingestionJobPayloadSchema.parse({
           type: "url_ingestion",
+          ingestionJobId: "job_1",
           tenantId: "tenant_1",
           knowledgeBaseId: "kb_1",
           documentId: "doc_1",
@@ -88,6 +131,7 @@ describe("@kb/queue", () => {
     expect(() =>
       ingestionJobPayloadSchema.parse({
         type: "url_ingestion",
+        ingestionJobId: "job_1",
         tenantId: "tenant_1",
         knowledgeBaseId: "kb_1",
         documentId: "doc_1",
@@ -108,6 +152,7 @@ describe("@kb/queue", () => {
       expect(() =>
         ingestionJobPayloadSchema.parse({
           type: "url_ingestion",
+          ingestionJobId: "job_1",
           tenantId: "tenant_1",
           knowledgeBaseId: "kb_1",
           documentId: "doc_1",
@@ -123,6 +168,7 @@ describe("@kb/queue", () => {
     expect(() =>
       ingestionJobPayloadSchema.parse({
         type: "url_ingestion",
+        ingestionJobId: "job_1",
         tenantId: "tenant_1",
         knowledgeBaseId: "kb_1",
         documentId: "doc_1",
@@ -137,6 +183,7 @@ describe("@kb/queue", () => {
     expect(() =>
       ingestionJobPayloadSchema.parse({
         type: "url_ingestion",
+        ingestionJobId: "job_1",
         tenantId: "tenant_1",
         knowledgeBaseId: "kb_1",
         documentId: "doc_1",
@@ -156,6 +203,7 @@ describe("@kb/queue", () => {
       expect(() =>
         ingestionJobPayloadSchema.parse({
           type: "url_ingestion",
+          ingestionJobId: "job_1",
           tenantId: "tenant_1",
           knowledgeBaseId: "kb_1",
           documentId: "doc_1",
@@ -171,6 +219,7 @@ describe("@kb/queue", () => {
     expect(() =>
       ingestionJobPayloadSchema.parse({
         type: "url_ingestion",
+        ingestionJobId: "job_1",
         tenantId: "tenant_1",
         knowledgeBaseId: "kb_1",
         documentId: "doc_1",
@@ -185,6 +234,7 @@ describe("@kb/queue", () => {
     expect(() =>
       ingestionJobPayloadSchema.parse({
         type: "url_ingestion",
+        ingestionJobId: "job_1",
         tenantId: "tenant_1",
         knowledgeBaseId: "kb_1",
         documentId: "doc_1",

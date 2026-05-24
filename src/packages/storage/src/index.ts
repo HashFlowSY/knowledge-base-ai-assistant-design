@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 
 export const objectStorageConfigSchema = z.object({
   endpoint: z.string().url(),
@@ -27,8 +32,20 @@ export interface DeleteObjectInput {
   key: string;
 }
 
+export interface GetObjectInput {
+  bucket: string;
+  key: string;
+}
+
+export interface GetObjectResult {
+  body: Uint8Array;
+  contentType?: string;
+  metadata: Record<string, string>;
+}
+
 export interface ObjectStorageClient {
   putObject(input: PutObjectInput): Promise<void>;
+  getObject(input: GetObjectInput): Promise<GetObjectResult>;
   deleteObject(input: DeleteObjectInput): Promise<void>;
 }
 
@@ -73,6 +90,25 @@ export function createS3ObjectStorageClient(
         }),
       );
     },
+    async getObject(input) {
+      const response = await client.send(
+        new GetObjectCommand({
+          Bucket: input.bucket,
+          Key: input.key,
+        }),
+      );
+      if (response.Body === undefined) {
+        throw new Error("Object body is empty");
+      }
+
+      return {
+        body: await response.Body.transformToByteArray(),
+        ...(response.ContentType === undefined
+          ? {}
+          : { contentType: response.ContentType }),
+        metadata: response.Metadata ?? {},
+      };
+    },
     async deleteObject(input) {
       await client.send(
         new DeleteObjectCommand({
@@ -82,6 +118,46 @@ export function createS3ObjectStorageClient(
       );
     },
   };
+}
+
+export function createInMemoryObjectStorageClient(): ObjectStorageClient {
+  const objects = new Map<
+    string,
+    { body: Uint8Array; contentType?: string; metadata: Record<string, string> }
+  >();
+
+  return {
+    async putObject(input) {
+      objects.set(createObjectMapKey(input), {
+        body: new Uint8Array(input.body),
+        ...(input.contentType === undefined
+          ? {}
+          : { contentType: input.contentType }),
+        metadata: { ...(input.metadata ?? {}) },
+      });
+    },
+    async getObject(input) {
+      const stored = objects.get(createObjectMapKey(input));
+      if (stored === undefined) {
+        throw new Error("Object not found");
+      }
+
+      return {
+        body: new Uint8Array(stored.body),
+        ...(stored.contentType === undefined
+          ? {}
+          : { contentType: stored.contentType }),
+        metadata: { ...stored.metadata },
+      };
+    },
+    async deleteObject(input) {
+      objects.delete(createObjectMapKey(input));
+    },
+  };
+}
+
+function createObjectMapKey(input: { bucket: string; key: string }): string {
+  return `${input.bucket}\u0000${input.key}`;
 }
 
 const unsafeFilenameCharacters = /[^A-Za-z0-9._-]+/g;

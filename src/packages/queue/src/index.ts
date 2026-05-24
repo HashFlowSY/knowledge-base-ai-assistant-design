@@ -1,4 +1,5 @@
 export { createIngestionJobId } from "./job-id";
+export { createIngestionJobOptions } from "./options";
 export {
   ingestionJobPayloadSchema,
   queueNameSchema,

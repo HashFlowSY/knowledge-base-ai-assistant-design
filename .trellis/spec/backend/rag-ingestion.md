@@ -76,6 +76,34 @@ type ParsedDocument = {
 
 Parsers must reject unsupported or suspicious content types before expensive processing.
 
+### PDF Parser Contract
+
+Use `pdf-parse` for MVP text-layer PDF extraction. The installed v2 API exports
+`PDFParse`, not the legacy default function, so production code must support:
+
+```typescript
+const parser = new PDFParse({ data: pdfBytes });
+try {
+  const result = await parser.getText();
+  // result.text is the extracted text; result.total is the page count.
+} finally {
+  await parser.destroy();
+}
+```
+
+Wrong:
+
+```typescript
+const pdfParse = (await import("pdf-parse")).default;
+await pdfParse(pdfBytes);
+```
+
+Required tests:
+
+- A real text-layer PDF fixture is parsed by the bundled parser.
+- Empty or image-only extraction fails with `PARSE_EMPTY_TEXT`.
+- OCR is not invoked in the PDF parser path.
+
 ## Normalization
 
 Normalization must:
@@ -133,6 +161,19 @@ Meilisearch documents must include filterable fields:
 - `chunkId`
 
 Search indexing must never index chunks outside the authorized tenant/knowledge base scope.
+
+Meilisearch writes are asynchronous. The index writer must:
+
+- Configure filterable attributes before documents are considered searchable:
+  `tenantId`, `knowledgeBaseId`, `documentId`, and `chunkId`.
+- Write documents with `primaryKey=id`; do not rely on Meilisearch primary-key
+  inference because chunk documents contain multiple `*Id` fields.
+- Generate document `id` values with only Meilisearch-safe characters:
+  letters, numbers, hyphens, and underscores. Do not use `:` in search
+  document ids.
+- Poll the returned Meilisearch task until it reaches `succeeded`.
+- Throw on `failed`, `canceled`, missing task ids, or task timeout so ingestion
+  does not mark a document `ready` while keyword indexing actually failed.
 
 ## RAG Query Pipeline
 
@@ -218,4 +259,3 @@ Feedback records include:
 - tenant id.
 
 Feedback must not modify the original answer or retrieval run.
-

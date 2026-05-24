@@ -22,4 +22,37 @@ describe("@kb/worker", () => {
       "worker_stopped",
     ]);
   });
+
+  it("runs recovery on startup and closes managed resources on stop", async () => {
+    const closed: string[] = [];
+    const recovered: number[] = [];
+    const runtime = await startWorkerRuntime({
+      resources: [
+        {
+          name: "ingestion-worker",
+          close: async () => {
+            closed.push("ingestion-worker");
+          },
+        },
+        {
+          name: "ingestion-events",
+          close: async () => {
+            closed.push("ingestion-events");
+          },
+        },
+      ],
+      recovery: {
+        intervalMs: 60_000,
+        run: async () => {
+          recovered.push(1);
+          return { enqueued: 2 };
+        },
+      },
+    });
+
+    await runtime.stop("test");
+
+    expect(recovered).toEqual([1]);
+    expect(closed).toEqual(["ingestion-worker", "ingestion-events"]);
+  });
 });

@@ -11,6 +11,7 @@ import {
   createProviderConfigService,
 } from "@kb/ai-providers/service";
 import { createKnowledgeBaseService } from "@kb/knowledge/service";
+import { createBullMqIngestionQueueProducer } from "@kb/queue/producer";
 import { normalizeAes256GcmKey } from "@kb/security";
 import {
   createS3ObjectStorageClient,
@@ -49,6 +50,10 @@ export interface ApiRuntimeServiceConfig {
   betterAuthSecret: string;
   appEncryptionKey: string;
   databaseUrl: string;
+  ingestionQueueConfig: {
+    attempts: number;
+    backoffMs: number;
+  };
   objectStorage: ObjectStorageConfig;
   redisUrl: string;
   uploadConfig: UploadConfig;
@@ -67,8 +72,14 @@ export function createApiRuntimeServices(
     store: createRedisRateLimitStore(redis),
   });
   const objectStorage = createS3ObjectStorageClient(input.objectStorage);
+  const ingestionQueueProducer = createBullMqIngestionQueueProducer({
+    attempts: input.ingestionQueueConfig.attempts,
+    backoffMs: input.ingestionQueueConfig.backoffMs,
+    redisUrl: input.redisUrl,
+  });
   const knowledgeBaseService = createKnowledgeBaseService({
     db: dbRuntime.db,
+    ingestionQueueProducer,
     objectStorage,
     sourceBucket: input.objectStorage.bucket,
   });
@@ -145,6 +156,7 @@ export function createApiRuntimeServices(
     uploadConfig: input.uploadConfig,
     userService: userService as UserService,
     async close() {
+      await ingestionQueueProducer.close();
       redis.disconnect();
       await dbRuntime.pool.end();
     },
@@ -161,6 +173,10 @@ export function createApiRuntimeServicesFromEnv(
     appEncryptionKey: config.APP_ENCRYPTION_KEY,
     betterAuthSecret: config.BETTER_AUTH_SECRET,
     databaseUrl: config.DATABASE_URL,
+    ingestionQueueConfig: {
+      attempts: config.INGESTION_QUEUE_ATTEMPTS,
+      backoffMs: config.INGESTION_QUEUE_BACKOFF_MS,
+    },
     objectStorage: objectStorageConfigSchema.parse({
       accessKeyId: config.S3_ACCESS_KEY_ID,
       bucket: config.S3_BUCKET,

@@ -28,17 +28,21 @@ Use discriminated Zod schemas for job payloads.
 type IngestionJobPayload =
   | {
       type: "file_ingestion";
+      ingestionJobId: string;
       tenantId: string;
       knowledgeBaseId: string;
       documentId: string;
+      documentVersion: string;
       sourceObjectKey: string;
       requestedBy: string;
     }
   | {
       type: "url_ingestion";
+      ingestionJobId: string;
       tenantId: string;
       knowledgeBaseId: string;
       documentId: string;
+      documentVersion: string;
       sourceUrl: string;
       requestedBy: string;
     };
@@ -50,6 +54,8 @@ Every job payload must include:
 - `tenantId`
 - `knowledgeBaseId` when applicable
 - `documentId` when applicable
+- `documentVersion` when applicable
+- `ingestionJobId` for the persisted PostgreSQL job row
 - `requestedBy` for user-triggered jobs
 
 System or maintenance jobs that do not have a direct user actor must use an
@@ -72,8 +78,12 @@ Use stable job ids when duplicate work should collapse.
 Recommended ingestion job id:
 
 ```text
-ingestion:{tenantId}:{documentId}:{documentVersion}
+ingestion__{encodeURIComponent(tenantId)}__{encodeURIComponent(documentId)}__{encodeURIComponent(documentVersion)}
 ```
+
+Do not use `:` in BullMQ custom `jobId` values. BullMQ 5.x rejects many custom
+ids containing colons during `Job.validateOptions`, so `@kb/queue` must produce
+BullMQ-safe stable ids through `createIngestionJobId`.
 
 Workers must tolerate retries:
 
@@ -189,3 +199,57 @@ Validation and error matrix:
 | BullMQ enqueue fails after database commit | Persisted job is marked retryable/pending and logged with `jobId` |
 | Duplicate enqueue for same document version | Stable job id collapses duplicate work |
 | Recovery requeues stale pending job | Worker idempotency prevents duplicate chunks, embeddings, search docs, and audit events |
+
+## Scenario: BullMQ-safe stable ingestion job ids
+
+### 1. Scope / Trigger
+
+- Trigger: any producer or recovery path enqueuing ingestion work into BullMQ.
+- Scope: `@kb/queue`, API upload enqueue, worker startup/periodic recovery.
+
+### 2. Signatures
+
+- `createIngestionJobId(payload: IngestionJobPayload): string`
+- `createIngestionJobOptions(payload, config).jobId`
+
+### 3. Contracts
+
+- The returned `jobId` must be deterministic for the same tenant, document, and
+  document version.
+- The returned `jobId` must not contain `:`.
+- Components must be URI-encoded before joining.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| Same tenant/document/version enqueued twice | Same BullMQ `jobId` collapses duplicate work |
+| Tenant/document/version contains unsafe URL characters | Component is URI-encoded before joining |
+| Generated `jobId` contains `:` | Unit test failure; do not enqueue |
+
+### 5. Good/Base/Bad Cases
+
+- Good: `ingestion__tenant_1__doc_1__1`
+- Base: `ingestion__tenant%3A1__doc%2F1__1`
+- Bad: `ingestion:tenant_1:doc_1:1`
+
+### 6. Tests Required
+
+- Unit test `createIngestionJobId` output is stable and has no colon.
+- Unit test `createIngestionJobOptions` uses the same stable id.
+- Recovery/upload handoff tests must assert duplicate enqueue uses the helper,
+  not hand-written id strings.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+const jobId = `ingestion:${tenantId}:${documentId}:${documentVersion}`;
+```
+
+#### Correct
+
+```typescript
+const jobId = createIngestionJobId(payload);
+```

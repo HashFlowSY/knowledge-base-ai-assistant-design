@@ -17,6 +17,10 @@ describe("api runtime services", () => {
         region: "local",
         secretAccessKey: "minioadmin",
       },
+      ingestionQueueConfig: {
+        attempts: 3,
+        backoffMs: 5_000,
+      },
       redisUrl: "redis://localhost:6379",
       uploadConfig: {
         concurrencyPerActor: 2,

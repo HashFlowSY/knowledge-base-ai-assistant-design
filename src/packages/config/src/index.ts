@@ -7,6 +7,15 @@ export const defaultUploadRequestOverheadBytes = 64 * 1024;
 export const defaultUploadRateLimitPerMinute = 20;
 export const defaultUploadConcurrencyPerActor = 2;
 export const defaultUploadConcurrencyPerTenant = 10;
+export const defaultIngestionQueueAttempts = 3;
+export const defaultIngestionQueueBackoffMs = 5_000;
+export const defaultIngestionRequeueStaleAfterMs = 300_000;
+export const defaultIngestionRequeueBatchSize = 100;
+export const defaultIngestionParserConcurrency = 2;
+export const defaultIngestionEmbeddingConcurrency = 1;
+export const defaultIngestionIndexConcurrency = 1;
+export const defaultIngestionChunkSize = 1_000;
+export const defaultIngestionChunkOverlap = 150;
 
 const envSchema = z.object({
   SERVICE_NAME: serviceNameSchema.default("api"),
@@ -55,6 +64,60 @@ const envSchema = z.object({
     .min(1)
     .max(500)
     .default(defaultUploadConcurrencyPerTenant),
+  INGESTION_QUEUE_ATTEMPTS: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(10)
+    .default(defaultIngestionQueueAttempts),
+  INGESTION_QUEUE_BACKOFF_MS: z.coerce
+    .number()
+    .int()
+    .min(100)
+    .max(60_000)
+    .default(defaultIngestionQueueBackoffMs),
+  INGESTION_REQUEUE_STALE_AFTER_MS: z.coerce
+    .number()
+    .int()
+    .min(1_000)
+    .max(24 * 60 * 60 * 1_000)
+    .default(defaultIngestionRequeueStaleAfterMs),
+  INGESTION_REQUEUE_BATCH_SIZE: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(1_000)
+    .default(defaultIngestionRequeueBatchSize),
+  INGESTION_PARSER_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(defaultIngestionParserConcurrency),
+  INGESTION_EMBEDDING_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(defaultIngestionEmbeddingConcurrency),
+  INGESTION_INDEX_CONCURRENCY: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .default(defaultIngestionIndexConcurrency),
+  INGESTION_CHUNK_SIZE: z.coerce
+    .number()
+    .int()
+    .min(100)
+    .max(20_000)
+    .default(defaultIngestionChunkSize),
+  INGESTION_CHUNK_OVERLAP: z.coerce
+    .number()
+    .int()
+    .min(0)
+    .max(5_000)
+    .default(defaultIngestionChunkOverlap),
 });
 
 export type RuntimeConfig = z.infer<typeof envSchema>;
@@ -90,6 +153,16 @@ export function redactRuntimeConfig(config: RuntimeConfig): Omit<
     UPLOAD_RATE_LIMIT_PER_MINUTE: config.UPLOAD_RATE_LIMIT_PER_MINUTE,
     UPLOAD_CONCURRENCY_PER_ACTOR: config.UPLOAD_CONCURRENCY_PER_ACTOR,
     UPLOAD_CONCURRENCY_PER_TENANT: config.UPLOAD_CONCURRENCY_PER_TENANT,
+    INGESTION_QUEUE_ATTEMPTS: config.INGESTION_QUEUE_ATTEMPTS,
+    INGESTION_QUEUE_BACKOFF_MS: config.INGESTION_QUEUE_BACKOFF_MS,
+    INGESTION_REQUEUE_STALE_AFTER_MS:
+      config.INGESTION_REQUEUE_STALE_AFTER_MS,
+    INGESTION_REQUEUE_BATCH_SIZE: config.INGESTION_REQUEUE_BATCH_SIZE,
+    INGESTION_PARSER_CONCURRENCY: config.INGESTION_PARSER_CONCURRENCY,
+    INGESTION_EMBEDDING_CONCURRENCY: config.INGESTION_EMBEDDING_CONCURRENCY,
+    INGESTION_INDEX_CONCURRENCY: config.INGESTION_INDEX_CONCURRENCY,
+    INGESTION_CHUNK_SIZE: config.INGESTION_CHUNK_SIZE,
+    INGESTION_CHUNK_OVERLAP: config.INGESTION_CHUNK_OVERLAP,
   };
 
   return {

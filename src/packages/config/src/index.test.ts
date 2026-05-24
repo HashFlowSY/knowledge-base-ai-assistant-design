@@ -25,6 +25,15 @@ describe("@kb/config", () => {
     expect(config.UPLOAD_RATE_LIMIT_PER_MINUTE).toBe(20);
     expect(config.UPLOAD_CONCURRENCY_PER_ACTOR).toBe(2);
     expect(config.UPLOAD_CONCURRENCY_PER_TENANT).toBe(10);
+    expect(config.INGESTION_QUEUE_ATTEMPTS).toBe(3);
+    expect(config.INGESTION_QUEUE_BACKOFF_MS).toBe(5_000);
+    expect(config.INGESTION_REQUEUE_STALE_AFTER_MS).toBe(300_000);
+    expect(config.INGESTION_REQUEUE_BATCH_SIZE).toBe(100);
+    expect(config.INGESTION_PARSER_CONCURRENCY).toBe(2);
+    expect(config.INGESTION_EMBEDDING_CONCURRENCY).toBe(1);
+    expect(config.INGESTION_INDEX_CONCURRENCY).toBe(1);
+    expect(config.INGESTION_CHUNK_SIZE).toBe(1_000);
+    expect(config.INGESTION_CHUNK_OVERLAP).toBe(150);
   });
 
   it("redacts secrets from config dumps", () => {
@@ -33,6 +42,7 @@ describe("@kb/config", () => {
     expect(redacted).toMatchObject({ secrets: "[REDACTED]" });
     expect("DATABASE_URL" in redacted).toBe(false);
     expect(redacted.UPLOAD_MAX_FILE_BYTES).toBe(8 * 1024 * 1024);
+    expect(redacted.INGESTION_QUEUE_ATTEMPTS).toBe(3);
   });
 
   it("allows upload limits to be configured from environment", () => {
@@ -51,6 +61,33 @@ describe("@kb/config", () => {
       UPLOAD_MAX_FILE_BYTES: 1_048_576,
       UPLOAD_RATE_LIMIT_PER_MINUTE: 25,
       UPLOAD_REQUEST_OVERHEAD_BYTES: 32_768,
+    });
+  });
+
+  it("allows ingestion worker settings to be configured from environment", () => {
+    const config = loadRuntimeConfig({
+      ...validEnv,
+      INGESTION_CHUNK_OVERLAP: "200",
+      INGESTION_CHUNK_SIZE: "1200",
+      INGESTION_EMBEDDING_CONCURRENCY: "2",
+      INGESTION_INDEX_CONCURRENCY: "2",
+      INGESTION_PARSER_CONCURRENCY: "4",
+      INGESTION_QUEUE_ATTEMPTS: "5",
+      INGESTION_QUEUE_BACKOFF_MS: "7500",
+      INGESTION_REQUEUE_BATCH_SIZE: "25",
+      INGESTION_REQUEUE_STALE_AFTER_MS: "600000",
+    });
+
+    expect(config).toMatchObject({
+      INGESTION_CHUNK_OVERLAP: 200,
+      INGESTION_CHUNK_SIZE: 1_200,
+      INGESTION_EMBEDDING_CONCURRENCY: 2,
+      INGESTION_INDEX_CONCURRENCY: 2,
+      INGESTION_PARSER_CONCURRENCY: 4,
+      INGESTION_QUEUE_ATTEMPTS: 5,
+      INGESTION_QUEUE_BACKOFF_MS: 7_500,
+      INGESTION_REQUEUE_BATCH_SIZE: 25,
+      INGESTION_REQUEUE_STALE_AFTER_MS: 600_000,
     });
   });
 });

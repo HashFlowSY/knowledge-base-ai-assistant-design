@@ -4,6 +4,7 @@ import {
   auditLogs,
   documents,
   documentSources,
+  ingestionJobLogs,
   ingestionJobs,
   type ProjectDb,
 } from "@kb/db";
@@ -28,11 +29,13 @@ import type {
   KnowledgeBaseServiceOptions,
 } from "../service-types";
 import type { DocumentFileUploadResult } from "../schemas";
+import { createDocumentFileIngestionPayload } from "../ingestion-queue";
 
 const documentVersion = 1;
 const objectUploadFailedCode = "OBJECT_UPLOAD_FAILED";
 const finalizationFailedCode = "UPLOAD_FINALIZATION_FAILED";
 const objectCleanupFailedCode = "OBJECT_CLEANUP_FAILED";
+const queueEnqueueFailedCode = "QUEUE_ENQUEUE_FAILED";
 
 type UploadInput = Parameters<KnowledgeBaseService["uploadDocumentFile"]>[0];
 type UploadResult = Awaited<ReturnType<KnowledgeBaseService["uploadDocumentFile"]>>;
@@ -201,12 +204,13 @@ async function runUploadDocumentFileOperation(
 
   try {
     const finalized = await finalizeUpload(options.db, input, reservation);
+    const result = await enqueueFinalizedUpload(options, input, {
+      ...finalized,
+      duplicate: false,
+    });
     return {
       ok: true,
-      result: {
-        ...finalized,
-        duplicate: false,
-      },
+      result,
     };
   } catch {
     const cleanup = await cleanupObjectAfterFinalizationFailure(
@@ -241,6 +245,42 @@ async function runUploadDocumentFileOperation(
     }
 
     return createInternalError();
+  }
+}
+
+async function enqueueFinalizedUpload(
+  options: KnowledgeBaseServiceOptions,
+  input: UploadInput,
+  result: DocumentFileUploadResult,
+): Promise<DocumentFileUploadResult> {
+  if (options.ingestionQueueProducer === undefined) {
+    return result;
+  }
+
+  try {
+    await options.ingestionQueueProducer.enqueue(
+      createDocumentFileIngestionPayload({
+        requestedBy: input.actor.user.id,
+        tenantId: input.actor.tenant.id,
+        upload: result,
+      }),
+    );
+
+    return result;
+  } catch {
+    await markUploadQueueEnqueueFailed(options.db, {
+      jobId: result.job.id,
+      tenantId: input.actor.tenant.id,
+    });
+    const refreshed = await findUploadResultBySourceId(options.db, {
+      sourceId: result.source.id,
+      tenantId: input.actor.tenant.id,
+    });
+
+    return {
+      ...(refreshed ?? result),
+      duplicate: false,
+    };
   }
 }
 
@@ -603,6 +643,37 @@ async function markReservedUploadFailed(
         updatedAt: sql`NOW()`,
       })
       .where(eq(documents.id, input.documentId));
+  });
+}
+
+async function markUploadQueueEnqueueFailed(
+  db: ProjectDb,
+  input: {
+    jobId: string;
+    tenantId: string;
+  },
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx
+      .update(ingestionJobs)
+      .set({
+        lastErrorCode: queueEnqueueFailedCode,
+        lastErrorMessage: "Queue enqueue failed; recovery will requeue this job.",
+        status: "retrying",
+        updatedAt: sql`NOW()`,
+      })
+      .where(eq(ingestionJobs.id, input.jobId));
+
+    await tx.insert(ingestionJobLogs).values({
+      errorCode: queueEnqueueFailedCode,
+      jobId: input.jobId,
+      level: "error",
+      message: "Queue enqueue failed; recovery will requeue this job.",
+      metadata: {
+        retryable: true,
+      },
+      tenantId: input.tenantId,
+    });
   });
 }
 

@@ -11,6 +11,7 @@ import {
   normalizeKnowledgeBaseName,
   updateKnowledgeBaseInputSchema,
 } from "./index";
+import { createDocumentFileIngestionPayload } from "./ingestion-queue";
 
 describe("@kb/knowledge", () => {
   it("defines knowledge-base authorization scope identifiers", () => {
@@ -77,6 +78,66 @@ describe("@kb/knowledge", () => {
       document: { status: "pending" },
       job: { status: "queued" },
       source: { uploadStatus: "available" },
+    });
+  });
+
+  it("creates queue payloads from finalized upload metadata", () => {
+    const timestamp = "2026-05-23T06:00:00.000Z";
+    const upload = documentFileUploadResultSchema.parse({
+      document: {
+        createdAt: timestamp,
+        currentVersion: 1,
+        id: "doc_1",
+        knowledgeBaseId: "kb_1",
+        status: "pending",
+        title: "采购制度",
+        updatedAt: timestamp,
+      },
+      duplicate: false,
+      job: {
+        createdAt: timestamp,
+        documentId: "doc_1",
+        id: "job_1",
+        knowledgeBaseId: "kb_1",
+        queuedAt: timestamp,
+        sourceHash: "sha256:abc",
+        sourceType: "file",
+        status: "queued",
+        updatedAt: timestamp,
+      },
+      source: {
+        bucket: "kb-source",
+        documentId: "doc_1",
+        id: "source_1",
+        mimeType: "application/pdf",
+        objectKey:
+          "tenants/tenant_1/knowledge-bases/kb_1/documents/doc_1/versions/1/source/file.pdf",
+        scanStatus: "not_scanned",
+        sizeBytes: 12,
+        sourceHash: "sha256:abc",
+        sourceType: "file",
+        sourceUri: "file.pdf",
+        uploadedAt: timestamp,
+        uploadStatus: "available",
+      },
+    });
+
+    expect(
+      createDocumentFileIngestionPayload({
+        requestedBy: "user_1",
+        tenantId: "tenant_1",
+        upload,
+      }),
+    ).toEqual({
+      type: "file_ingestion",
+      documentId: "doc_1",
+      documentVersion: "1",
+      ingestionJobId: "job_1",
+      knowledgeBaseId: "kb_1",
+      requestedBy: "user_1",
+      sourceObjectKey:
+        "tenants/tenant_1/knowledge-bases/kb_1/documents/doc_1/versions/1/source/file.pdf",
+      tenantId: "tenant_1",
     });
   });
 

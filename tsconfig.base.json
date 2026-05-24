@@ -33,6 +33,7 @@
       "@kb/knowledge": ["src/packages/knowledge/src/index.ts"],
       "@kb/observability": ["src/packages/observability/src/index.ts"],
       "@kb/queue": ["src/packages/queue/src/index.ts"],
+      "@kb/queue/producer": ["src/packages/queue/src/producer.ts"],
       "@kb/rag": ["src/packages/rag/src/index.ts"],
       "@kb/search": ["src/packages/search/src/index.ts"],
       "@kb/security": ["src/packages/security/src/index.ts"],

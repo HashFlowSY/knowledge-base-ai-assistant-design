@@ -16,6 +16,7 @@
   "dependencies": {
     "@kb/auth": "workspace:*",
     "@kb/db": "workspace:*",
+    "@kb/queue": "workspace:*",
     "@kb/shared": "workspace:*",
     "@kb/storage": "workspace:*",
     "drizzle-orm": "^0.45.2",

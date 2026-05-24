@@ -36,6 +36,7 @@ export const sourceUrlSchema = z
 export const ingestionJobPayloadSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("file_ingestion"),
+    ingestionJobId: z.string().min(1),
     tenantId: z.string().min(1),
     knowledgeBaseId: z.string().min(1),
     documentId: z.string().min(1),
@@ -45,6 +46,7 @@ export const ingestionJobPayloadSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("url_ingestion"),
+    ingestionJobId: z.string().min(1),
     tenantId: z.string().min(1),
     knowledgeBaseId: z.string().min(1),
     documentId: z.string().min(1),

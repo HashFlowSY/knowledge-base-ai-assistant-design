@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createInMemoryObjectStorageClient,
   createDocumentObjectKey,
   normalizeObjectMetadata,
   objectStorageConfigSchema,
@@ -97,6 +98,34 @@ describe("@kb/storage", () => {
     ).toEqual({
       checksum: "sha256:abc",
       originalFilename: "%E5%8F%8D%E8%84%86%E5%BC%B1%20.pdf",
+    });
+  });
+
+  it("reads stored source objects through the object storage boundary", async () => {
+    const storage = createInMemoryObjectStorageClient();
+    const body = new TextEncoder().encode("hello ingestion");
+
+    await storage.putObject({
+      body,
+      bucket: "kb-source",
+      contentType: "text/plain",
+      key: "tenants/tenant_1/source.txt",
+      metadata: {
+        checksum: "sha256:abc",
+      },
+    });
+
+    await expect(
+      storage.getObject({
+        bucket: "kb-source",
+        key: "tenants/tenant_1/source.txt",
+      }),
+    ).resolves.toEqual({
+      body,
+      contentType: "text/plain",
+      metadata: {
+        checksum: "sha256:abc",
+      },
     });
   });
 });
