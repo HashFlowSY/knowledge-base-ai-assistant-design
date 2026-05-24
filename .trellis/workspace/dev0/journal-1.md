@@ -577,3 +577,36 @@ Restored the model configuration page with fixed provider slots, hid secret/stat
 ### Next Steps
 
 - None - task complete
+
+
+## Session 18: Document ingestion pipeline
+
+**Date**: 2026-05-24
+**Task**: Document ingestion pipeline
+**Branch**: `main`
+
+### Summary
+
+Implemented uploaded PDF/Markdown/TXT ingestion through upload enqueue, BullMQ worker, parsing, chunking, embedding generation, chunk/vector persistence, Meilisearch indexing, recovery, runtime config, specs, tests, and local end-to-end verification.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `30f6ba2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
