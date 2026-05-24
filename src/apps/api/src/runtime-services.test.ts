@@ -6,6 +6,7 @@ describe("api runtime services", () => {
   it("wires auth service, user service, and rate limiter from runtime config", async () => {
     const runtime = createApiRuntimeServices({
       appBaseUrl: "http://localhost:3000",
+      appEncryptionKey: "0123456789abcdef0123456789abcdef",
       betterAuthSecret: "0123456789abcdef0123456789abcdef",
       databaseUrl: "postgres://kb:kb@localhost:5432/kb",
       objectStorage: {
@@ -29,6 +30,7 @@ describe("api runtime services", () => {
     expect(runtime.allowedOrigins).toEqual(["http://localhost:3000"]);
     expect(runtime.authService.getSession).toBeTypeOf("function");
     expect(runtime.documentService.uploadDocumentFile).toBeTypeOf("function");
+    expect(runtime.providerConfigService.listProviderConfigs).toBeTypeOf("function");
     expect(runtime.userService.createUser).toBeTypeOf("function");
     expect(runtime.rateLimiter.consume).toBeTypeOf("function");
     expect(runtime.uploadConfig.maxFileBytes).toBe(8 * 1024 * 1024);

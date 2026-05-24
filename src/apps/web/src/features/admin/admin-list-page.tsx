@@ -4,6 +4,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Pencil, Search, Trash2, UserPlus } from "lucide-react";
 import { type ReactElement, useState } from "react";
 
+import type { ProviderSummary } from "@kb/ai-providers";
 import type { UserSummary, UsersPage } from "@kb/users";
 import { listUsersQuerySchema } from "@kb/users";
 
@@ -30,10 +31,16 @@ import { AdminPagination } from "./admin-pagination";
 import { UserDialog } from "./user-dialog";
 import { useSessionQuery } from "../auth/auth-hooks";
 import { useRemoveUserAccess, useUsers } from "./user-hooks";
+import { ProviderConfigDialog } from "./provider-config-dialog";
+import { useProviders, useSaveProviderConfig } from "./provider-hooks";
 
 export type AdminPageKind = "tasks" | "logs" | "providers" | "users" | "audit";
 
 export function AdminListPage({ kind }: { kind: AdminPageKind }): ReactElement {
+  if (kind === "providers") {
+    return <ProvidersPage />;
+  }
+
   if (kind !== "users") {
     return (
       <ProtectedPage>
@@ -48,6 +55,109 @@ export function AdminListPage({ kind }: { kind: AdminPageKind }): ReactElement {
   }
 
   return <UsersPage />;
+}
+
+function ProvidersPage(): ReactElement {
+  const [notice, setNotice] = useState<string | null>(null);
+  const [providerDialog, setProviderDialog] = useState<ProviderSummary | null>(null);
+  const providersQuery = useProviders();
+  const saveProvider = useSaveProviderConfig();
+  const providers = providersQuery.data ?? [];
+
+  return (
+    <ProtectedPage>
+      <Panel className={adminListPanelClassName()}>
+        <PanelHeader
+          description={adminCopy.providers.description}
+          title={adminCopy.providers.title}
+        />
+        {notice === null ? null : (
+          <div className="p-4">
+            <Notice tone="success">{notice}</Notice>
+          </div>
+        )}
+        {providersQuery.isError ? (
+          <div className="p-4">
+            <Notice tone="error">{adminCopy.providers.error}</Notice>
+          </div>
+        ) : providersQuery.isLoading ? (
+          <div className="p-4">
+            <Notice>正在加载模型服务配置。</Notice>
+          </div>
+        ) : providers.length === 0 ? (
+          <EmptyState message={adminCopy.providers.empty} />
+        ) : (
+          <ScrollArea aria-label="模型服务列表" className={adminListScrollClassName()} size="fill">
+            <div className="divide-y divide-slate-200">
+              {providers.map((provider) => (
+                <ProviderRow
+                  key={provider.kind}
+                  onEdit={() => setProviderDialog(provider)}
+                  provider={provider}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+      </Panel>
+
+      {providerDialog === null ? null : (
+        <ProviderConfigDialog
+          isSaving={saveProvider.isPending}
+          kind={providerDialog.kind}
+          onClose={() => setProviderDialog(null)}
+          onNotice={setNotice}
+          onSave={async (input) => {
+            await saveProvider.mutateAsync({
+              ...input,
+              kind: providerDialog.kind,
+            });
+          }}
+          provider={providerDialog}
+        />
+      )}
+    </ProtectedPage>
+  );
+}
+
+function ProviderRow({
+  onEdit,
+  provider,
+}: {
+  onEdit: () => void;
+  provider: ProviderSummary;
+}): ReactElement {
+  const status = provider.configured ? provider.status ?? "disabled" : "missing";
+  const actionLabel = provider.configured ? "编辑" : "配置";
+
+  return (
+    <div className={adminRowClassName()}>
+      <button className={adminRowPrimaryActionClassName()} onClick={onEdit} type="button">
+        <p className="truncate text-sm font-semibold text-slate-950">
+          {provider.displayName ?? provider.label}
+        </p>
+        <p className="mt-1 text-xs text-slate-500">
+          {provider.configured
+            ? `${provider.provider ?? "-"} · ${provider.modelId ?? "-"}`
+            : "未配置"}
+        </p>
+      </button>
+      <div className={adminRowSideClassName()}>
+        <div className={adminRowMetaClassName()}>
+          <span>{provider.label}</span>
+          <span>{providerStatusLabel(status)}</span>
+          <span>{provider.maskedKey ?? "无密钥"}</span>
+          <span>{provider.updatedAt?.slice(0, 10) ?? "未保存"}</span>
+        </div>
+        <div className={adminRowActionClassName()}>
+          <Button onClick={onEdit}>
+            <Pencil aria-hidden="true" className="h-4 w-4" />
+            {actionLabel}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function UsersPage(): ReactElement {
@@ -333,6 +443,17 @@ function EmptyState({ message }: { message: string }): ReactElement {
       <Notice>{message}</Notice>
     </div>
   );
+}
+
+function providerStatusLabel(status: "enabled" | "disabled" | "missing"): string {
+  if (status === "enabled") {
+    return "启用";
+  }
+  if (status === "disabled") {
+    return "停用";
+  }
+
+  return "未配置";
 }
 
 function toSelectOptions(options: [string, string][]): SelectFieldOption[] {

@@ -22,6 +22,7 @@
     "baseUrl": ".",
     "paths": {
       "@kb/ai-providers": ["src/packages/ai-providers/src/index.ts"],
+      "@kb/ai-providers/service": ["src/packages/ai-providers/src/service.ts"],
       "@kb/api": ["src/apps/api/src/app.ts"],
       "@kb/audit": ["src/packages/audit/src/index.ts"],
       "@kb/auth": ["src/packages/auth/src/index.ts"],

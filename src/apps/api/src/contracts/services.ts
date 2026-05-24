@@ -1,5 +1,12 @@
 import type { SessionPayload } from "@kb/auth";
 import type {
+  ModelServiceKind,
+  ProviderListResponse,
+  ProviderPublicKey,
+  ProviderSummary,
+} from "@kb/ai-providers";
+import type { ProviderConfigServiceSaveBody } from "@kb/ai-providers/service";
+import type {
   CreateKnowledgeBaseInput,
   DocumentFileUploadResult,
   KnowledgeBaseDetail,
@@ -60,20 +67,14 @@ export interface UserService {
       }
     | ApiServiceError
   >;
-  createUser(input: {
-    actor: SessionPayload;
-    body: CreateUserInput;
-  }): Promise<
+  createUser(input: { actor: SessionPayload; body: CreateUserInput }): Promise<
     | {
         ok: true;
         user: UserSummary;
       }
     | ApiServiceError
   >;
-  getUser(input: {
-    actor: SessionPayload;
-    userId: string;
-  }): Promise<
+  getUser(input: { actor: SessionPayload; userId: string }): Promise<
     | {
         ok: true;
         user: UserSummary;
@@ -108,10 +109,7 @@ export interface KnowledgeBaseService {
       }
     | ApiServiceError
   >;
-  getKnowledgeBase(input: {
-    actor: SessionPayload;
-    knowledgeBaseId: string;
-  }): Promise<
+  getKnowledgeBase(input: { actor: SessionPayload; knowledgeBaseId: string }): Promise<
     | {
         ok: true;
         knowledgeBase: KnowledgeBaseDetail;
@@ -165,6 +163,36 @@ export interface DocumentService {
   >;
 }
 
+export interface ProviderConfigApiService {
+  listProviderConfigs(input: { actor: SessionPayload }): Promise<
+    | {
+        ok: true;
+        providers: ProviderListResponse["providers"];
+      }
+    | ApiServiceError
+  >;
+  saveProviderConfig(input: {
+    actor: SessionPayload;
+    body: ProviderConfigServiceSaveBody;
+    kind: ModelServiceKind;
+    requestId: string;
+  }): Promise<
+    | {
+        ok: true;
+        provider: ProviderSummary;
+      }
+    | ApiServiceError
+  >;
+}
+
+export interface ProviderTransportKeyService {
+  createPublicKey(): Promise<ProviderPublicKey>;
+  decryptApiKey(input: {
+    ciphertext: string;
+    keyId: string;
+  }): Promise<{ ok: true; plaintext: string } | ApiServiceError>;
+}
+
 export interface ApiRateLimiter {
   consume(input: RateLimitConsumeInput): Promise<{
     allowed: boolean;
@@ -189,10 +217,7 @@ export interface AuditService {
     ipSummary: string;
     knowledgeBaseId: string;
     metadata: Record<string, unknown>;
-    reason:
-      | "oversized_file"
-      | "spoofed_file_signature"
-      | "unsupported_file_type";
+    reason: "oversized_file" | "spoofed_file_signature" | "unsupported_file_type";
     requestId: string;
     userAgentSummary: string | null;
   }): Promise<void>;
@@ -233,6 +258,8 @@ export interface ApiAppOptions {
   authService?: AuthService;
   documentService?: Partial<DocumentService>;
   knowledgeBaseService?: Partial<KnowledgeBaseService>;
+  providerConfigService?: Partial<ProviderConfigApiService>;
+  providerTransportKeyService?: ProviderTransportKeyService;
   rateLimiter?: ApiRateLimiter;
   uploadConcurrencyLimiter?: UploadConcurrencyLimiter;
   uploadConfig?: UploadConfig;

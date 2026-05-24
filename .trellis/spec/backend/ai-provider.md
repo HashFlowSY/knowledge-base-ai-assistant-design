@@ -99,6 +99,125 @@ Provider keys:
 
 Provider key create, update, disable, and status check operations must write audit logs.
 
+## Scenario: Fixed Provider Config API And Secret Handling
+
+### 1. Scope / Trigger
+
+- Trigger: implementing or changing model service configuration APIs, frontend provider settings, provider secret storage, or provider config consumption by RAG/ingestion.
+- Scope: Production v1 has exactly three model service slots per tenant: `chat`, `embedding`, and `rerank`.
+
+### 2. Signatures
+
+- List route: `GET /api/providers` -> `ApiSuccessResponse<{ providers: ProviderSummary[] }>`
+- Transport key route: `GET /api/providers/public-key` -> `ApiSuccessResponse<ProviderPublicKey>`
+- Save route: `PUT /api/providers/:kind` where `kind` is `chat | embedding | rerank`
+- Save body:
+  ```typescript
+  type SaveProviderConfigInput = {
+    displayName: string;
+    provider: string;
+    modelId: string;
+    baseUrl: string;
+    status: "enabled" | "disabled";
+    apiKey:
+      | { mode: "keep" }
+      | { mode: "encrypted"; keyId: string; ciphertext: string };
+  };
+  ```
+- Database constraints:
+  - `provider_configs.base_url` is structured, not only `settings` JSON.
+  - `provider_configs` has a unique index on `(tenant_id, kind)`.
+
+### 3. Contracts
+
+- Frontend must submit new API keys through short-lived RSA-OAEP public-key transport encryption.
+- API handlers decrypt transport ciphertext only long enough to call the provider config service.
+- Provider config service stores API keys with AES-256-GCM using `APP_ENCRYPTION_KEY`.
+- AES-GCM envelope fields are `alg`, `keyVersion`, `iv`, `tag`, and `ciphertext`.
+- AES-GCM AAD must bind at least `tenantId`, `secretRecordId`, `purpose`, and `keyVersion`.
+- API responses, logs, audit metadata, and frontend state must not contain plaintext API keys or encrypted payloads.
+- Connection tests must validate the configured provider through a real provider endpoint, never by bare `GET baseUrl`.
+- Production v1 provider checks:
+  - DeepSeek chat: `GET <baseUrl>/models` with `Authorization: Bearer <apiKey>`.
+  - Alibaba Bailian/DashScope chat: `POST <baseUrl>/chat/completions` with a minimal one-token probe.
+  - Alibaba Bailian/DashScope OpenAI-compatible embedding: `POST <baseUrl>/embeddings` with a minimal input and explicit dimension for `text-embedding-v3/v4`.
+  - Alibaba Bailian/DashScope native embedding: `POST https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding` with `input.texts` and `parameters.dimension`.
+  - Alibaba Bailian/DashScope `qwen3-rerank`: `POST https://dashscope.aliyuncs.com/compatible-api/v1/reranks` with a minimal query/documents payload.
+  - Alibaba Bailian/DashScope `gte-rerank-v2`: `POST https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank` with the native `input`/`parameters` payload.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| Non-admin calls provider routes | `UNAUTHORIZED` or `FORBIDDEN` envelope |
+| `kind` not in `chat | embedding | rerank` | `VALIDATION_ERROR` |
+| First save uses `apiKey.mode = "keep"` | `VALIDATION_ERROR` |
+| Transport key is expired or unknown | `VALIDATION_ERROR` |
+| Connection test returns auth failure | `FORBIDDEN` with safe Chinese message |
+| Connection test returns rate limit | `RATE_LIMITED` |
+| Connection test unavailable/timeout | `PROVIDER_UNAVAILABLE` |
+| Connection test fails | Do not write config or secret changes |
+| Connection test receives provider raw error body | Normalize to safe code/message; do not expose raw body |
+
+### 5. Good/Base/Bad Cases
+
+- Good: save decrypts transport ciphertext, runs a deterministic connection tester in tests, then transactionally upserts one `(tenantId, kind)` config and a secret record.
+- Base: updating an existing provider with `apiKey.mode = "keep"` decrypts the existing secret inside `@kb/ai-providers/service` for the connection test and keeps the same secret metadata.
+- Bad: frontend sends plaintext API keys in JSON, API returns `encryptedPayload`, or RAG/ingestion reads and decrypts `secret_records` directly.
+
+### 6. Tests Required
+
+- `@kb/security`: AES-GCM envelope, fresh IV, AAD mismatch failure, RSA-OAEP transport encryption round trip.
+- `@kb/ai-providers`: fixed three slots, first key required, failed connection test writes nothing, idempotent same-key save, key rotation metadata.
+- `@kb/ai-providers`: DeepSeek/DashScope connection tester routes to provider-specific capability endpoints and maps upstream status codes without leaking raw response bodies.
+- `@kb/db`: `base_url` column and `(tenant_id, kind)` unique index migration.
+- `@kb/api`: admin-only routes, redacted list response, public key route, encrypted save request decryption, safe provider error mapping.
+- `@kb/web`: Hono RPC provider route exposure and frontend API-key encryption helper.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+await apiClient.api.providers[":kind"].$put({
+  json: {
+    apiKey: "sk-live-key",
+    baseUrl,
+    displayName,
+    modelId,
+    provider,
+    status,
+  },
+  param: { kind: "chat" },
+});
+```
+
+#### Correct
+
+```typescript
+const publicKey = await getProviderPublicKey();
+const encryptedApiKey = await encryptRsaOaep({
+  plaintext: rawApiKey,
+  publicKey: publicKey.publicKey,
+});
+
+await apiClient.api.providers[":kind"].$put({
+  json: {
+    apiKey: {
+      mode: "encrypted",
+      keyId: publicKey.keyId,
+      ciphertext: encryptedApiKey,
+    },
+    baseUrl,
+    displayName,
+    modelId,
+    provider,
+    status,
+  },
+  param: { kind: "chat" },
+});
+```
+
 ## Config Validation
 
 Provider configs must validate:

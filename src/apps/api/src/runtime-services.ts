@@ -5,7 +5,13 @@ import {
   auditLogs,
   type ProjectDbRuntime,
 } from "@kb/db";
+import {
+  createDrizzleProviderConfigRepository,
+  createProviderConnectionTester,
+  createProviderConfigService,
+} from "@kb/ai-providers/service";
 import { createKnowledgeBaseService } from "@kb/knowledge/service";
+import { normalizeAes256GcmKey } from "@kb/security";
 import {
   createS3ObjectStorageClient,
   objectStorageConfigSchema,
@@ -14,6 +20,7 @@ import {
 import { createUserManagementService } from "@kb/users/service";
 
 import { createBetterAuthService } from "./auth-service";
+import { createInMemoryProviderTransportKeyService } from "./default-services";
 import {
   createRateLimiter,
   createRedisClient,
@@ -26,6 +33,8 @@ import type {
   AuthService,
   DocumentService,
   KnowledgeBaseService,
+  ProviderConfigApiService,
+  ProviderTransportKeyService,
   UploadConfig,
   UserService,
 } from "./contracts";
@@ -38,6 +47,7 @@ export interface ApiRuntimeServices extends Required<ApiAppOptions> {
 export interface ApiRuntimeServiceConfig {
   appBaseUrl: string;
   betterAuthSecret: string;
+  appEncryptionKey: string;
   databaseUrl: string;
   objectStorage: ObjectStorageConfig;
   redisUrl: string;
@@ -63,6 +73,23 @@ export function createApiRuntimeServices(
     sourceBucket: input.objectStorage.bucket,
   });
   const userService = createUserManagementService({ db: dbRuntime.db });
+  const providerConfigService = createProviderConfigService({
+    auditRecorder: async (event) => {
+      await dbRuntime.db.insert(auditLogs).values({
+        tenantId: event.tenantId,
+        actorId: event.actorId,
+        actorType: "user",
+        action: event.action,
+        targetType: "provider_config",
+        targetId: event.targetId,
+        metadata: event.metadata,
+        requestId: event.requestId,
+      });
+    },
+    connectionTester: createProviderConnectionTester(),
+    encryptionKey: normalizeAes256GcmKey(input.appEncryptionKey),
+    repository: createDrizzleProviderConfigRepository(dbRuntime.db),
+  });
   const auditService: AuditService = {
     async recordDocumentUploadSecurityFailure(event) {
       await dbRuntime.db.insert(auditLogs).values({
@@ -110,6 +137,8 @@ export function createApiRuntimeServices(
       db: dbRuntime.db,
     }),
     knowledgeBaseService: knowledgeBaseService as KnowledgeBaseService,
+    providerConfigService: providerConfigService as ProviderConfigApiService,
+    providerTransportKeyService: createInMemoryProviderTransportKeyService(),
     rateLimiter,
     documentService: knowledgeBaseService as DocumentService,
     uploadConcurrencyLimiter: createInMemoryUploadConcurrencyLimiter(),
@@ -129,6 +158,7 @@ export function createApiRuntimeServicesFromEnv(
 
   return createApiRuntimeServices({
     appBaseUrl: config.APP_BASE_URL,
+    appEncryptionKey: config.APP_ENCRYPTION_KEY,
     betterAuthSecret: config.BETTER_AUTH_SECRET,
     databaseUrl: config.DATABASE_URL,
     objectStorage: objectStorageConfigSchema.parse({
@@ -154,6 +184,8 @@ export type {
   AuthService,
   DocumentService,
   KnowledgeBaseService,
+  ProviderConfigApiService,
+  ProviderTransportKeyService,
   ProjectDbRuntime,
   UploadConfig,
   UserService,

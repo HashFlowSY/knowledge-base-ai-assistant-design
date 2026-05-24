@@ -14,6 +14,7 @@ import type {
   ApiEnv,
   DocumentService,
   KnowledgeBaseService,
+  ProviderConfigApiService,
   UploadConfig,
   UserService,
 } from "./contracts";
@@ -31,6 +32,8 @@ export type {
   DocumentFileUploadServiceInput,
   DocumentService,
   KnowledgeBaseService,
+  ProviderConfigApiService,
+  ProviderTransportKeyService,
   UploadConcurrencyLimiter,
   UploadConcurrencyReservation,
   UploadConfig,
@@ -39,7 +42,9 @@ export type {
 import {
   createEmptyDocumentService,
   createEmptyKnowledgeBaseService,
+  createEmptyProviderConfigService,
   createEmptyUserService,
+  createInMemoryProviderTransportKeyService,
   createNoopAuditService,
   createUnauthenticatedAuthService,
 } from "./default-services";
@@ -52,6 +57,7 @@ import { createAuthRouter } from "./modules/auth/router";
 import { createHealthRouter } from "./modules/health/router";
 import { createKnowledgeBasesRouter } from "./modules/knowledge-bases/router";
 import { createDocumentsRouter } from "./modules/documents/router";
+import { createProvidersRouter } from "./modules/providers/router";
 export { healthResponseSchema } from "./modules/health/types";
 export type { HealthResponse } from "./modules/health/types";
 import { registerUserRoutes } from "./user-routes";
@@ -88,6 +94,13 @@ export function createApiApp(options: ApiAppOptions = {}) {
     ...createEmptyKnowledgeBaseService(),
     ...options.knowledgeBaseService,
   };
+  const providerConfigService: ProviderConfigApiService = {
+    ...createEmptyProviderConfigService(),
+    ...options.providerConfigService,
+  };
+  const providerTransportKeyService =
+    options.providerTransportKeyService ??
+    createInMemoryProviderTransportKeyService();
   const uploadConcurrencyLimiter =
     options.uploadConcurrencyLimiter ?? createInMemoryUploadConcurrencyLimiter();
   const uploadConfig = options.uploadConfig ?? defaultUploadConfig;
@@ -149,6 +162,17 @@ export function createApiApp(options: ApiAppOptions = {}) {
       rateLimiter,
       uploadConcurrencyLimiter,
       uploadConfig,
+    }),
+  );
+  app.route(
+    "/",
+    createProvidersRouter({
+      allowedOrigins,
+      auditService,
+      authService,
+      providerConfigService,
+      providerTransportKeyService,
+      rateLimiter,
     }),
   );
 

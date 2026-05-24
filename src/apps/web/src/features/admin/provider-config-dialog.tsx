@@ -2,41 +2,43 @@
 
 import { useState, type ReactElement } from "react";
 
-import { useMockStore } from "../mock/store";
 import type {
-  MockProviderConfig,
-  MockProviderConfigInput,
-  MockProviderKind,
-} from "../mock/types";
+  ModelServiceKind,
+  ProviderStatus,
+  ProviderSummary,
+} from "@kb/ai-providers";
+
 import { Button } from "../ui/button";
 import { DialogFrame } from "../ui/dialog";
 import type { FormSubmitHandler } from "../ui/form-types";
 import { Notice } from "../ui/notice";
 import { SelectField, type SelectFieldOption } from "../ui/select-field";
 import { providerKindLabels } from "./admin-list-helpers";
+import type { ProviderFormValues } from "./provider-hooks";
 
 export function ProviderConfigDialog({
+  isSaving,
   kind,
   onClose,
   onNotice,
+  onSave,
   provider,
 }: {
-  kind: MockProviderKind;
+  isSaving: boolean;
+  kind: ModelServiceKind;
   onClose: () => void;
   onNotice: (notice: string) => void;
-  provider: MockProviderConfig | null;
+  onSave: (input: ProviderFormValues) => Promise<void>;
+  provider: ProviderSummary;
 }): ReactElement {
-  const { dispatch } = useMockStore();
-  const [displayName, setDisplayName] = useState(provider?.displayName ?? providerKindLabels[kind]);
-  const [providerName, setProviderName] = useState(provider?.provider ?? providerNameForKind(kind));
-  const [modelId, setModelId] = useState(provider?.modelId ?? "");
-  const [baseUrl, setBaseUrl] = useState(provider?.baseUrl ?? "");
+  const [displayName, setDisplayName] = useState(provider.displayName ?? providerKindLabels[kind]);
+  const [providerName, setProviderName] = useState(provider.provider ?? providerNameForKind(kind));
+  const [modelId, setModelId] = useState(provider.modelId ?? "");
+  const [baseUrl, setBaseUrl] = useState(provider.baseUrl ?? "");
   const [apiKey, setApiKey] = useState("");
-  const [status, setStatus] = useState<Extract<MockProviderConfigInput["status"], "enabled" | "disabled">>(
-    provider?.status === "disabled" ? "disabled" : "enabled",
-  );
+  const [status, setStatus] = useState<ProviderStatus>(provider.status === "disabled" ? "disabled" : "enabled");
   const [error, setError] = useState<string | null>(null);
-  const title = provider === null ? `配置${providerKindLabels[kind]}` : `编辑${providerKindLabels[kind]}`;
+  const title = provider.configured ? `编辑${providerKindLabels[kind]}` : `配置${providerKindLabels[kind]}`;
 
   const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault();
@@ -44,7 +46,7 @@ export function ProviderConfigDialog({
       apiKey,
       baseUrl,
       displayName,
-      existingProvider: provider,
+      isConfigured: provider.configured,
       modelId,
       providerName,
     });
@@ -54,21 +56,21 @@ export function ProviderConfigDialog({
       return;
     }
 
-    dispatch({
-      provider: {
-        apiKey,
-        baseUrl: baseUrl.trim(),
-        displayName: displayName.trim(),
-        ...(provider === null ? {} : { id: provider.id }),
-        kind,
-        modelId: modelId.trim(),
-        provider: providerName.trim(),
-        status,
-      },
-      type: "saveProviderConfig",
-    });
-    onNotice(`${providerKindLabels[kind]}已保存，并完成连接测试。`);
-    onClose();
+    void onSave({
+      apiKey,
+      baseUrl: baseUrl.trim(),
+      displayName: displayName.trim(),
+      modelId: modelId.trim(),
+      provider: providerName.trim(),
+      status,
+    })
+      .then(() => {
+        onNotice(`${providerKindLabels[kind]}已保存，并完成连接测试。`);
+        onClose();
+      })
+      .catch((saveError: unknown) => {
+        setError(saveError instanceof Error ? saveError.message : "保存失败，请稍后重试。");
+      });
   };
 
   return (
@@ -86,7 +88,7 @@ export function ProviderConfigDialog({
         <FormField label="模型 ID" value={modelId} onChange={setModelId} />
         <FormField label="Base URL" type="url" value={baseUrl} onChange={setBaseUrl} />
         <FormField
-          label={provider === null ? "API Key" : "API Key（留空不修改）"}
+          label={provider.configured ? "API Key（留空不修改）" : "API Key"}
           type="password"
           value={apiKey}
           onChange={setApiKey}
@@ -98,15 +100,15 @@ export function ProviderConfigDialog({
           <SelectField
             ariaLabel="模型服务状态"
             className="mt-2"
-            onChange={(value) => setStatus(value as Extract<MockProviderConfigInput["status"], "enabled" | "disabled">)}
+            onChange={(value) => setStatus(value as ProviderStatus)}
             options={toSelectOptions([["enabled", "启用"], ["disabled", "停用"]])}
             value={status}
           />
         </div>
         <div className="flex flex-wrap justify-end gap-2">
           <Button onClick={onClose}>取消</Button>
-          <Button type="submit" variant="primary">
-            保存并测试
+          <Button disabled={isSaving} type="submit" variant="primary">
+            {isSaving ? "保存中" : "保存并测试"}
           </Button>
         </div>
       </div>
@@ -152,19 +154,19 @@ function FormField({
   );
 }
 
-function providerNameForKind(kind: MockProviderKind): string {
+function providerNameForKind(kind: ModelServiceKind): string {
   if (kind === "rerank") {
-    return "Cohere Compatible";
+    return "dashscope";
   }
 
-  return "OpenAI Compatible";
+  return kind === "chat" ? "deepseek" : "dashscope";
 }
 
 function validateProviderForm(input: {
   apiKey: string;
   baseUrl: string;
   displayName: string;
-  existingProvider: MockProviderConfig | null;
+  isConfigured: boolean;
   modelId: string;
   providerName: string;
 }): string | null {
@@ -180,7 +182,7 @@ function validateProviderForm(input: {
   if (!isValidHttpUrl(input.baseUrl.trim())) {
     return "请输入有效的 Base URL。";
   }
-  if (input.existingProvider === null && input.apiKey.trim().length === 0) {
+  if (!input.isConfigured && input.apiKey.trim().length === 0) {
     return "新增模型服务必须输入 API Key。";
   }
 

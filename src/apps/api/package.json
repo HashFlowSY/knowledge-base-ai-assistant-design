@@ -16,6 +16,7 @@
   "dependencies": {
     "@hono/node-server": "^1.13.0",
     "@kb/audit": "workspace:*",
+    "@kb/ai-providers": "workspace:*",
     "@kb/auth": "workspace:*",
     "@kb/config": "workspace:*",
     "@kb/db": "workspace:*",

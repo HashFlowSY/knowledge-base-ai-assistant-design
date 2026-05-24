@@ -70,6 +70,7 @@ export const providerConfigs = pgTable(
     kind: providerKindEnum("kind").notNull(),
     provider: varchar("provider", { length: 120 }).notNull(),
     modelId: varchar("model_id", { length: 200 }).notNull(),
+    baseUrl: varchar("base_url", { length: 500 }).notNull(),
     displayName: varchar("display_name", { length: 200 }).notNull(),
     status: providerStatusEnum("status").notNull().default("enabled"),
     isDefault: boolean("is_default").notNull().default(false),
@@ -93,6 +94,7 @@ export const providerConfigs = pgTable(
     uniqueIndex("provider_configs_tenant_kind_default_idx")
       .on(table.tenantId, table.kind, table.isDefault)
       .where(sql`${table.isDefault} = true`),
+    uniqueIndex("provider_configs_tenant_kind_idx").on(table.tenantId, table.kind),
     uniqueIndex("provider_configs_tenant_id_id_idx").on(table.tenantId, table.id),
     foreignKey({
       name: "provider_configs_tenant_secret_fk",

@@ -10,6 +10,8 @@ export type {
   DocumentFileUploadServiceInput,
   DocumentService,
   KnowledgeBaseService,
+  ProviderConfigApiService,
+  ProviderTransportKeyService,
   UploadConcurrencyLimiter,
   UploadConcurrencyReservation,
   UploadConfig,

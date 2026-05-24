@@ -7,6 +7,9 @@ describe("API client helpers", () => {
     expect(apiClient.api.auth.session.$get).toBeTypeOf("function");
     expect(apiClient.api.auth.login.$post).toBeTypeOf("function");
     expect(apiClient.api.users.$get).toBeTypeOf("function");
+    expect(apiClient.api.providers.$get).toBeTypeOf("function");
+    expect(apiClient.api.providers["public-key"].$get).toBeTypeOf("function");
+    expect(apiClient.api.providers[":kind"].$put).toBeTypeOf("function");
   });
 
   it("omits body and content-type for no-body browser mutations", () => {

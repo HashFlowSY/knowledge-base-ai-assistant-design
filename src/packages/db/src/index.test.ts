@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -11,6 +13,7 @@ import {
   ingestionJobStatusEnum,
   knowledgeBases,
   migrationStatusSchema,
+  providerConfigs,
   shouldLoadExampleEnv,
   schema,
   vectorDimensions,
@@ -72,6 +75,17 @@ describe("@kb/db", () => {
 
   it("uses the initial embedding vector dimension", () => {
     expect(vectorDimensions.chunkEmbedding).toBe(1024);
+  });
+
+  it("exports fixed provider config fields and tenant-kind uniqueness", () => {
+    expect(providerConfigs.baseUrl).toBeDefined();
+    expect(schema.providerConfigs).toBe(providerConfigs);
+    const providerConfigMigration = readdirSync("drizzle")
+      .filter((file) => file.startsWith("0005_") && file.endsWith(".sql"))
+      .map((file) => readFileSync(`drizzle/${file}`, "utf8"))
+      .join("\n");
+
+    expect(providerConfigMigration).toContain("provider_configs_tenant_kind_idx");
   });
 
   it("validates migration configuration", () => {

@@ -75,6 +75,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.13.0
         version: 1.19.14(hono@4.12.18)
+      '@kb/ai-providers':
+        specifier: workspace:*
+        version: link:../../packages/ai-providers
       '@kb/audit':
         specifier: workspace:*
         version: link:../../packages/audit
@@ -120,6 +123,9 @@ importers:
 
   src/apps/web:
     dependencies:
+      '@kb/ai-providers':
+        specifier: workspace:*
+        version: link:../../packages/ai-providers
       '@kb/api':
         specifier: workspace:*
         version: link:../api
@@ -129,6 +135,9 @@ importers:
       '@kb/knowledge':
         specifier: workspace:*
         version: link:../../packages/knowledge
+      '@kb/security':
+        specifier: workspace:*
+        version: link:../../packages/security
       '@kb/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -184,6 +193,15 @@ importers:
 
   src/packages/ai-providers:
     dependencies:
+      '@kb/db':
+        specifier: workspace:*
+        version: link:../db
+      '@kb/security':
+        specifier: workspace:*
+        version: link:../security
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/pg@8.20.0)(kysely@0.28.17)(pg@8.20.0)
       zod:
         specifier: ^3.24.0
         version: 3.25.76

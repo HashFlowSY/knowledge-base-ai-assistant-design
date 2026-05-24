@@ -3,6 +3,12 @@ import type { Endpoint } from "hono/types";
 
 import type { SessionPayload } from "@kb/auth";
 import type {
+  ProviderListResponse,
+  ProviderPublicKey,
+  ProviderSummary,
+  SaveProviderConfigInput,
+} from "@kb/ai-providers";
+import type {
   CreateKnowledgeBaseInput,
   DocumentFileUploadResult,
   KnowledgeBaseDetail,
@@ -136,6 +142,30 @@ type ApiRouteSchema = {
       },
       ApiSuccessResponse<DocumentFileUploadResult> | ApiErrorResponse,
       200 | 201 | 400 | 401 | 403 | 404 | 409 | 413 | 415 | 429 | 500
+    >;
+  };
+  "/api/providers": {
+    $get: JsonEndpoint<
+      Record<string, never>,
+      ApiSuccessResponse<ProviderListResponse> | ApiErrorResponse,
+      200 | 401 | 403 | 429 | 500
+    >;
+  };
+  "/api/providers/public-key": {
+    $get: JsonEndpoint<
+      Record<string, never>,
+      ApiSuccessResponse<ProviderPublicKey> | ApiErrorResponse,
+      200 | 401 | 403 | 429 | 500
+    >;
+  };
+  "/api/providers/:kind": {
+    $put: JsonEndpoint<
+      {
+        json: SaveProviderConfigInput;
+        param: { kind: string };
+      },
+      ApiSuccessResponse<ProviderSummary> | ApiErrorResponse,
+      200 | 400 | 401 | 403 | 409 | 429 | 500
     >;
   };
 };
