@@ -544,3 +544,36 @@ Implemented fixed model provider configuration APIs and provider-aware DeepSeek/
 ### Next Steps
 
 - None - task complete
+
+
+## Session 17: Restore model config page
+
+**Date**: 2026-05-24
+**Task**: Restore model config page
+**Branch**: `main`
+
+### Summary
+
+Restored the model configuration page with fixed provider slots, hid secret/status UI, kept API-key save flow, and verified web lint/typecheck/test/build.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6c58f17` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

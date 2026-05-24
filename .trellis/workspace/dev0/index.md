@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
+- **Total Sessions**: 17
 - **Last Active**: 2026-05-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~546 | Active |
+| `journal-1.md` | ~579 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 17 | 2026-05-24 | Restore model config page | `6c58f17` | `main` |
 | 16 | 2026-05-24 | Model service provider configuration | `5645550` | `main` |
 | 15 | 2026-05-23 | Temporarily remove document pages | `bdec608` | `main` |
 | 14 | 2026-05-23 | Fix document upload unicode filename save | `efdedb6` | `main` |
