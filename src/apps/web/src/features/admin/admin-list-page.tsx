@@ -33,6 +33,7 @@ import { useSessionQuery } from "../auth/auth-hooks";
 import { useRemoveUserAccess, useUsers } from "./user-hooks";
 import { ProviderConfigDialog } from "./provider-config-dialog";
 import { useProviders, useSaveProviderConfig } from "./provider-hooks";
+import { providerListColumnLabels, providerRowView } from "./provider-page-view";
 
 export type AdminPageKind = "tasks" | "logs" | "providers" | "users" | "audit";
 
@@ -88,14 +89,25 @@ function ProvidersPage(): ReactElement {
           <EmptyState message={adminCopy.providers.empty} />
         ) : (
           <ScrollArea aria-label="模型服务列表" className={adminListScrollClassName()} size="fill">
-            <div className="divide-y divide-slate-200">
-              {providers.map((provider) => (
-                <ProviderRow
-                  key={provider.kind}
-                  onEdit={() => setProviderDialog(provider)}
-                  provider={provider}
-                />
-              ))}
+            <div className="overflow-x-auto">
+              <div className="min-w-[920px]">
+                <div
+                  className={`${providerGridClassName()} border-b border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium text-slate-500`}
+                >
+                  {providerListColumnLabels.map((label) => (
+                    <span key={label}>{label}</span>
+                  ))}
+                </div>
+                <div className="divide-y divide-slate-200">
+                  {providers.map((provider) => (
+                    <ProviderRow
+                      key={provider.kind}
+                      onEdit={() => setProviderDialog(provider)}
+                      provider={provider}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </ScrollArea>
         )}
@@ -127,36 +139,35 @@ function ProviderRow({
   onEdit: () => void;
   provider: ProviderSummary;
 }): ReactElement {
-  const status = provider.configured ? provider.status ?? "disabled" : "missing";
-  const actionLabel = provider.configured ? "编辑" : "配置";
+  const view = providerRowView(provider);
 
   return (
-    <div className={adminRowClassName()}>
+    <div className={`${providerGridClassName()} items-center px-4 py-3 text-sm`}>
       <button className={adminRowPrimaryActionClassName()} onClick={onEdit} type="button">
         <p className="truncate text-sm font-semibold text-slate-950">
-          {provider.displayName ?? provider.label}
+          {view.title}
         </p>
-        <p className="mt-1 text-xs text-slate-500">
-          {provider.configured
-            ? `${provider.provider ?? "-"} · ${provider.modelId ?? "-"}`
-            : "未配置"}
-        </p>
+        <p className="mt-1 text-xs text-slate-500">{view.subtitle}</p>
       </button>
-      <div className={adminRowSideClassName()}>
-        <div className={adminRowMetaClassName()}>
-          <span>{provider.label}</span>
-          <span>{providerStatusLabel(status)}</span>
-          <span>{provider.maskedKey ?? "无密钥"}</span>
-          <span>{provider.updatedAt?.slice(0, 10) ?? "未保存"}</span>
-        </div>
-        <div className={adminRowActionClassName()}>
-          <Button onClick={onEdit}>
-            <Pencil aria-hidden="true" className="h-4 w-4" />
-            {actionLabel}
-          </Button>
-        </div>
+      <ProviderCell value={view.providerName} />
+      <ProviderCell value={view.modelId} />
+      <ProviderCell value={view.baseUrl} />
+      <ProviderCell value={view.updatedAt} />
+      <div className="flex justify-end">
+        <Button onClick={onEdit}>
+          <Pencil aria-hidden="true" className="h-4 w-4" />
+          {view.actionLabel}
+        </Button>
       </div>
     </div>
+  );
+}
+
+function ProviderCell({ value }: { value: string }): ReactElement {
+  return (
+    <span className="min-w-0 truncate text-slate-600" title={value}>
+      {value}
+    </span>
   );
 }
 
@@ -445,15 +456,8 @@ function EmptyState({ message }: { message: string }): ReactElement {
   );
 }
 
-function providerStatusLabel(status: "enabled" | "disabled" | "missing"): string {
-  if (status === "enabled") {
-    return "启用";
-  }
-  if (status === "disabled") {
-    return "停用";
-  }
-
-  return "未配置";
+function providerGridClassName(): string {
+  return "grid min-w-0 grid-cols-[minmax(180px,1.1fr)_minmax(120px,.9fr)_minmax(150px,1fr)_minmax(220px,1.35fr)_minmax(100px,.75fr)_minmax(96px,auto)] gap-3";
 }
 
 function toSelectOptions(options: [string, string][]): SelectFieldOption[] {

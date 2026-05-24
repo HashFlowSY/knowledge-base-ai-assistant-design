@@ -2,19 +2,18 @@
 
 import { useState, type ReactElement } from "react";
 
-import type {
-  ModelServiceKind,
-  ProviderStatus,
-  ProviderSummary,
+import {
+  modelServiceKindLabels,
+  type ModelServiceKind,
+  type ProviderSummary,
 } from "@kb/ai-providers";
 
 import { Button } from "../ui/button";
 import { DialogFrame } from "../ui/dialog";
 import type { FormSubmitHandler } from "../ui/form-types";
 import { Notice } from "../ui/notice";
-import { SelectField, type SelectFieldOption } from "../ui/select-field";
-import { providerKindLabels } from "./admin-list-helpers";
 import type { ProviderFormValues } from "./provider-hooks";
+import { providerFormStatusForSave } from "./provider-page-view";
 
 export function ProviderConfigDialog({
   isSaving,
@@ -31,14 +30,13 @@ export function ProviderConfigDialog({
   onSave: (input: ProviderFormValues) => Promise<void>;
   provider: ProviderSummary;
 }): ReactElement {
-  const [displayName, setDisplayName] = useState(provider.displayName ?? providerKindLabels[kind]);
+  const [displayName, setDisplayName] = useState(provider.displayName ?? modelServiceKindLabels[kind]);
   const [providerName, setProviderName] = useState(provider.provider ?? providerNameForKind(kind));
   const [modelId, setModelId] = useState(provider.modelId ?? "");
   const [baseUrl, setBaseUrl] = useState(provider.baseUrl ?? "");
   const [apiKey, setApiKey] = useState("");
-  const [status, setStatus] = useState<ProviderStatus>(provider.status === "disabled" ? "disabled" : "enabled");
   const [error, setError] = useState<string | null>(null);
-  const title = provider.configured ? `编辑${providerKindLabels[kind]}` : `配置${providerKindLabels[kind]}`;
+  const title = provider.configured ? `编辑${modelServiceKindLabels[kind]}` : `配置${modelServiceKindLabels[kind]}`;
 
   const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault();
@@ -62,10 +60,10 @@ export function ProviderConfigDialog({
       displayName: displayName.trim(),
       modelId: modelId.trim(),
       provider: providerName.trim(),
-      status,
+      status: providerFormStatusForSave(provider),
     })
       .then(() => {
-        onNotice(`${providerKindLabels[kind]}已保存，并完成连接测试。`);
+        onNotice(`${modelServiceKindLabels[kind]}已保存，并完成连接测试。`);
         onClose();
       })
       .catch((saveError: unknown) => {
@@ -82,7 +80,7 @@ export function ProviderConfigDialog({
     >
       <div className="space-y-4">
         {error === null ? null : <Notice tone="error">{error}</Notice>}
-        <Info label="模型类型" value={`${providerKindLabels[kind]} · ${kind}`} />
+        <Info label="模型类型" value={`${modelServiceKindLabels[kind]} · ${kind}`} />
         <FormField label="服务名称" value={displayName} onChange={setDisplayName} />
         <FormField label="Provider" value={providerName} onChange={setProviderName} />
         <FormField label="模型 ID" value={modelId} onChange={setModelId} />
@@ -93,18 +91,6 @@ export function ProviderConfigDialog({
           value={apiKey}
           onChange={setApiKey}
         />
-        <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="provider-status">
-            状态
-          </label>
-          <SelectField
-            ariaLabel="模型服务状态"
-            className="mt-2"
-            onChange={(value) => setStatus(value as ProviderStatus)}
-            options={toSelectOptions([["enabled", "启用"], ["disabled", "停用"]])}
-            value={status}
-          />
-        </div>
         <div className="flex flex-wrap justify-end gap-2">
           <Button onClick={onClose}>取消</Button>
           <Button disabled={isSaving} type="submit" variant="primary">
@@ -203,8 +189,4 @@ function slugifyFieldId(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "") || "field";
-}
-
-function toSelectOptions(options: [string, string][]): SelectFieldOption[] {
-  return options.map(([value, label]) => ({ label, value }));
 }

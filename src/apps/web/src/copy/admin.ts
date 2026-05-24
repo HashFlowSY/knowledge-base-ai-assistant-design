@@ -13,7 +13,7 @@ export const adminCopy = {
   },
   providers: {
     title: "模型服务",
-    description: "配置问答、向量和重排 Provider；密钥只展示掩码。",
+    description: "配置问答、向量和重排 Provider。",
     empty: "暂无模型服务配置，请添加必需的 Provider。",
     error: "模型服务配置加载失败，请重试。请求编号：req-provider-demo。",
   },
