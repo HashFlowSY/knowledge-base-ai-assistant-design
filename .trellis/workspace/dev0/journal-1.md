@@ -610,3 +610,36 @@ Implemented uploaded PDF/Markdown/TXT ingestion through upload enqueue, BullMQ w
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: Backend spec compliance refactor
+
+**Date**: 2026-05-25
+**Task**: Backend spec compliance refactor
+**Branch**: `main`
+
+### Summary
+
+Aligned backend API/package boundaries with Trellis specs, classified API tests under owning directories, and verified typecheck/lint/test/build before archiving.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `19c97cd` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
