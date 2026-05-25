@@ -7,9 +7,7 @@ export interface BullMqConnectionOptions {
   username?: string;
 }
 
-export function createBullMqConnectionOptions(
-  redisUrl: string,
-): BullMqConnectionOptions {
+export function createBullMqConnectionOptions(redisUrl: string): BullMqConnectionOptions {
   const url = new URL(redisUrl);
   const dbPath = url.pathname.replace(/^\//, "");
 
@@ -17,12 +15,8 @@ export function createBullMqConnectionOptions(
     ...(dbPath.length === 0 ? {} : { db: Number.parseInt(dbPath, 10) }),
     host: url.hostname,
     maxRetriesPerRequest: null,
-    ...(url.password.length === 0
-      ? {}
-      : { password: decodeURIComponent(url.password) }),
+    ...(url.password.length === 0 ? {} : { password: decodeURIComponent(url.password) }),
     port: url.port.length === 0 ? 6379 : Number.parseInt(url.port, 10),
-    ...(url.username.length === 0
-      ? {}
-      : { username: decodeURIComponent(url.username) }),
+    ...(url.username.length === 0 ? {} : { username: decodeURIComponent(url.username) }),
   };
 }
