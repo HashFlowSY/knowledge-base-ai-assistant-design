@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createBullMqConnectionOptions,
   createIngestionJobId,
   createIngestionJobOptions,
   ingestionJobPayloadSchema,
@@ -53,6 +54,21 @@ describe("@kb/queue", () => {
       removeOnFail: {
         count: 5_000,
       },
+    });
+  });
+
+  it("creates shared BullMQ connection options from Redis URLs", () => {
+    expect(
+      createBullMqConnectionOptions(
+        "redis://worker:secret%20value@localhost:6380/2",
+      ),
+    ).toEqual({
+      db: 2,
+      host: "localhost",
+      maxRetriesPerRequest: null,
+      password: "secret value",
+      port: 6380,
+      username: "worker",
     });
   });
 

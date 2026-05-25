@@ -1,22 +1,19 @@
 import type { Context } from "hono";
 
-import { loginInputSchema } from "@kb/auth";
-
 import type { ApiEnv } from "../../../contracts";
 import {
+  appendSetCookieHeaders,
   createSuccessResponse,
   readJsonBody,
   respondWithError,
 } from "../../../http";
 import {
-  appendSetCookieHeaders,
-  validateJsonMutationRequest,
-} from "../../../request-helpers";
-import {
   getLoginRateLimitEmail,
   rateLimitLogin,
-} from "../../../session-guards";
-import type { AuthRouteDependencies } from "../types";
+  validateJsonMutationRequest,
+} from "../../../guards";
+import type { AuthRouteDependencies } from "../dependencies";
+import { loginInputSchema } from "../types";
 
 export async function loginProcedure(
   context: Context<ApiEnv>,

@@ -23,7 +23,9 @@
     "paths": {
       "@kb/ai-providers": ["src/packages/ai-providers/src/index.ts"],
       "@kb/ai-providers/service": ["src/packages/ai-providers/src/service.ts"],
-      "@kb/api": ["src/apps/api/src/app.ts"],
+      "@kb/api": ["src/apps/api/src/index.ts"],
+      "@kb/api/app": ["src/apps/api/src/app.ts"],
+      "@kb/api/contracts": ["src/apps/api/src/contracts.ts"],
       "@kb/audit": ["src/packages/audit/src/index.ts"],
       "@kb/auth": ["src/packages/auth/src/index.ts"],
       "@kb/auth/server": ["src/packages/auth/src/server.ts"],

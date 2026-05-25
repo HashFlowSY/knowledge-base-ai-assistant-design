@@ -6,7 +6,7 @@ import { getUserProcedure } from "./procedures/get-user";
 import { listUsersProcedure } from "./procedures/list-users";
 import { removeUserAccessProcedure } from "./procedures/remove-user-access";
 import { updateUserProcedure } from "./procedures/update-user";
-import type { UserRouteDependencies } from "./types";
+import type { UserRouteDependencies } from "./dependencies";
 
 export function createUsersRouter(
   dependencies: UserRouteDependencies,

@@ -5,7 +5,7 @@ import { createKnowledgeBaseProcedure } from "./procedures/create-knowledge-base
 import { getKnowledgeBaseProcedure } from "./procedures/get-knowledge-base";
 import { listKnowledgeBasesProcedure } from "./procedures/list-knowledge-bases";
 import { updateKnowledgeBaseProcedure } from "./procedures/update-knowledge-base";
-import type { KnowledgeBaseRouteDependencies } from "./types";
+import type { KnowledgeBaseRouteDependencies } from "./dependencies";
 
 export function createKnowledgeBasesRouter(
   dependencies: KnowledgeBaseRouteDependencies,

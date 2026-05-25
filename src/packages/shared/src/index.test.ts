@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import {
+  apiErrorCodeSchema,
   apiErrorResponseSchema,
   apiSuccessResponseSchema,
   createUtcTimestamp,
@@ -52,6 +53,20 @@ describe("@kb/shared", () => {
       httpStatus: 400,
       code: "VALIDATION_ERROR",
     });
+  });
+
+  it("rejects non-standard public API error codes", () => {
+    expect(apiErrorCodeSchema.parse("RATE_LIMITED")).toBe("RATE_LIMITED");
+    expect(() => apiErrorCodeSchema.parse("DATABASE_FAILED")).toThrow();
+    expect(() =>
+      apiErrorResponseSchema.parse({
+        success: false,
+        httpStatus: 500,
+        code: "DATABASE_FAILED",
+        message: "Internal details",
+        requestId: "req_1",
+      }),
+    ).toThrow();
   });
 
   it("uses null as the empty success payload", () => {

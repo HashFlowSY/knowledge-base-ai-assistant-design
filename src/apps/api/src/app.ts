@@ -10,6 +10,7 @@ import {
 import { createLogger } from "@kb/observability";
 
 import type {
+  ApiApp,
   ApiAppOptions,
   ApiEnv,
   DocumentService,
@@ -47,21 +48,22 @@ import {
   createInMemoryProviderTransportKeyService,
   createNoopAuditService,
   createUnauthenticatedAuthService,
-} from "./default-services";
+} from "./runtime/defaults";
+import { createErrorResponse } from "./http";
 import {
   createInMemoryRateLimitStore,
   createRateLimiter,
 } from "./rate-limit";
-import { createApiRuntimeServicesFromEnv } from "./runtime-services";
+import { createApiRuntimeServicesFromEnv } from "./runtime/services";
 import { createAuthRouter } from "./modules/auth/router";
 import { createHealthRouter } from "./modules/health/router";
 import { createKnowledgeBasesRouter } from "./modules/knowledge-bases/router";
 import { createDocumentsRouter } from "./modules/documents/router";
 import { createProvidersRouter } from "./modules/providers/router";
+import { createUsersRouter } from "./modules/users/router";
 export { healthResponseSchema } from "./modules/health/types";
 export type { HealthResponse } from "./modules/health/types";
-import { registerUserRoutes } from "./user-routes";
-import { createInMemoryUploadConcurrencyLimiter } from "./upload-concurrency";
+import { createInMemoryUploadConcurrencyLimiter } from "./modules/documents/lib/upload-concurrency";
 
 const defaultUploadConfig: UploadConfig = {
   concurrencyPerActor: defaultUploadConcurrencyPerActor,
@@ -71,9 +73,9 @@ const defaultUploadConfig: UploadConfig = {
   requestOverheadBytes: defaultUploadRequestOverheadBytes,
 };
 
-export function createApiApp(options: ApiAppOptions = {}) {
+export function createApiApp(options: ApiAppOptions = {}): ApiApp {
   const app = new Hono<ApiEnv>();
-  const logger = createLogger({ service: "api" });
+  const logger = options.logger ?? createLogger({ service: "api" });
   const authService = options.authService ?? createUnauthenticatedAuthService();
   const auditService = options.auditService ?? createNoopAuditService();
   const allowedOrigins = options.allowedOrigins ?? ["http://localhost:3000"];
@@ -113,16 +115,37 @@ export function createApiApp(options: ApiAppOptions = {}) {
         : crypto.randomUUID();
 
     context.set("requestId", requestId);
+    context.set("logger", logger.child({ requestId }));
     context.header("X-Request-Id", requestId);
 
     await next();
 
-    logger.info("api_request_finished", {
-      requestId,
+    context.get("logger").info("api_request_finished", {
       method: context.req.method,
       path: context.req.path,
       status: context.res.status,
     });
+  });
+
+  app.onError((error, context) => {
+    const requestId = context.get("requestId") || crypto.randomUUID();
+    const requestLogger = context.get("logger") ?? logger.child({ requestId });
+    context.header("X-Request-Id", requestId);
+    requestLogger.error("api_request_unhandled_error", {
+      error: error instanceof Error ? error.message : String(error),
+      method: context.req.method,
+      path: context.req.path,
+    });
+
+    return context.json(
+      createErrorResponse({
+        code: "INTERNAL_ERROR",
+        httpStatus: 500,
+        message: "操作失败，请稍后重试。",
+        requestId,
+      }),
+      500,
+    );
   });
 
   app.route("/", createHealthRouter());
@@ -135,13 +158,16 @@ export function createApiApp(options: ApiAppOptions = {}) {
     }),
   );
 
-  registerUserRoutes(app, {
-    allowedOrigins,
-    auditService,
-    authService,
-    rateLimiter,
-    userService,
-  });
+  app.route(
+    "/",
+    createUsersRouter({
+      allowedOrigins,
+      auditService,
+      authService,
+      rateLimiter,
+      userService,
+    }),
+  );
   app.route(
     "/",
     createKnowledgeBasesRouter({

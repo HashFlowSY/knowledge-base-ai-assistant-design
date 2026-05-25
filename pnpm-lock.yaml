@@ -238,6 +238,9 @@ importers:
 
   src/packages/audit:
     dependencies:
+      '@kb/db':
+        specifier: workspace:*
+        version: link:../db
       '@kb/shared':
         specifier: workspace:*
         version: link:../shared
@@ -247,9 +250,18 @@ importers:
 
   src/packages/auth:
     dependencies:
+      '@kb/db':
+        specifier: workspace:*
+        version: link:../db
       better-auth:
         specifier: ^1.6.11
         version: 1.6.11(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@types/pg@8.20.0)(kysely@0.28.17)(pg@8.20.0))(next@16.2.6(@playwright/test@1.60.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6))(pg@8.20.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.6(@types/node@22.19.19)(vite@8.0.13(@types/node@22.19.19)(esbuild@0.27.7)(jiti@1.21.7)(tsx@4.21.0)))
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/pg@8.20.0)(kysely@0.28.17)(pg@8.20.0)
       zod:
         specifier: ^3.24.0
         version: 3.25.76
@@ -265,9 +277,6 @@ importers:
 
   src/packages/db:
     dependencies:
-      '@kb/auth':
-        specifier: workspace:*
-        version: link:../auth
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
@@ -320,12 +329,15 @@ importers:
 
   src/packages/knowledge:
     dependencies:
-      '@kb/auth':
+      '@kb/audit':
         specifier: workspace:*
-        version: link:../auth
+        version: link:../audit
       '@kb/db':
         specifier: workspace:*
         version: link:../db
+      '@kb/observability':
+        specifier: workspace:*
+        version: link:../observability
       '@kb/queue':
         specifier: workspace:*
         version: link:../queue
@@ -401,6 +413,9 @@ importers:
 
   src/packages/users:
     dependencies:
+      '@kb/audit':
+        specifier: workspace:*
+        version: link:../audit
       '@kb/auth':
         specifier: workspace:*
         version: link:../auth

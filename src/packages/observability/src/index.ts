@@ -54,12 +54,16 @@ export function redactLogFields(
   );
 }
 
+export function createJsonConsoleLogSink(
+  output: Pick<typeof process.stdout, "write"> = process.stdout,
+): LogSink {
+  return (record) => {
+    output.write(`${JSON.stringify(record)}\n`);
+  };
+}
+
 export function createLogger(context: LogContext = {}, sink?: LogSink): Logger {
-  const write: LogSink =
-    sink ??
-    (() => {
-      // Intentionally empty for bootstrap. Runtime tasks will wire a console or collector sink.
-    });
+  const write: LogSink = sink ?? createJsonConsoleLogSink();
 
   const emit = (
     level: LogLevel,

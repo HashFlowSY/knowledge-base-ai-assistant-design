@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createLogger, redactLogFields, type LogRecord } from "./index";
+import {
+  createJsonConsoleLogSink,
+  createLogger,
+  redactLogFields,
+  type LogRecord,
+} from "./index";
 
 describe("@kb/observability", () => {
   it("redacts known secret-bearing fields", () => {
@@ -27,6 +32,31 @@ describe("@kb/observability", () => {
       level: "info",
       event: "worker_started",
       fields: { jobId: "job_1" },
+    });
+  });
+
+  it("provides a JSON console sink for runtime entrypoints", () => {
+    const writes: string[] = [];
+    const sink = createJsonConsoleLogSink({
+      write(chunk) {
+        writes.push(String(chunk));
+        return true;
+      },
+    });
+
+    sink({
+      timestamp: "2026-05-25T00:00:00.000Z",
+      level: "info",
+      event: "api_started",
+      service: "api",
+      fields: { requestId: "req_1" },
+    });
+
+    expect(JSON.parse(writes[0] ?? "")).toMatchObject({
+      event: "api_started",
+      fields: { requestId: "req_1" },
+      level: "info",
+      service: "api",
     });
   });
 });

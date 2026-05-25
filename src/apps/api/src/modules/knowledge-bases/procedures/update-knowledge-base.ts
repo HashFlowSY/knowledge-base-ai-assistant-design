@@ -1,19 +1,20 @@
 import type { Context } from "hono";
 
-import { updateKnowledgeBaseInputSchema } from "@kb/knowledge";
-
 import type { ApiEnv } from "../../../contracts";
-import { createSuccessResponse, readJsonBody } from "../../../http";
 import {
+  createSuccessResponse,
+  readJsonBody,
   respondWithServiceError,
   respondWithValidationError,
-  validateJsonMutationRequest,
-} from "../../../request-helpers";
+} from "../../../http";
 import {
   requireAdminKnowledgeBaseSession,
   respondAfterUnresolvedKnowledgeBaseRateLimit,
-} from "../../../session-guards";
-import type { KnowledgeBaseRouteDependencies } from "../types";
+  toKnowledgeActor,
+  validateJsonMutationRequest,
+} from "../../../guards";
+import type { KnowledgeBaseRouteDependencies } from "../dependencies";
+import { updateKnowledgeBaseInputSchema } from "../types";
 
 type UpdateKnowledgeBaseContext = Context<
   ApiEnv,
@@ -53,7 +54,7 @@ export async function updateKnowledgeBaseProcedure(
   }
 
   const result = await dependencies.knowledgeBaseService.updateKnowledgeBase({
-    actor: authResult.actor,
+    actor: toKnowledgeActor(authResult.actor),
     body: parsed.data,
     knowledgeBaseId: context.req.param("knowledgeBaseId"),
   });

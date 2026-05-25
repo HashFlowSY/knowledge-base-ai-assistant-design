@@ -253,3 +253,57 @@ const jobId = `ingestion:${tenantId}:${documentId}:${documentVersion}`;
 ```typescript
 const jobId = createIngestionJobId(payload);
 ```
+
+## Scenario: Shared BullMQ Redis connection options
+
+### 1. Scope / Trigger
+
+- Trigger: any producer, worker, queue event listener, recovery path, or future queue helper that creates a BullMQ connection from `REDIS_URL`.
+- Owner: `@kb/queue` owns Redis URL parsing and BullMQ connection option shape.
+
+### 2. Signatures
+
+- `createBullMqConnectionOptions(redisUrl: string): BullMqConnectionOptions`
+- `BullMqConnectionOptions` includes `host`, `port`, `maxRetriesPerRequest: null`, and optional `db`, `username`, and `password`.
+
+### 3. Contracts
+
+- Producers and workers must import the helper from `@kb/queue` or an allowed queue subpath rather than duplicating Redis URL parsing.
+- Empty Redis DB path omits `db`; non-empty path parses to a numeric DB.
+- Username and password are URL-decoded.
+- Missing port defaults to `6379`.
+- `maxRetriesPerRequest` must be `null` for BullMQ worker compatibility.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| `redis://localhost:6379` | `{ host: "localhost", port: 6379, maxRetriesPerRequest: null }` |
+| `redis://worker:secret%20value@localhost:6380/2` | Decoded username/password and `db: 2` |
+| Invalid Redis URL | Let `new URL()` fail during config/startup |
+
+### 5. Good/Base/Bad Cases
+
+- Good: API producer and worker both call `createBullMqConnectionOptions(config.REDIS_URL)`.
+- Base: tests assert decoded credentials and DB path handling.
+- Bad: worker and producer each define private `createBullMqConnectionOptions` functions.
+
+### 6. Tests Required
+
+- Queue unit tests assert parsing of host, port, db, username, password, and `maxRetriesPerRequest`.
+- Worker typecheck must pass after replacing local connection parsing.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+const url = new URL(config.REDIS_URL);
+const connection = { host: url.hostname, port: Number(url.port || 6379) };
+```
+
+#### Correct
+
+```typescript
+const connection = createBullMqConnectionOptions(config.REDIS_URL);
+```

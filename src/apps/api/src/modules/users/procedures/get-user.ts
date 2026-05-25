@@ -1,10 +1,9 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import { createSuccessResponse } from "../../../http";
-import { respondWithServiceError } from "../../../request-helpers";
-import { requireAdminUserManagementSession } from "../../../session-guards";
-import type { UserRouteDependencies } from "../types";
+import { createSuccessResponse, respondWithServiceError } from "../../../http";
+import { requireAdminUserManagementSession } from "../../../guards";
+import type { UserRouteDependencies } from "../dependencies";
 
 type GetUserContext = Context<ApiEnv, "/api/users/:userId">;
 

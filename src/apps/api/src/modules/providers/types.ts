@@ -1,16 +1,18 @@
-import type {
-  ApiRateLimiter,
-  AuditService,
-  AuthService,
-  ProviderConfigApiService,
-  ProviderTransportKeyService,
-} from "../../contracts";
-
-export interface ProviderRouteDependencies {
-  allowedOrigins: string[];
-  auditService: AuditService;
-  authService: AuthService;
-  providerConfigService: ProviderConfigApiService;
-  providerTransportKeyService: ProviderTransportKeyService;
-  rateLimiter: ApiRateLimiter;
-}
+export {
+  modelServiceKindSchema,
+  providerApiKeyInputSchema,
+  providerListResponseSchema,
+  providerPublicKeySchema,
+  providerStatusSchema,
+  providerSummarySchema,
+  saveProviderConfigInputSchema,
+} from "@kb/ai-providers";
+export type {
+  ModelServiceKind,
+  ProviderApiKeyInput,
+  ProviderListResponse,
+  ProviderPublicKey,
+  ProviderStatus,
+  ProviderSummary,
+  SaveProviderConfigInput,
+} from "@kb/ai-providers";

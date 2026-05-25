@@ -5,16 +5,14 @@ import {
   createSuccessResponse,
   hasRequestBody,
   respondWithError,
-} from "../../../http";
-import {
   respondWithServiceError,
-  validateMutationRequest,
-} from "../../../request-helpers";
+} from "../../../http";
 import {
   requireAdminUserManagementSession,
   respondAfterUnresolvedUserManagementRateLimit,
-} from "../../../session-guards";
-import type { UserRouteDependencies } from "../types";
+  validateMutationRequest,
+} from "../../../guards";
+import type { UserRouteDependencies } from "../dependencies";
 
 type RemoveUserAccessContext = Context<ApiEnv, "/api/users/:userId/access">;
 

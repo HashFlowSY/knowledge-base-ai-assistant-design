@@ -1,14 +1,17 @@
 import type { SessionPayload } from "@kb/auth";
+import type { Logger } from "@kb/observability";
+import type { ApiErrorCode } from "@kb/shared";
 import type {
   ModelServiceKind,
   ProviderListResponse,
   ProviderPublicKey,
+  ProviderStatus,
   ProviderSummary,
 } from "@kb/ai-providers";
-import type { ProviderConfigServiceSaveBody } from "@kb/ai-providers/service";
 import type {
   CreateKnowledgeBaseInput,
   DocumentFileUploadResult,
+  KnowledgeActor,
   KnowledgeBaseDetail,
   KnowledgeBaseListQuery,
   KnowledgeBaseSummary,
@@ -29,10 +32,19 @@ export type { DocumentFileUploadResult } from "@kb/knowledge";
 
 export interface ApiServiceError {
   ok: false;
-  code: string;
+  code: ApiErrorCode;
   httpStatus: 400 | 401 | 403 | 404 | 409 | 429 | 500;
   message: string;
   setCookieHeaders?: string[];
+}
+
+export interface ProviderConfigApiServiceSaveBody {
+  displayName: string;
+  provider: string;
+  modelId: string;
+  baseUrl: string;
+  status: ProviderStatus;
+  apiKey: { mode: "keep" } | { mode: "plaintext"; value: string };
 }
 
 export interface AuthService {
@@ -100,7 +112,7 @@ export interface UserService {
 
 export interface KnowledgeBaseService {
   listKnowledgeBases(input: {
-    actor: SessionPayload;
+    actor: KnowledgeActor;
     query: KnowledgeBaseListQuery;
   }): Promise<
     | {
@@ -109,7 +121,7 @@ export interface KnowledgeBaseService {
       }
     | ApiServiceError
   >;
-  getKnowledgeBase(input: { actor: SessionPayload; knowledgeBaseId: string }): Promise<
+  getKnowledgeBase(input: { actor: KnowledgeActor; knowledgeBaseId: string }): Promise<
     | {
         ok: true;
         knowledgeBase: KnowledgeBaseDetail;
@@ -117,7 +129,7 @@ export interface KnowledgeBaseService {
     | ApiServiceError
   >;
   createKnowledgeBase(input: {
-    actor: SessionPayload;
+    actor: KnowledgeActor;
     body: CreateKnowledgeBaseInput;
   }): Promise<
     | {
@@ -127,7 +139,7 @@ export interface KnowledgeBaseService {
     | ApiServiceError
   >;
   updateKnowledgeBase(input: {
-    actor: SessionPayload;
+    actor: KnowledgeActor;
     body: UpdateKnowledgeBaseInput;
     knowledgeBaseId: string;
   }): Promise<
@@ -140,7 +152,7 @@ export interface KnowledgeBaseService {
 }
 
 export interface DocumentFileUploadServiceInput {
-  actor: SessionPayload;
+  actor: KnowledgeActor;
   checksum: string;
   content: Uint8Array;
   ipSummary: string;
@@ -173,9 +185,11 @@ export interface ProviderConfigApiService {
   >;
   saveProviderConfig(input: {
     actor: SessionPayload;
-    body: ProviderConfigServiceSaveBody;
+    body: ProviderConfigApiServiceSaveBody;
+    ipSummary: string | null;
     kind: ModelServiceKind;
     requestId: string;
+    userAgentSummary: string | null;
   }): Promise<
     | {
         ok: true;
@@ -258,6 +272,7 @@ export interface ApiAppOptions {
   authService?: AuthService;
   documentService?: Partial<DocumentService>;
   knowledgeBaseService?: Partial<KnowledgeBaseService>;
+  logger?: Logger;
   providerConfigService?: Partial<ProviderConfigApiService>;
   providerTransportKeyService?: ProviderTransportKeyService;
   rateLimiter?: ApiRateLimiter;

@@ -1,19 +1,19 @@
 import type { Context } from "hono";
 
-import { updateUserInputSchema } from "@kb/users";
-
 import type { ApiEnv } from "../../../contracts";
-import { createSuccessResponse, readJsonBody } from "../../../http";
 import {
+  createSuccessResponse,
+  readJsonBody,
   respondWithServiceError,
   respondWithValidationError,
-  validateJsonMutationRequest,
-} from "../../../request-helpers";
+} from "../../../http";
 import {
   requireAdminUserManagementSession,
   respondAfterUnresolvedUserManagementRateLimit,
-} from "../../../session-guards";
-import type { UserRouteDependencies } from "../types";
+  validateJsonMutationRequest,
+} from "../../../guards";
+import type { UserRouteDependencies } from "../dependencies";
+import { updateUserInputSchema } from "../types";
 
 type UpdateUserContext = Context<ApiEnv, "/api/users/:userId">;
 

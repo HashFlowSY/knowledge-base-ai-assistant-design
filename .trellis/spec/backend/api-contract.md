@@ -97,7 +97,7 @@ type ApiSuccessResponse<T> = {
 type ApiErrorResponse = {
   success: false;
   httpStatus: number;
-  code: string;
+  code: ApiErrorCode;
   message: string;
   requestId: string;
   validationErrors?: Array<{
@@ -134,6 +134,16 @@ Use cursor pagination for high-volume append-only streams such as logs when offs
 
 All API errors returned to clients must use `ApiErrorResponse`.
 
+The public error-code union is schema-owned by `@kb/shared`:
+
+- `apiErrorCodeSchema`
+- `ApiErrorCode`
+
+API response helpers, `ApiErrorResponse.code`, and API-facing service errors
+must use `ApiErrorCode` rather than a broad `string`. Internal package error
+codes that are not public API codes must be mapped before returning an HTTP
+response.
+
 Standard codes:
 
 - `VALIDATION_ERROR`
@@ -165,6 +175,12 @@ Provider package errors must be mapped before they reach clients:
 
 Frontend copy should map from the public API code and optional safe detail, not
 from raw provider errors.
+
+Tests required:
+
+- Shared schema tests reject non-standard public codes.
+- API typecheck catches service errors with non-public `code` values.
+- Web tests/typecheck update helpers that construct API errors to use `ApiErrorCode`.
 
 ## OpenAPI Rules
 

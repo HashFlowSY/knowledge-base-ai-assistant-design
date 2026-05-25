@@ -11,6 +11,7 @@ export type {
   DocumentService,
   KnowledgeBaseService,
   ProviderConfigApiService,
+  ProviderConfigApiServiceSaveBody,
   ProviderTransportKeyService,
   UploadConcurrencyLimiter,
   UploadConcurrencyReservation,

@@ -1,14 +1,18 @@
-import type {
-  ApiRateLimiter,
-  AuditService,
-  AuthService,
-  KnowledgeBaseService,
-} from "../../contracts";
-
-export interface KnowledgeBaseRouteDependencies {
-  allowedOrigins: string[];
-  auditService: AuditService;
-  authService: AuthService;
-  knowledgeBaseService: KnowledgeBaseService;
-  rateLimiter: ApiRateLimiter;
-}
+export {
+  createKnowledgeBaseInputSchema,
+  knowledgeBaseDetailSchema,
+  knowledgeBaseListQuerySchema,
+  knowledgeBaseMemberSummarySchema,
+  knowledgeBasesPageSchema,
+  knowledgeBaseSummarySchema,
+  updateKnowledgeBaseInputSchema,
+} from "@kb/knowledge";
+export type {
+  CreateKnowledgeBaseInput,
+  KnowledgeBaseDetail,
+  KnowledgeBaseListQuery,
+  KnowledgeBaseMemberSummary,
+  KnowledgeBasesPage,
+  KnowledgeBaseSummary,
+  UpdateKnowledgeBaseInput,
+} from "@kb/knowledge";

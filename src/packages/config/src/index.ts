@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { serviceNameSchema } from "@kb/shared";
 
+export const defaultApiPort = 4000;
 export const defaultUploadMaxFileBytes = 8 * 1024 * 1024;
 export const defaultUploadRequestOverheadBytes = 64 * 1024;
 export const defaultUploadRateLimitPerMinute = 20;
@@ -19,6 +20,7 @@ export const defaultIngestionChunkOverlap = 150;
 
 const envSchema = z.object({
   SERVICE_NAME: serviceNameSchema.default("api"),
+  PORT: z.coerce.number().int().min(1).max(65_535).default(defaultApiPort),
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   APP_BASE_URL: z.string().url().default("http://localhost:3000"),
@@ -140,6 +142,7 @@ export function redactRuntimeConfig(config: RuntimeConfig): Omit<
 } {
   const safeConfig = {
     SERVICE_NAME: config.SERVICE_NAME,
+    PORT: config.PORT,
     NODE_ENV: config.NODE_ENV,
     LOG_LEVEL: config.LOG_LEVEL,
     APP_BASE_URL: config.APP_BASE_URL,

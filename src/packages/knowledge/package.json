@@ -14,8 +14,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@kb/auth": "workspace:*",
+    "@kb/audit": "workspace:*",
     "@kb/db": "workspace:*",
+    "@kb/observability": "workspace:*",
     "@kb/queue": "workspace:*",
     "@kb/shared": "workspace:*",
     "@kb/storage": "workspace:*",

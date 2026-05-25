@@ -1,4 +1,4 @@
-import { betterAuth } from "better-auth";
+import { betterAuth, type Auth } from "better-auth";
 import {
   drizzleAdapter,
   type DB,
@@ -14,8 +14,18 @@ export interface BetterAuthRuntimeOptions {
   secret: string;
 }
 
-export function createBetterAuthRuntime(input: BetterAuthRuntimeOptions) {
-  return betterAuth({
+type BetterAuthRuntimeConfig = ReturnType<typeof createBetterAuthRuntimeConfig>;
+
+export type BetterAuthRuntime = Auth<BetterAuthRuntimeConfig>;
+
+export function createBetterAuthRuntime(
+  input: BetterAuthRuntimeOptions,
+): BetterAuthRuntime {
+  return betterAuth(createBetterAuthRuntimeConfig(input));
+}
+
+function createBetterAuthRuntimeConfig(input: BetterAuthRuntimeOptions) {
+  return {
     baseURL: input.appBaseUrl,
     basePath: "/api/_better-auth",
     secret: input.secret,
@@ -34,10 +44,8 @@ export function createBetterAuthRuntime(input: BetterAuthRuntimeOptions) {
     session: betterAuthDatabaseOptions.session,
     account: betterAuthDatabaseOptions.account,
     verification: betterAuthDatabaseOptions.verification,
-  });
+  };
 }
-
-export type BetterAuthRuntime = ReturnType<typeof createBetterAuthRuntime>;
 
 export function createBetterAuthDrizzleAdapterConfig(
   schema: Record<string, unknown>,

@@ -138,6 +138,8 @@ export interface ProviderAuditEventInput {
     | "provider_config.connection_tested";
   targetId: string;
   requestId: string;
+  ipSummary: string | null;
+  userAgentSummary: string | null;
   metadata: Record<string, unknown>;
 }
 
@@ -169,8 +171,10 @@ export interface ProviderConfigService {
   saveProviderConfig(input: {
     actor: ProviderConfigActor;
     body: ProviderConfigServiceSaveBody;
+    ipSummary?: string | null;
     kind: ModelServiceKind;
     requestId: string;
+    userAgentSummary?: string | null;
   }): Promise<{ ok: true; provider: ProviderSummary } | ProviderConfigServiceError>;
 }
 
@@ -277,8 +281,10 @@ export function createProviderConfigService(
         actorId: input.actor.user.id,
         metadata: safeConnectionMetadata,
         requestId: input.requestId,
+        ipSummary: input.ipSummary ?? null,
         targetId: existingConfig?.id ?? input.kind,
         tenantId: input.actor.tenant.id,
+        userAgentSummary: input.userAgentSummary ?? null,
       });
       if (!connectionResult.ok) {
         return mapProviderConnectionError(connectionResult.code);
@@ -326,8 +332,10 @@ export function createProviderConfigService(
           keyRotated: nextSecret !== null && existingConfig !== null,
         },
         requestId: input.requestId,
+        ipSummary: input.ipSummary ?? null,
         targetId: saved.config.id,
         tenantId: input.actor.tenant.id,
+        userAgentSummary: input.userAgentSummary ?? null,
       });
 
       return {

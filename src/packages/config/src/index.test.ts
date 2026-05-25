@@ -20,6 +20,7 @@ describe("@kb/config", () => {
     const config = loadRuntimeConfig(validEnv);
 
     expect(config.SERVICE_NAME).toBe("api");
+    expect(config.PORT).toBe(4000);
     expect(config.WORKER_CONCURRENCY).toBe(2);
     expect(config.UPLOAD_MAX_FILE_BYTES).toBe(8 * 1024 * 1024);
     expect(config.UPLOAD_RATE_LIMIT_PER_MINUTE).toBe(20);
@@ -41,8 +42,18 @@ describe("@kb/config", () => {
 
     expect(redacted).toMatchObject({ secrets: "[REDACTED]" });
     expect("DATABASE_URL" in redacted).toBe(false);
+    expect(redacted.PORT).toBe(4000);
     expect(redacted.UPLOAD_MAX_FILE_BYTES).toBe(8 * 1024 * 1024);
     expect(redacted.INGESTION_QUEUE_ATTEMPTS).toBe(3);
+  });
+
+  it("allows the API server port to be configured from environment", () => {
+    const config = loadRuntimeConfig({
+      ...validEnv,
+      PORT: "4101",
+    });
+
+    expect(config.PORT).toBe(4101);
   });
 
   it("allows upload limits to be configured from environment", () => {

@@ -1,14 +1,14 @@
-import type {
-  ApiRateLimiter,
-  AuditService,
-  AuthService,
-  UserService,
-} from "../../contracts";
-
-export interface UserRouteDependencies {
-  allowedOrigins: string[];
-  auditService: AuditService;
-  authService: AuthService;
-  rateLimiter: ApiRateLimiter;
-  userService: UserService;
-}
+export {
+  createUserInputSchema,
+  listUsersQuerySchema,
+  updateUserInputSchema,
+  userSummarySchema,
+  usersPageSchema,
+} from "@kb/users";
+export type {
+  CreateUserInput,
+  ListUsersQuery,
+  UpdateUserInput,
+  UserSummary,
+  UsersPage,
+} from "@kb/users";

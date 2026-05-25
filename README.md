@@ -154,7 +154,7 @@ docker compose up -d postgres redis meilisearch minio
 
 ```bash
 pnpm db:migrate
-pnpm --filter @kb/db seed:dev-auth
+pnpm --filter @kb/auth seed:dev-auth
 ```
 
 开发种子会创建默认租户和两个本地账号：

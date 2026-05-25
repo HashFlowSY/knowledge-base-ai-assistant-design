@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { auditLogs, type ProjectDb } from "@kb/db";
 import { isoTimestampSchema } from "@kb/shared";
 
 export const auditActorSchema = z.discriminatedUnion("actorType", [
@@ -27,3 +28,50 @@ export const auditEventSchema = z.object({
 });
 
 export type AuditEvent = z.infer<typeof auditEventSchema>;
+
+export type AuditActorType = "system" | "user";
+
+export interface AuditLogInput {
+  tenantId: string;
+  actorId: string | null;
+  actorType: AuditActorType;
+  action: string;
+  targetType: string;
+  targetId: string;
+  metadata?: Record<string, unknown>;
+  requestId?: string | null;
+  ipSummary?: string | null;
+  userAgentSummary?: string | null;
+}
+
+export interface AuditLogRecorder {
+  record(input: AuditLogInput): Promise<void>;
+}
+
+export type AuditLogDb = Pick<ProjectDb, "insert">;
+
+export async function recordAuditLog(
+  db: AuditLogDb,
+  input: AuditLogInput,
+): Promise<void> {
+  await db.insert(auditLogs).values({
+    tenantId: input.tenantId,
+    actorId: input.actorId,
+    actorType: input.actorType,
+    action: input.action,
+    targetType: input.targetType,
+    targetId: input.targetId,
+    metadata: input.metadata ?? {},
+    requestId: input.requestId ?? null,
+    ipSummary: input.ipSummary ?? null,
+    userAgentSummary: input.userAgentSummary ?? null,
+  });
+}
+
+export function createAuditLogRecorder(db: AuditLogDb): AuditLogRecorder {
+  return {
+    async record(input) {
+      await recordAuditLog(db, input);
+    },
+  };
+}

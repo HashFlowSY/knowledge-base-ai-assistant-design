@@ -1,11 +1,10 @@
 import type { Context } from "hono";
 
-import { listUsersQuerySchema } from "@kb/users";
-
 import type { ApiEnv } from "../../../contracts";
 import { createSuccessResponse, respondWithError } from "../../../http";
-import { requireAdminUserManagementSession } from "../../../session-guards";
-import type { UserRouteDependencies } from "../types";
+import { requireAdminUserManagementSession } from "../../../guards";
+import type { UserRouteDependencies } from "../dependencies";
+import { listUsersQuerySchema } from "../types";
 
 export async function listUsersProcedure(
   context: Context<ApiEnv>,

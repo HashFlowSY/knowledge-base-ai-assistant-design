@@ -1,10 +1,9 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import { createSuccessResponse } from "../../../http";
-import { respondWithServiceError } from "../../../request-helpers";
-import { requireKnowledgeBaseSession } from "../../../session-guards";
-import type { KnowledgeBaseRouteDependencies } from "../types";
+import { createSuccessResponse, respondWithServiceError } from "../../../http";
+import { requireKnowledgeBaseSession, toKnowledgeActor } from "../../../guards";
+import type { KnowledgeBaseRouteDependencies } from "../dependencies";
 
 type GetKnowledgeBaseContext = Context<
   ApiEnv,
@@ -25,7 +24,7 @@ export async function getKnowledgeBaseProcedure(
   }
 
   const result = await dependencies.knowledgeBaseService.getKnowledgeBase({
-    actor: authResult.actor,
+    actor: toKnowledgeActor(authResult.actor),
     knowledgeBaseId: context.req.param("knowledgeBaseId"),
   });
   if (!result.ok) {

@@ -1,22 +1,23 @@
 import type { Context } from "hono";
 
+import type { ApiEnv, ApiServiceError } from "../../../contracts";
+import {
+  createSuccessResponse,
+  readJsonBody,
+  respondWithServiceError,
+  respondWithValidationError,
+} from "../../../http";
+import {
+  getRequestIpSummary,
+  requireAdminKnowledgeBaseSession,
+  respondAfterUnresolvedKnowledgeBaseRateLimit,
+  validateJsonMutationRequest,
+} from "../../../guards";
+import type { ProviderRouteDependencies } from "../dependencies";
 import {
   modelServiceKindSchema,
   saveProviderConfigInputSchema,
-} from "@kb/ai-providers";
-
-import type { ApiEnv } from "../../../contracts";
-import { createSuccessResponse, readJsonBody } from "../../../http";
-import {
-  respondWithServiceError,
-  respondWithValidationError,
-  validateJsonMutationRequest,
-} from "../../../request-helpers";
-import {
-  requireAdminKnowledgeBaseSession,
-  respondAfterUnresolvedKnowledgeBaseRateLimit,
-} from "../../../session-guards";
-import type { ProviderRouteDependencies } from "../types";
+} from "../types";
 
 type SaveProviderContext = Context<ApiEnv, "/api/providers/:kind">;
 
@@ -78,8 +79,10 @@ export async function saveProviderProcedure(
       status: parsedBody.data.status,
       apiKey: apiKeyResult.value,
     },
+    ipSummary: getRequestIpSummary(context),
     kind: parsedKind.data,
     requestId: context.get("requestId"),
+    userAgentSummary: context.req.header("user-agent") ?? null,
   });
   if (!result.ok) {
     return respondWithServiceError(context, result);
@@ -104,12 +107,7 @@ async function decryptProviderApiKey(
   },
 ): Promise<
   | { ok: true; value: { mode: "plaintext"; value: string } }
-  | {
-      ok: false;
-      code: string;
-      httpStatus: 400 | 401 | 403 | 404 | 409 | 429 | 500;
-      message: string;
-    }
+  | ApiServiceError
 > {
   const decrypted = await dependencies.providerTransportKeyService.decryptApiKey(input);
   if (!decrypted.ok) {

@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
+import { recordAuditLog } from "@kb/audit";
 import {
-  auditLogs,
   documents,
   documentSources,
   ingestionJobLogs,
@@ -92,7 +92,10 @@ export async function uploadDocumentFileOperation(
 ): Promise<UploadResult> {
   try {
     return await runUploadDocumentFileOperation(options, input);
-  } catch {
+  } catch (error) {
+    logUploadFailure(options, "document_upload_operation_failed", input, {
+      error,
+    });
     return createInternalError();
   }
 }
@@ -189,7 +192,12 @@ async function runUploadDocumentFileOperation(
         tenantId: input.actor.tenant.id,
       },
     });
-  } catch {
+  } catch (error) {
+    logUploadFailure(options, "document_upload_object_put_failed", input, {
+      documentId: reservation.documentId,
+      error,
+      jobId: reservation.jobId,
+    });
     await markReservedUploadFailed(options.db, {
       cleanupStatus: "not_required",
       documentId: reservation.documentId,
@@ -212,7 +220,12 @@ async function runUploadDocumentFileOperation(
       ok: true,
       result,
     };
-  } catch {
+  } catch (error) {
+    logUploadFailure(options, "document_upload_finalization_failed", input, {
+      documentId: reservation.documentId,
+      error,
+      jobId: reservation.jobId,
+    });
     const cleanup = await cleanupObjectAfterFinalizationFailure(
       objectStorage,
       sourceBucket,
@@ -230,6 +243,11 @@ async function runUploadDocumentFileOperation(
     });
 
     if (!cleanup.ok) {
+      logUploadFailure(options, "document_upload_object_cleanup_failed", input, {
+        documentId: reservation.documentId,
+        error: "Object cleanup failed.",
+        jobId: reservation.jobId,
+      });
       await writeUploadAudit(options.db, {
         action: "document.upload_cleanup_failed",
         documentId: reservation.documentId,
@@ -267,7 +285,12 @@ async function enqueueFinalizedUpload(
     );
 
     return result;
-  } catch {
+  } catch (error) {
+    logUploadFailure(options, "document_upload_queue_enqueue_failed", input, {
+      documentId: result.document.id,
+      error,
+      jobId: result.job.id,
+    });
     await markUploadQueueEnqueueFailed(options.db, {
       jobId: result.job.id,
       tenantId: input.actor.tenant.id,
@@ -282,6 +305,27 @@ async function enqueueFinalizedUpload(
       duplicate: false,
     };
   }
+}
+
+function logUploadFailure(
+  options: KnowledgeBaseServiceOptions,
+  event: string,
+  input: UploadInput,
+  fields: {
+    documentId?: string;
+    error: unknown;
+    jobId?: string;
+  },
+): void {
+  options.logger?.error(event, {
+    actorId: input.actor.user.id,
+    documentId: fields.documentId,
+    error: fields.error instanceof Error ? fields.error.message : String(fields.error),
+    jobId: fields.jobId,
+    knowledgeBaseId: input.knowledgeBaseId,
+    requestId: input.requestId,
+    tenantId: input.actor.tenant.id,
+  });
 }
 
 async function authorizeUpload(
@@ -708,7 +752,7 @@ async function writeUploadAudit(
     targetType?: string;
   },
 ): Promise<void> {
-  await db.insert(auditLogs).values({
+  await recordAuditLog(db, {
     action: input.action,
     actorId: input.input.actor.user.id,
     actorType: "user",

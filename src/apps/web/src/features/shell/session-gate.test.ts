@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import type { ApiErrorCode } from "@kb/shared";
+
 import { ApiClientError } from "../api/client";
 import { getAppShellSessionGateDecision } from "./session-gate";
 
@@ -88,7 +90,7 @@ describe("app shell session gate", () => {
   });
 });
 
-function createApiError(code: string, httpStatus: number): ApiClientError {
+function createApiError(code: ApiErrorCode, httpStatus: number): ApiClientError {
   return new ApiClientError({
     success: false,
     code,

@@ -2,16 +2,13 @@ import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
 import {
+  appendSetCookieHeaders,
   createSuccessResponse,
   hasRequestBody,
   respondWithError,
 } from "../../../http";
-import {
-  appendSetCookieHeaders,
-  validateMutationRequest,
-} from "../../../request-helpers";
-import { rateLimitAuthSession } from "../../../session-guards";
-import type { AuthRouteDependencies } from "../types";
+import { rateLimitAuthSession, validateMutationRequest } from "../../../guards";
+import type { AuthRouteDependencies } from "../dependencies";
 
 export async function logoutProcedure(
   context: Context<ApiEnv>,

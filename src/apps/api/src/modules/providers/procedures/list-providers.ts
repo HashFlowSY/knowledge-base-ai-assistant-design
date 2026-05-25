@@ -1,10 +1,9 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import { createSuccessResponse } from "../../../http";
-import { respondWithServiceError } from "../../../request-helpers";
-import { requireAdminKnowledgeBaseSession } from "../../../session-guards";
-import type { ProviderRouteDependencies } from "../types";
+import { createSuccessResponse, respondWithServiceError } from "../../../http";
+import { requireAdminKnowledgeBaseSession } from "../../../guards";
+import type { ProviderRouteDependencies } from "../dependencies";
 
 export async function listProvidersProcedure(
   context: Context<ApiEnv>,

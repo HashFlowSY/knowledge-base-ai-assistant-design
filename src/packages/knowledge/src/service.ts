@@ -9,6 +9,7 @@ import type {
 } from "./service-types";
 
 export type {
+  KnowledgeActor,
   KnowledgeBaseService,
   KnowledgeBaseServiceOptions,
 } from "./service-types";

@@ -2,13 +2,22 @@ import { eq } from "drizzle-orm";
 
 import { authAccounts, authSessions, type ProjectDb } from "@kb/db";
 
-export function createAuthMutationRepository(db: ProjectDb) {
+export interface UpsertPasswordAccountInput {
+  passwordHash: string;
+  providerId: "credential";
+  userId: string;
+}
+
+export interface AuthMutationRepository {
+  revokeUserSessions(input: { userId: string }): Promise<void>;
+  upsertPasswordAccount(input: UpsertPasswordAccountInput): Promise<void>;
+}
+
+export function createAuthMutationRepository(
+  db: ProjectDb,
+): AuthMutationRepository {
   return {
-    async upsertPasswordAccount(input: {
-      passwordHash: string;
-      providerId: "credential";
-      userId: string;
-    }): Promise<void> {
+    async upsertPasswordAccount(input) {
       const now = new Date();
       await db
         .insert(authAccounts)
@@ -29,7 +38,7 @@ export function createAuthMutationRepository(db: ProjectDb) {
           },
         });
     },
-    async revokeUserSessions(input: { userId: string }): Promise<void> {
+    async revokeUserSessions(input) {
       await db.delete(authSessions).where(eq(authSessions.userId, input.userId));
     },
   };

@@ -1,3 +1,5 @@
+export { createBullMqConnectionOptions } from "./connection";
+export type { BullMqConnectionOptions } from "./connection";
 export { createIngestionJobId } from "./job-id";
 export { createIngestionJobOptions } from "./options";
 export {

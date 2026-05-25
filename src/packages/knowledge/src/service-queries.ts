@@ -13,7 +13,6 @@ import {
   type SQL,
 } from "drizzle-orm";
 
-import type { SessionPayload } from "@kb/auth";
 import {
   authUsers,
   documents,
@@ -25,6 +24,7 @@ import {
 
 import type { KnowledgeBaseListQuery } from "./schemas";
 import type { KnowledgeBaseMemberRow, KnowledgeBaseRow } from "./service-mappers";
+import type { KnowledgeActor } from "./service-types";
 
 export type ProjectDbTransaction = Parameters<
   Parameters<ProjectDb["transaction"]>[0]
@@ -33,7 +33,7 @@ export type ProjectDbTransaction = Parameters<
 export type KnowledgeDb = ProjectDb | ProjectDbTransaction;
 
 export function createVisibleKnowledgeBaseConditions(
-  actor: SessionPayload,
+  actor: KnowledgeActor,
   query?: Pick<KnowledgeBaseListQuery, "search">,
 ): SQL<unknown>[] {
   const conditions: SQL<unknown>[] = [
@@ -69,7 +69,7 @@ export function createVisibleKnowledgeBaseConditions(
 
 export async function listVisibleKnowledgeBaseRows(
   db: KnowledgeDb,
-  input: { actor: SessionPayload; query: KnowledgeBaseListQuery },
+  input: { actor: KnowledgeActor; query: KnowledgeBaseListQuery },
 ): Promise<{ items: KnowledgeBaseRow[]; total: number }> {
   const conditions = createVisibleKnowledgeBaseConditions(input.actor, input.query);
   const offset = (input.query.page - 1) * input.query.pageSize;
@@ -106,7 +106,7 @@ export async function listVisibleKnowledgeBaseRows(
 
 export async function findVisibleKnowledgeBaseRow(
   db: KnowledgeDb,
-  input: { actor: SessionPayload; knowledgeBaseId: string },
+  input: { actor: KnowledgeActor; knowledgeBaseId: string },
 ): Promise<KnowledgeBaseRow | null> {
   const rows = await db
     .select({

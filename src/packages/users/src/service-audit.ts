@@ -1,4 +1,4 @@
-import { auditLogs, type ProjectDb } from "@kb/db";
+import { recordAuditLog, type AuditLogDb } from "@kb/audit";
 import type { SessionPayload } from "@kb/auth";
 
 export type UserRequestContextGetter = () => {
@@ -8,7 +8,7 @@ export type UserRequestContextGetter = () => {
 };
 
 export async function insertAudit(
-  db: ProjectDb,
+  db: AuditLogDb,
   input: {
     action:
       | "user.created"
@@ -23,7 +23,7 @@ export async function insertAudit(
 ): Promise<void> {
   const context = input.getRequestContext?.();
 
-  await db.insert(auditLogs).values({
+  await recordAuditLog(db, {
     tenantId: input.actor.tenant.id,
     actorId: input.actor.user.id,
     actorType: "user",

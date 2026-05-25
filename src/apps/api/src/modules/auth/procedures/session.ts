@@ -1,10 +1,13 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import { createSuccessResponse, respondWithError } from "../../../http";
-import { appendSetCookieHeaders } from "../../../request-helpers";
-import { rateLimitAuthSession } from "../../../session-guards";
-import type { AuthRouteDependencies } from "../types";
+import {
+  appendSetCookieHeaders,
+  createSuccessResponse,
+  respondWithError,
+} from "../../../http";
+import { rateLimitAuthSession } from "../../../guards";
+import type { AuthRouteDependencies } from "../dependencies";
 
 export async function sessionProcedure(
   context: Context<ApiEnv>,

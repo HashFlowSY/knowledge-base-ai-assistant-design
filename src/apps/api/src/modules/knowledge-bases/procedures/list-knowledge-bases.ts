@@ -1,12 +1,10 @@
 import type { Context } from "hono";
 
-import { knowledgeBaseListQuerySchema } from "@kb/knowledge";
-
 import type { ApiEnv } from "../../../contracts";
-import { createSuccessResponse } from "../../../http";
-import { respondWithServiceError } from "../../../request-helpers";
-import { requireKnowledgeBaseSession } from "../../../session-guards";
-import type { KnowledgeBaseRouteDependencies } from "../types";
+import { createSuccessResponse, respondWithServiceError } from "../../../http";
+import { requireKnowledgeBaseSession, toKnowledgeActor } from "../../../guards";
+import type { KnowledgeBaseRouteDependencies } from "../dependencies";
+import { knowledgeBaseListQuerySchema } from "../types";
 
 export async function listKnowledgeBasesProcedure(
   context: Context<ApiEnv>,
@@ -25,7 +23,7 @@ export async function listKnowledgeBasesProcedure(
     Object.fromEntries(new URL(context.req.url).searchParams),
   );
   const result = await dependencies.knowledgeBaseService.listKnowledgeBases({
-    actor: authResult.actor,
+    actor: toKnowledgeActor(authResult.actor),
     query,
   });
   if (!result.ok) {

@@ -1,5 +1,5 @@
-import type { SessionPayload } from "@kb/auth";
 import type { ProjectDb } from "@kb/db";
+import type { Logger } from "@kb/observability";
 import type { IngestionQueueProducer } from "@kb/queue/producer";
 import type { ObjectStorageClient } from "@kb/storage";
 
@@ -14,33 +14,40 @@ import type {
 } from "./schemas";
 import type { KnowledgeBaseServiceError } from "./service-errors";
 
+export interface KnowledgeActor {
+  user: { id: string };
+  tenant: { id: string };
+  role: "admin" | "member";
+}
+
 export interface KnowledgeBaseServiceOptions {
   db: ProjectDb;
   ingestionQueueProducer?: IngestionQueueProducer;
+  logger?: Logger;
   objectStorage?: ObjectStorageClient;
   sourceBucket?: string;
 }
 
 export interface KnowledgeBaseService {
   listKnowledgeBases(input: {
-    actor: SessionPayload;
+    actor: KnowledgeActor;
     query: KnowledgeBaseListQuery;
   }): Promise<{ ok: true; page: KnowledgeBasesPage } | KnowledgeBaseServiceError>;
   getKnowledgeBase(input: {
-    actor: SessionPayload;
+    actor: KnowledgeActor;
     knowledgeBaseId: string;
   }): Promise<{ ok: true; knowledgeBase: KnowledgeBaseDetail } | KnowledgeBaseServiceError>;
   createKnowledgeBase(input: {
-    actor: SessionPayload;
+    actor: KnowledgeActor;
     body: CreateKnowledgeBaseInput;
   }): Promise<{ ok: true; knowledgeBase: KnowledgeBaseSummary } | KnowledgeBaseServiceError>;
   updateKnowledgeBase(input: {
-    actor: SessionPayload;
+    actor: KnowledgeActor;
     body: UpdateKnowledgeBaseInput;
     knowledgeBaseId: string;
   }): Promise<{ ok: true; knowledgeBase: KnowledgeBaseDetail } | KnowledgeBaseServiceError>;
   uploadDocumentFile(input: {
-    actor: SessionPayload;
+    actor: KnowledgeActor;
     checksum: string;
     content: Uint8Array;
     ipSummary: string;

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 
 import type { ApiEnv } from "../../contracts";
 import { uploadDocumentFileProcedure } from "./procedures/upload-document-file";
-import type { DocumentsRouteDependencies } from "./types";
+import type { DocumentsRouteDependencies } from "./dependencies";
 
 export function createDocumentsRouter(
   dependencies: DocumentsRouteDependencies,

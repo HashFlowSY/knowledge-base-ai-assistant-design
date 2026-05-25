@@ -4,7 +4,7 @@ import type { ApiEnv } from "../../contracts";
 import { listProvidersProcedure } from "./procedures/list-providers";
 import { providerPublicKeyProcedure } from "./procedures/provider-public-key";
 import { saveProviderProcedure } from "./procedures/save-provider";
-import type { ProviderRouteDependencies } from "./types";
+import type { ProviderRouteDependencies } from "./dependencies";
 
 export function createProvidersRouter(
   dependencies: ProviderRouteDependencies,

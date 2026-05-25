@@ -4,7 +4,7 @@ import type { ApiEnv } from "../../contracts";
 import { loginProcedure } from "./procedures/login";
 import { logoutProcedure } from "./procedures/logout";
 import { sessionProcedure } from "./procedures/session";
-import type { AuthRouteDependencies } from "./types";
+import type { AuthRouteDependencies } from "./dependencies";
 
 export function createAuthRouter(
   dependencies: AuthRouteDependencies,

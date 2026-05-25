@@ -1,7 +1,8 @@
-import type { ApiRateLimiter, AuthService } from "../../contracts";
-
-export interface AuthRouteDependencies {
-  allowedOrigins: string[];
-  authService: AuthService;
-  rateLimiter: ApiRateLimiter;
-}
+export {
+  loginInputSchema,
+  sessionPayloadSchema,
+} from "@kb/auth";
+export type {
+  LoginInput,
+  SessionPayload,
+} from "@kb/auth";

@@ -19,6 +19,21 @@ export const emptyPayloadSchema = z.null();
 
 export type EmptyPayload = z.infer<typeof emptyPayloadSchema>;
 
+export const apiErrorCodeSchema = z.enum([
+  "UNAUTHORIZED",
+  "FORBIDDEN",
+  "NOT_FOUND",
+  "CONFLICT",
+  "VALIDATION_ERROR",
+  "RATE_LIMITED",
+  "PAYLOAD_TOO_LARGE",
+  "UNSUPPORTED_MEDIA_TYPE",
+  "PROVIDER_UNAVAILABLE",
+  "INTERNAL_ERROR",
+]);
+
+export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
+
 export function apiSuccessResponseSchema<T extends z.ZodTypeAny>(
   dataSchema: T,
 ): z.ZodObject<{
@@ -45,7 +60,7 @@ export interface ApiSuccessResponse<T> {
 export const apiErrorResponseSchema = z.object({
   success: z.literal(false),
   httpStatus: z.number().int().min(400).max(599),
-  code: z.string().min(1),
+  code: apiErrorCodeSchema,
   message: z.string().min(1),
   requestId: z.string().min(1),
   validationErrors: z.array(apiValidationErrorSchema).optional(),

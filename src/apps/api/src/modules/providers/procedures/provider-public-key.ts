@@ -2,8 +2,8 @@ import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
 import { createSuccessResponse } from "../../../http";
-import { requireAdminKnowledgeBaseSession } from "../../../session-guards";
-import type { ProviderRouteDependencies } from "../types";
+import { requireAdminKnowledgeBaseSession } from "../../../guards";
+import type { ProviderRouteDependencies } from "../dependencies";
 
 export async function providerPublicKeyProcedure(
   context: Context<ApiEnv>,

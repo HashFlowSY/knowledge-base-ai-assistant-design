@@ -11,10 +11,14 @@
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "seed:dev-auth": "tsx src/seed-dev-auth.ts"
   },
   "dependencies": {
+    "@kb/db": "workspace:*",
     "better-auth": "^1.6.11",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.45.2",
     "zod": "^3.24.0"
   }
 }
