@@ -643,3 +643,37 @@ Aligned backend API/package boundaries with Trellis specs, classified API tests 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 20: User chat RAG page
+
+**Date**: 2026-05-26
+**Task**: User chat RAG page
+**Branch**: `feat/user-chat-page`
+
+### Summary
+
+Implemented the real user chat/RAG baseline flow, updated README testing and current-state documentation, and recorded remaining query rewrite and multi-turn gaps.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a34493b` | (see git log) |
+| `cd2b0e1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
