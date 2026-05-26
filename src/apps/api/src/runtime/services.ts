@@ -8,12 +8,22 @@ import {
 } from "@kb/db";
 import {
   createDrizzleProviderConfigRepository,
+  createEmbeddingService,
   createProviderConnectionTester,
   createProviderConfigService,
 } from "@kb/ai-providers/service";
+import {
+  createProviderChatService,
+  createProviderRerankService,
+} from "@kb/ai-providers/runtime";
 import { createKnowledgeBaseService } from "@kb/knowledge/service";
 import { createBullMqIngestionQueueProducer } from "@kb/queue/producer";
+import {
+  createRagChatService,
+} from "@kb/rag";
+import { createDrizzleRagChatRepository } from "@kb/rag/drizzle";
 import { normalizeAes256GcmKey } from "@kb/security";
+import { createMeiliKeywordSearcher } from "@kb/search";
 import {
   createS3ObjectStorageClient,
   objectStorageConfigSchema,
@@ -56,6 +66,10 @@ export interface ApiRuntimeServiceConfig {
     attempts: number;
     backoffMs: number;
   };
+  meiliSearch: {
+    apiKey: string;
+    host: string;
+  };
   objectStorage: ObjectStorageConfig;
   redisUrl: string;
   uploadConfig: UploadConfig;
@@ -75,6 +89,8 @@ export function createApiRuntimeServices(
   });
   const objectStorage = createS3ObjectStorageClient(input.objectStorage);
   const logger = createLogger({ service: "api" });
+  const encryptionKey = normalizeAes256GcmKey(input.appEncryptionKey);
+  const providerRepository = createDrizzleProviderConfigRepository(dbRuntime.db);
   const ingestionQueueProducer = createBullMqIngestionQueueProducer({
     attempts: input.ingestionQueueConfig.attempts,
     backoffMs: input.ingestionQueueConfig.backoffMs,
@@ -108,8 +124,84 @@ export function createApiRuntimeServices(
       });
     },
     connectionTester: createProviderConnectionTester(),
-    encryptionKey: normalizeAes256GcmKey(input.appEncryptionKey),
-    repository: createDrizzleProviderConfigRepository(dbRuntime.db),
+    encryptionKey,
+    repository: providerRepository,
+  });
+  const embeddingService = createEmbeddingService({
+    encryptionKey,
+    repository: providerRepository,
+  });
+  const providerChatService = createProviderChatService({
+    encryptionKey,
+    repository: providerRepository,
+  });
+  const providerRerankService = createProviderRerankService({
+    encryptionKey,
+    repository: providerRepository,
+  });
+  const keywordSearcher = createMeiliKeywordSearcher(input.meiliSearch);
+  const chatService = createRagChatService({
+    answerGenerator: {
+      async generate(chatInput) {
+        return providerChatService.generate({
+          messages: [
+            {
+              role: "system",
+              content:
+                "你只能基于给定知识库上下文回答。没有依据时明确说明知识库中没有找到。",
+            },
+            {
+              role: "user",
+              content: `问题：${chatInput.question}\n\n上下文：\n${chatInput.context}`,
+            },
+          ],
+          requestId: chatInput.requestId,
+          tenantId: chatInput.tenantId,
+        });
+      },
+    },
+    embeddingProvider: {
+      async embedQuery(embedInput) {
+        const result = await embeddingService.embed({
+          inputs: [embedInput.query],
+          requestId: embedInput.requestId,
+          tenantId: embedInput.tenantId,
+        });
+        if (!result.ok) {
+          return { ok: false, code: result.code };
+        }
+
+        const vector = result.vectors[0];
+        return vector === undefined
+          ? { ok: false, code: "PROVIDER_INVALID_REQUEST" }
+          : { ok: true, vector };
+      },
+    },
+    keywordSearcher,
+    logger: logger.child({ action: "chat.rag" }),
+    repository: createDrizzleRagChatRepository(dbRuntime.db),
+    reranker: {
+      async rerank(rerankInput) {
+        const result = await providerRerankService.rerank({
+          documents: rerankInput.candidates.map((candidate) => ({
+            id: candidate.chunkId,
+            text: candidate.content,
+          })),
+          query: rerankInput.query,
+          requestId: rerankInput.requestId,
+          tenantId: rerankInput.tenantId,
+        });
+        return result.ok
+          ? {
+              ok: true,
+              results: result.results.map((item) => ({
+                chunkId: item.id,
+                score: item.score,
+              })),
+            }
+          : result;
+      },
+    },
   });
   const auditService: AuditService = {
     async recordDocumentUploadSecurityFailure(event) {
@@ -157,6 +249,7 @@ export function createApiRuntimeServices(
       betterAuthSecret: input.betterAuthSecret,
       db: dbRuntime.db,
     }),
+    chatService,
     knowledgeBaseService: knowledgeAdapters.knowledgeBaseService,
     logger,
     providerConfigService: providerConfigService as ProviderConfigApiService,
@@ -187,6 +280,10 @@ export function createApiRuntimeServicesFromEnv(
     ingestionQueueConfig: {
       attempts: config.INGESTION_QUEUE_ATTEMPTS,
       backoffMs: config.INGESTION_QUEUE_BACKOFF_MS,
+    },
+    meiliSearch: {
+      apiKey: config.MEILISEARCH_MASTER_KEY,
+      host: config.MEILISEARCH_HOST,
     },
     objectStorage: objectStorageConfigSchema.parse({
       accessKeyId: config.S3_ACCESS_KEY_ID,

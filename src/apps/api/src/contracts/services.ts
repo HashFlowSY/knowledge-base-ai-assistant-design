@@ -19,6 +19,15 @@ import type {
   UpdateKnowledgeBaseInput,
 } from "@kb/knowledge";
 import type {
+  ChatMessagesResponse,
+  ChatSessionsResponse,
+  ChatSubmitResponse,
+  CreateChatSessionInput,
+  SubmitAnswerFeedbackInput,
+  SubmitAnswerFeedbackResponse,
+  SubmitChatQuestionInput,
+} from "@kb/rag";
+import type {
   CreateUserInput,
   UpdateUserInput,
   UsersPage,
@@ -199,6 +208,36 @@ export interface ProviderConfigApiService {
   >;
 }
 
+export interface ChatService {
+  listSessions(input: {
+    actor: SessionPayload;
+    query: { knowledgeBaseId?: string };
+  }): Promise<{ ok: true; result: ChatSessionsResponse } | ApiServiceError>;
+  createSession(input: {
+    actor: SessionPayload;
+    body: CreateChatSessionInput;
+  }): Promise<
+    | { ok: true; result: { session: ChatSessionsResponse["sessions"][number] } }
+    | ApiServiceError
+  >;
+  listMessages(input: {
+    actor: SessionPayload;
+    sessionId: string;
+  }): Promise<{ ok: true; result: ChatMessagesResponse } | ApiServiceError>;
+  submitQuestion(input: {
+    actor: SessionPayload;
+    body: SubmitChatQuestionInput;
+    requestId: string;
+  }): Promise<{ ok: true; result: ChatSubmitResponse } | ApiServiceError>;
+  submitFeedback(input: {
+    actor: SessionPayload;
+    body: SubmitAnswerFeedbackInput;
+    messageId: string;
+  }): Promise<
+    { ok: true; result: SubmitAnswerFeedbackResponse } | ApiServiceError
+  >;
+}
+
 export interface ProviderTransportKeyService {
   createPublicKey(): Promise<ProviderPublicKey>;
   decryptApiKey(input: {
@@ -270,6 +309,7 @@ export interface ApiAppOptions {
   allowedOrigins?: string[];
   auditService?: AuditService;
   authService?: AuthService;
+  chatService?: Partial<ChatService>;
   documentService?: Partial<DocumentService>;
   knowledgeBaseService?: Partial<KnowledgeBaseService>;
   logger?: Logger;

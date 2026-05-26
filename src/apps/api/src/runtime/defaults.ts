@@ -13,6 +13,7 @@ import type {
   ApiServiceError,
   AuditService,
   AuthService,
+  ChatService,
   DocumentService,
   KnowledgeBaseService,
   ProviderConfigApiService,
@@ -190,6 +191,26 @@ export function createEmptyKnowledgeBaseService(): KnowledgeBaseService {
       return createNotImplementedServiceError();
     },
     async updateKnowledgeBase() {
+      return createNotImplementedServiceError();
+    },
+  };
+}
+
+export function createEmptyChatService(): ChatService {
+  return {
+    async listSessions() {
+      return { ok: true, result: { sessions: [] } };
+    },
+    async createSession() {
+      return createNotImplementedServiceError();
+    },
+    async listMessages() {
+      return { ok: true, result: { messages: [] } };
+    },
+    async submitQuestion() {
+      return createNotImplementedServiceError();
+    },
+    async submitFeedback() {
       return createNotImplementedServiceError();
     },
   };

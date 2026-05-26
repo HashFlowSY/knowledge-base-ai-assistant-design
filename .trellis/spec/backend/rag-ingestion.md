@@ -258,4 +258,83 @@ Feedback records include:
 - actor id.
 - tenant id.
 
+## Scenario: Non-Streaming RAG Chat Query
+
+### 1. Scope / Trigger
+
+- Trigger: browser chat submits a question to one selected knowledge base and expects one complete response.
+- Owner: `src/packages/rag` owns retrieval orchestration, run/result persistence, citations, and feedback hooks; `src/apps/api` owns HTTP validation, auth context, and error envelopes.
+
+### 2. Signatures
+
+- `GET /api/chat/sessions?knowledgeBaseId=<id>` -> `ApiSuccessResponse<ChatSessionsResponse>`
+- `POST /api/chat/sessions` with `{ knowledgeBaseId }` -> `ApiSuccessResponse<CreateChatSessionResponse>`
+- `GET /api/chat/sessions/:sessionId/messages` -> `ApiSuccessResponse<ChatMessagesResponse>`
+- `POST /api/chat/messages` with `{ knowledgeBaseId, question, sessionId: string | null }` -> `ApiSuccessResponse<ChatSubmitResponse>`
+- `POST /api/chat/messages/:messageId/feedback` with `{ rating, reason, citationIds }` -> `ApiSuccessResponse<SubmitAnswerFeedbackResponse>`
+- Repository boundary must expose authorization, session/message access checks, retrieval run start/complete, retrieval result recording, message/citation persistence, feedback persistence, vector search, and recent history reads.
+
+### 3. Contracts
+
+- Chat v1 accepts exactly one `knowledgeBaseId`; persist it through `chat_sessions.selected_knowledge_base_ids` as a one-item array.
+- Submit-question is non-streaming: API returns user message, assistant message, citations, grounding label, and session summary only after retrieval, rerank, context assembly, generation, and persistence finish.
+- Retrieval defaults are vector top 30, keyword top 30, fused top 50, reranked/context top 8, recent history 6 messages, and context budget 6,000 estimated tokens.
+- Every retrieval must create `retrieval_runs`, record final ranked `retrieval_results`, store `retrievalRunId` on assistant message metadata, and attach it to answer citations and feedback.
+- Rerank fallback must log `provider.rerank_unavailable` with safe metadata only; do not log prompts, chunk content, provider keys, or full model output.
+- Session/message reads and feedback writes must be scoped to tenant and actor-owned accessible sessions.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| Missing session | `UNAUTHORIZED` envelope |
+| Empty or overlong question | `VALIDATION_ERROR` envelope |
+| Member uses unassigned knowledge base | `FORBIDDEN` envelope before retrieval/provider calls |
+| Session/message is absent or inaccessible | `NOT_FOUND` envelope |
+| Rerank provider unavailable | Fall back to fused ranking, cap grounding at `依据有限`, log safe fallback event |
+| No usable context | Persist assistant no-answer message with `未找到依据` |
+| Chat provider unavailable | Persist safe assistant failure text; do not expose raw provider body |
+
+### 5. Good/Base/Bad Cases
+
+- Good: API validates input, resolves actor/tenant, RAG checks knowledge-base authorization, then both pgvector and Meilisearch receive tenant and knowledge-base filters.
+- Base: existing sessions can be continued only after repository `getSession` confirms tenant, actor ownership, and selected knowledge-base scope.
+- Bad: accepting `sessionId` plus any caller-supplied `knowledgeBaseId` and appending messages without loading the persisted session scope.
+
+### 6. Tests Required
+
+- Unit tests for RRF fusion/deduplication, context assembly limits, no-answer handling, rerank fallback logging, retrieval run/result persistence orchestration, inaccessible sessions, inaccessible feedback messages, and unauthorized knowledge bases.
+- API tests for chat validation, authenticated submit/list/feedback routes, service error mapping, and typed Hono RPC route exposure.
+- Web tests for real chat hooks, query invalidation, no production mock-store imports, and visible forbidden/error/no-answer states.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+await repository.appendMessage({
+  sessionId: body.sessionId,
+  knowledgeBaseId: body.knowledgeBaseId,
+  role: "user",
+});
+```
+
+This trusts caller-supplied scope and can write into another accessible tenant session.
+
+#### Correct
+
+```typescript
+const session = await repository.getSession({
+  actor,
+  knowledgeBaseId: body.knowledgeBaseId,
+  sessionId: body.sessionId,
+});
+
+if (session === null) {
+  return chatResourceNotFound();
+}
+```
+
+Load the persisted session through the repository boundary before writing or reading chat content.
+
 Feedback must not modify the original answer or retrieval run.

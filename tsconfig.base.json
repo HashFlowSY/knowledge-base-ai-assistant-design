@@ -22,6 +22,7 @@
     "baseUrl": ".",
     "paths": {
       "@kb/ai-providers": ["src/packages/ai-providers/src/index.ts"],
+      "@kb/ai-providers/runtime": ["src/packages/ai-providers/src/runtime.ts"],
       "@kb/ai-providers/service": ["src/packages/ai-providers/src/service.ts"],
       "@kb/api": ["src/apps/api/src/index.ts"],
       "@kb/api/app": ["src/apps/api/src/app.ts"],
@@ -37,6 +38,7 @@
       "@kb/queue": ["src/packages/queue/src/index.ts"],
       "@kb/queue/producer": ["src/packages/queue/src/producer.ts"],
       "@kb/rag": ["src/packages/rag/src/index.ts"],
+      "@kb/rag/drizzle": ["src/packages/rag/src/drizzle-repository.ts"],
       "@kb/search": ["src/packages/search/src/index.ts"],
       "@kb/security": ["src/packages/security/src/index.ts"],
       "@kb/shared": ["src/packages/shared/src/index.ts"],

@@ -215,6 +215,52 @@ describe("@kb/ingestion", () => {
     ]);
   });
 
+  it("batches embedding requests before persisting large chunk sets", async () => {
+    const sourceText = Array.from({ length: 23 }, (_, index) =>
+      index.toString().padStart(2, "0").repeat(5),
+    ).join("");
+    const repository = createFakeRepository({
+      source: {
+        body: new TextEncoder().encode(sourceText),
+        mimeType: "text/plain",
+        originalFilename: "large.txt",
+      },
+    });
+    const batchSizes: number[] = [];
+    const pipeline = createIngestionPipeline({
+      chunking: {
+        chunkOverlap: 0,
+        chunkSize: 10,
+      },
+      embeddingService: {
+        async embed(input) {
+          batchSizes.push(input.inputs.length);
+          return {
+            ok: true,
+            dimensions: 1_024,
+            modelId: "text-embedding-v4",
+            provider: "openai-compatible",
+            providerConfigId: "provider_1",
+            vectors: input.inputs.map((_, index) => createVector(index)),
+          };
+        },
+      },
+      indexWriter: {
+        async indexDocuments() {
+          return undefined;
+        },
+      },
+      repository,
+    });
+
+    await expect(pipeline.processFileIngestion(filePayload())).resolves.toEqual({
+      status: "completed",
+    });
+    expect(batchSizes).toEqual([10, 10, 3]);
+    expect(repository.persisted?.chunks).toHaveLength(23);
+    expect(repository.persisted?.embeddings).toHaveLength(23);
+  });
+
   it("skips duplicate BullMQ deliveries that cannot claim the persisted job", async () => {
     const repository = createFakeRepository({
       claimResult: { status: "already_claimed" },

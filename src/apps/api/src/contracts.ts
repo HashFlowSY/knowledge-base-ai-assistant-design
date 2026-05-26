@@ -6,6 +6,7 @@ export type {
   ApiServiceError,
   AuditService,
   AuthService,
+  ChatService,
   DocumentFileUploadResult,
   DocumentFileUploadServiceInput,
   DocumentService,

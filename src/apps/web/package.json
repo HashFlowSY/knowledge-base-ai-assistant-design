@@ -15,6 +15,7 @@
     "@kb/auth": "workspace:*",
     "@kb/api": "workspace:*",
     "@kb/knowledge": "workspace:*",
+    "@kb/rag": "workspace:*",
     "@kb/security": "workspace:*",
     "@kb/shared": "workspace:*",
     "@kb/users": "workspace:*",

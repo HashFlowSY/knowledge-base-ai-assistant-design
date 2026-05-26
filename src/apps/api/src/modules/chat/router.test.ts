@@ -1,0 +1,155 @@
+import { describe, expect, it } from "vitest";
+
+import { chatMessagesResponseSchema, chatSubmitResponseSchema } from "@kb/rag";
+import { apiErrorResponseSchema, apiSuccessResponseSchema } from "@kb/shared";
+
+import { createApiApp, type ChatService } from "../../app";
+import { adminSession, createStaticAuthService } from "../../testing/fakes";
+
+const sessionSummary = {
+  id: "chat_1",
+  title: "差旅制度",
+  knowledgeBaseId: "kb_1",
+  createdAt: "2026-05-25T00:00:00.000Z",
+  updatedAt: "2026-05-25T00:00:00.000Z",
+  messageCount: 2,
+};
+
+const assistantMessage = {
+  id: "msg_a",
+  sessionId: "chat_1",
+  role: "assistant" as const,
+  content: "差旅住宿标准见引用。",
+  sequence: 2,
+  createdAt: "2026-05-25T00:00:02.000Z",
+  groundingLabel: "依据充分" as const,
+  retrievalRunId: "run_1",
+  citations: [
+    {
+      id: "citation_1",
+      messageId: "msg_a",
+      retrievalRunId: "run_1",
+      knowledgeBaseId: "kb_1",
+      documentId: "doc_1",
+      chunkId: "chunk_1",
+      sourceTitle: "差旅制度",
+      sourceUri: "s3://policy",
+      sourceLocator: "P1",
+      snippet: "住宿标准",
+      rank: 1,
+    },
+  ],
+  feedback: null,
+};
+
+describe("chat API router", () => {
+  it("submits a non-streaming chat question through the authenticated chat service", async () => {
+    const chatService: Partial<ChatService> = {
+      async submitQuestion(input) {
+        expect(input.actor).toEqual(adminSession);
+        expect(input.body).toEqual({
+          knowledgeBaseId: "kb_1",
+          question: "差旅住宿标准是多少？",
+          sessionId: null,
+        });
+        return {
+          ok: true,
+          result: {
+            session: sessionSummary,
+            userMessage: {
+              id: "msg_u",
+              sessionId: "chat_1",
+              role: "user",
+              content: "差旅住宿标准是多少？",
+              sequence: 1,
+              createdAt: "2026-05-25T00:00:01.000Z",
+              groundingLabel: null,
+              retrievalRunId: null,
+              citations: [],
+              feedback: null,
+            },
+            assistantMessage,
+          },
+        };
+      },
+    };
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService,
+    });
+
+    const response = await app.request("/api/chat/messages", {
+      body: JSON.stringify({
+        knowledgeBaseId: "kb_1",
+        question: "差旅住宿标准是多少？",
+        sessionId: null,
+      }),
+      headers: {
+        "content-type": "application/json",
+        cookie: "better-auth.session_token=token",
+        "x-request-id": "req_chat_submit",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(200);
+    expect(
+      apiSuccessResponseSchema(chatSubmitResponseSchema).parse(await response.json()),
+    ).toMatchObject({
+      data: {
+        assistantMessage: {
+          groundingLabel: "依据充分",
+          citations: [{ id: "citation_1" }],
+        },
+      },
+      requestId: "req_chat_submit",
+    });
+  });
+
+  it("lists persisted session messages and maps service errors safely", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService: {
+        async listMessages(input) {
+          expect(input.sessionId).toBe("chat_1");
+          return { ok: true, result: { messages: [assistantMessage] } };
+        },
+      },
+    });
+
+    const response = await app.request("/api/chat/sessions/chat_1/messages", {
+      headers: {
+        cookie: "better-auth.session_token=token",
+        "x-request-id": "req_chat_messages",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(
+      apiSuccessResponseSchema(chatMessagesResponseSchema).parse(await response.json())
+        .data.messages[0],
+    ).toMatchObject({ id: "msg_a", citations: [{ id: "citation_1" }] });
+  });
+
+  it("returns validation envelopes for invalid chat questions", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+    });
+
+    const response = await app.request("/api/chat/messages", {
+      body: JSON.stringify({ knowledgeBaseId: "kb_1", question: "" }),
+      headers: {
+        "content-type": "application/json",
+        cookie: "better-auth.session_token=token",
+        "x-request-id": "req_chat_invalid",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(400);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "VALIDATION_ERROR",
+      requestId: "req_chat_invalid",
+    });
+  });
+});

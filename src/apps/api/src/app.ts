@@ -13,6 +13,7 @@ import type {
   ApiApp,
   ApiAppOptions,
   ApiEnv,
+  ChatService,
   DocumentService,
   KnowledgeBaseService,
   ProviderConfigApiService,
@@ -29,6 +30,7 @@ export type {
   ApiServiceError,
   AuditService,
   AuthService,
+  ChatService,
   DocumentFileUploadResult,
   DocumentFileUploadServiceInput,
   DocumentService,
@@ -41,6 +43,7 @@ export type {
   UserService,
 } from "./contracts";
 import {
+  createEmptyChatService,
   createEmptyDocumentService,
   createEmptyKnowledgeBaseService,
   createEmptyProviderConfigService,
@@ -59,6 +62,7 @@ import { createAuthRouter } from "./modules/auth/router";
 import { createHealthRouter } from "./modules/health/router";
 import { createKnowledgeBasesRouter } from "./modules/knowledge-bases/router";
 import { createDocumentsRouter } from "./modules/documents/router";
+import { createChatRouter } from "./modules/chat/router";
 import { createProvidersRouter } from "./modules/providers/router";
 import { createUsersRouter } from "./modules/users/router";
 export { healthResponseSchema } from "./modules/health/types";
@@ -91,6 +95,10 @@ export function createApiApp(options: ApiAppOptions = {}): ApiApp {
   const documentService: DocumentService = {
     ...createEmptyDocumentService(),
     ...options.documentService,
+  };
+  const chatService: ChatService = {
+    ...createEmptyChatService(),
+    ...options.chatService,
   };
   const knowledgeBaseService: KnowledgeBaseService = {
     ...createEmptyKnowledgeBaseService(),
@@ -188,6 +196,14 @@ export function createApiApp(options: ApiAppOptions = {}): ApiApp {
       rateLimiter,
       uploadConcurrencyLimiter,
       uploadConfig,
+    }),
+  );
+  app.route(
+    "/",
+    createChatRouter({
+      authService,
+      chatService,
+      rateLimiter,
     }),
   );
   app.route(

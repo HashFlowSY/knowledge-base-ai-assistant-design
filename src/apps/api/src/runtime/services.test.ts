@@ -21,6 +21,10 @@ describe("api runtime services", () => {
         attempts: 3,
         backoffMs: 5_000,
       },
+      meiliSearch: {
+        apiKey: "local-meili-master-key",
+        host: "http://localhost:7700",
+      },
       redisUrl: "redis://localhost:6379",
       uploadConfig: {
         concurrencyPerActor: 2,

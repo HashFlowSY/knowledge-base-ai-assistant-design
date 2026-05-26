@@ -99,6 +99,12 @@ importers:
       '@kb/queue':
         specifier: workspace:*
         version: link:../../packages/queue
+      '@kb/rag':
+        specifier: workspace:*
+        version: link:../../packages/rag
+      '@kb/search':
+        specifier: workspace:*
+        version: link:../../packages/search
       '@kb/security':
         specifier: workspace:*
         version: link:../../packages/security
@@ -138,6 +144,9 @@ importers:
       '@kb/knowledge':
         specifier: workspace:*
         version: link:../../packages/knowledge
+      '@kb/rag':
+        specifier: workspace:*
+        version: link:../../packages/rag
       '@kb/security':
         specifier: workspace:*
         version: link:../../packages/security
@@ -377,9 +386,15 @@ importers:
 
   src/packages/rag:
     dependencies:
+      '@kb/db':
+        specifier: workspace:*
+        version: link:../db
       '@kb/search':
         specifier: workspace:*
         version: link:../search
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@types/pg@8.20.0)(kysely@0.28.17)(pg@8.20.0)
       zod:
         specifier: ^3.24.0
         version: 3.25.76

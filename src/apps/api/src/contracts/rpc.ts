@@ -27,6 +27,15 @@ import type {
   UsersPage,
   UserSummary,
 } from "@kb/users";
+import type {
+  ChatMessagesResponse,
+  ChatSessionsResponse,
+  ChatSubmitResponse,
+  CreateChatSessionInput,
+  SubmitAnswerFeedbackInput,
+  SubmitAnswerFeedbackResponse,
+  SubmitChatQuestionInput,
+} from "@kb/rag";
 
 import type { ApiEnv } from "./context";
 
@@ -142,6 +151,40 @@ type ApiRouteSchema = {
       },
       ApiSuccessResponse<DocumentFileUploadResult> | ApiErrorResponse,
       200 | 201 | 400 | 401 | 403 | 404 | 409 | 413 | 415 | 429 | 500
+    >;
+  };
+  "/api/chat/sessions": {
+    $get: JsonEndpoint<
+      { query?: { knowledgeBaseId?: string } },
+      ApiSuccessResponse<ChatSessionsResponse> | ApiErrorResponse,
+      200 | 401 | 403 | 429 | 500
+    >;
+    $post: JsonEndpoint<
+      { json: CreateChatSessionInput },
+      | ApiSuccessResponse<{ session: ChatSessionsResponse["sessions"][number] }>
+      | ApiErrorResponse,
+      200 | 400 | 401 | 403 | 429 | 500
+    >;
+  };
+  "/api/chat/sessions/:sessionId/messages": {
+    $get: JsonEndpoint<
+      { param: { sessionId: string } },
+      ApiSuccessResponse<ChatMessagesResponse> | ApiErrorResponse,
+      200 | 401 | 403 | 404 | 429 | 500
+    >;
+  };
+  "/api/chat/messages": {
+    $post: JsonEndpoint<
+      { json: SubmitChatQuestionInput },
+      ApiSuccessResponse<ChatSubmitResponse> | ApiErrorResponse,
+      200 | 400 | 401 | 403 | 404 | 429 | 500
+    >;
+  };
+  "/api/chat/messages/:messageId/feedback": {
+    $post: JsonEndpoint<
+      { json: SubmitAnswerFeedbackInput; param: { messageId: string } },
+      ApiSuccessResponse<SubmitAnswerFeedbackResponse> | ApiErrorResponse,
+      200 | 400 | 401 | 403 | 404 | 429 | 500
     >;
   };
   "/api/providers": {

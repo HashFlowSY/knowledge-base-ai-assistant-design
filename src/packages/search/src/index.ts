@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export * from "./query";
+
 export const searchBackendSchema = z.enum(["meilisearch", "pgvector"]);
 
 export type SearchBackend = z.infer<typeof searchBackendSchema>;

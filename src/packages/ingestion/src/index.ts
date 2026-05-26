@@ -256,6 +256,7 @@ export interface IngestionRecoveryOptions {
 }
 
 const minimumPdfTextCharacters = 5;
+const defaultEmbeddingBatchSize = 10;
 
 export async function parseDocument(
   input: ParseDocumentInput,
@@ -405,8 +406,9 @@ export function createIngestionPipeline(
         });
 
         await recordStep(options.repository, context, "embedding", "started");
-        const embeddingResult = await options.embeddingService.embed({
-          inputs: chunks.map((chunk) => chunk.content),
+        const embeddingResult = await embedChunksInBatches({
+          chunks,
+          embeddingService: options.embeddingService,
           requestId: context.ingestionJobId,
           tenantId: context.tenantId,
         });
@@ -427,14 +429,7 @@ export function createIngestionPipeline(
         await options.repository.persistIngestionOutput({
           chunks,
           context,
-          embeddings: chunks.map((chunk) => ({
-            chunkIndex: chunk.chunkIndex,
-            contentHash: chunk.contentHash,
-            dimensions: embeddingResult.dimensions,
-            embedding: embeddingResult.vectors[chunk.chunkIndex] ?? [],
-            modelId: embeddingResult.modelId,
-            providerId: embeddingResult.providerConfigId,
-          })),
+          embeddings: embeddingResult.embeddings,
         });
 
         await recordStep(options.repository, context, "index_writer", "started");
@@ -475,6 +470,53 @@ export function createIngestionPipeline(
         };
       }
     },
+  };
+}
+
+async function embedChunksInBatches(input: {
+  chunks: DocumentChunkDraft[];
+  embeddingService: IngestionEmbeddingService;
+  requestId: string;
+  tenantId: string;
+}): Promise<
+  | { ok: true; embeddings: ChunkEmbeddingDraft[] }
+  | Extract<EmbeddingServiceResult, { ok: false }>
+> {
+  const embeddings: ChunkEmbeddingDraft[] = [];
+
+  for (
+    let startIndex = 0;
+    startIndex < input.chunks.length;
+    startIndex += defaultEmbeddingBatchSize
+  ) {
+    const batch = input.chunks.slice(
+      startIndex,
+      startIndex + defaultEmbeddingBatchSize,
+    );
+    const batchResult = await input.embeddingService.embed({
+      inputs: batch.map((chunk) => chunk.content),
+      requestId: input.requestId,
+      tenantId: input.tenantId,
+    });
+    if (!batchResult.ok) {
+      return batchResult;
+    }
+
+    embeddings.push(
+      ...batch.map((chunk, batchIndex) => ({
+        chunkIndex: chunk.chunkIndex,
+        contentHash: chunk.contentHash,
+        dimensions: batchResult.dimensions,
+        embedding: batchResult.vectors[batchIndex] ?? [],
+        modelId: batchResult.modelId,
+        providerId: batchResult.providerConfigId,
+      })),
+    );
+  }
+
+  return {
+    embeddings,
+    ok: true,
   };
 }
 
