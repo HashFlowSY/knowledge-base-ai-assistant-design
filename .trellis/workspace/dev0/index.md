@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 20
-- **Last Active**: 2026-05-26
+- **Total Sessions**: 21
+- **Last Active**: 2026-05-27
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~679 | Active |
+| `journal-1.md` | ~712 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 21 | 2026-05-27 | Dev middleware reset command | `27630c9` | `feat/user-chat-page` |
 | 20 | 2026-05-26 | User chat RAG page | `a34493b`, `cd2b0e1` | `feat/user-chat-page` |
 | 19 | 2026-05-25 | Backend spec compliance refactor | `19c97cd` | `main` |
 | 18 | 2026-05-24 | Document ingestion pipeline | `30f6ba2` | `main` |

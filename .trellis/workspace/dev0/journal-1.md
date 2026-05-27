@@ -677,3 +677,36 @@ Implemented the real user chat/RAG baseline flow, updated README testing and cur
 ### Next Steps
 
 - None - task complete
+
+
+## Session 21: Dev middleware reset command
+
+**Date**: 2026-05-27
+**Task**: Dev middleware reset command
+**Branch**: `feat/user-chat-page`
+
+### Summary
+
+Added pnpm dev:reset to safely reset local Docker Compose middleware with dev-only .env validation, bucket creation, migrations, dev auth seed, tests, README updates, and ops spec coverage.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `27630c9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
