@@ -177,3 +177,85 @@ Configure limits explicitly:
 - Redis connection count.
 
 Defaults should be conservative for single-VM deployment.
+
+## Scenario: Local middleware reset command
+
+### 1. Scope / Trigger
+
+- Trigger: changing the local development reset workflow for Docker Compose middleware.
+- Applies to the root `pnpm dev:reset` command and its implementation under `scripts/`.
+- This is a local development-only workflow. It must never reset production or shared environment data.
+
+### 2. Signatures
+
+- Command: `pnpm dev:reset`
+- Script entrypoint: `tsx scripts/dev-reset.ts`
+- Docker Compose file: `compose.yaml`
+- Local Compose services: `postgres`, `redis`, `meilisearch`, `minio`
+- Local container names: `kb-postgres`, `kb-redis`, `kb-meilisearch`, `kb-minio`
+
+### 3. Contracts
+
+- The command reads the project root `.env` before doing destructive work.
+- Required `.env` values:
+  - `NODE_ENV=development`
+  - `DATABASE_URL` targets `localhost` or `127.0.0.1` on port `5432`
+  - `REDIS_URL` targets `localhost` or `127.0.0.1` on port `6379`
+  - `MEILISEARCH_HOST` targets `localhost` or `127.0.0.1` on port `7700`
+  - `S3_ENDPOINT` targets `localhost` or `127.0.0.1` on port `9000`
+  - `S3_BUCKET` is non-empty
+  - `S3_ACCESS_KEY_ID=minioadmin`
+  - `S3_SECRET_ACCESS_KEY=minioadmin`
+- The command may delete only the current repository's local Compose containers and volumes.
+- The command must preserve Docker images.
+- The command must recreate the configured MinIO bucket, apply database migrations, seed development auth data, then exit.
+- The command must not start `pnpm dev`.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| `.env` is missing | Refuse before Docker, migration, seed, or bucket commands |
+| `NODE_ENV` is missing or not `development` | Refuse before destructive work |
+| Any dependency URL points away from the expected local host/port | Refuse before destructive work |
+| MinIO credentials do not match the local Compose defaults | Refuse before destructive work |
+| Safety checks pass | Run Compose reset, health wait, bucket creation, migration, and dev seed |
+| Middleware health checks do not become healthy | Fail the command before migration and seed |
+
+### 5. Good/Base/Bad Cases
+
+- Good: `pnpm dev:reset` with `.env` pointing to local Compose dependencies deletes local volumes, recreates bucket from `S3_BUCKET`, runs migrations, runs dev seed, and exits.
+- Base: `docker compose up -d postgres redis meilisearch minio` remains valid when a developer wants to start services without clearing data.
+- Bad: `NODE_ENV=development` with `DATABASE_URL` pointing at a remote host must still be rejected.
+
+### 6. Tests Required
+
+- Unit tests must cover accepted local `.env` values.
+- Unit tests must prove non-development `NODE_ENV` is rejected before destructive commands.
+- Unit tests must prove remote or wrong-port dependency URLs are rejected.
+- Unit tests must prove MinIO bucket and credential validation.
+- Unit tests must assert the command plan contains `docker compose down --volumes --remove-orphans` and does not contain image deletion or `pnpm dev`.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```json
+{
+  "scripts": {
+    "dev:reset": "docker compose down -v && docker compose up -d && pnpm db:migrate"
+  }
+}
+```
+
+#### Correct
+
+```json
+{
+  "scripts": {
+    "dev:reset": "tsx scripts/dev-reset.ts"
+  }
+}
+```
+
+The TypeScript entrypoint must run explicit dev and local-dependency safety checks before any destructive command.

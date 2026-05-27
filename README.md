@@ -145,7 +145,19 @@ APP_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
 
 `APP_ENCRYPTION_KEY` 必须能解析成 32 字节 AES-256-GCM key；上面的值仅适合本地开发。
 
-### 4. 启动本地依赖服务
+### 4. 一键重置本地依赖服务
+
+如果本地 PostgreSQL、Redis、Meilisearch、MinIO 中已经积累了开发测试脏数据，推荐使用：
+
+```bash
+pnpm dev:reset
+```
+
+该命令只允许在项目根目录 `.env` 中 `NODE_ENV=development` 时执行，并会先校验 `DATABASE_URL`、`REDIS_URL`、`MEILISEARCH_HOST`、`S3_ENDPOINT`、MinIO 凭据都指向本地 Docker Compose 服务。校验失败时不会删除任何资源。
+
+`pnpm dev:reset` 会删除当前仓库 `compose.yaml` 对应的本地中间件容器和 volumes，保留 Docker images，然后重新启动 PostgreSQL、Redis、Meilisearch、MinIO，等待健康检查，通过 `.env` 的 `S3_BUCKET` 创建 MinIO bucket，执行数据库迁移并写入开发账号 seed。命令完成后会退出，不会自动启动 `pnpm dev`。
+
+### 5. 仅启动本地依赖服务
 
 ```bash
 docker compose up -d postgres redis meilisearch minio
@@ -161,7 +173,7 @@ docker compose up -d postgres redis meilisearch minio
 | MinIO API | `http://localhost:9000` |
 | MinIO Console | `http://localhost:9001` |
 
-文件上传需要先创建本地对象存储 bucket：
+如果没有使用 `pnpm dev:reset`，文件上传需要先创建本地对象存储 bucket：
 
 ```bash
 docker exec kb-minio mc alias set local http://127.0.0.1:9000 minioadmin minioadmin
@@ -170,7 +182,9 @@ docker exec kb-minio mc mb --ignore-existing local/kb-source
 
 也可以登录 MinIO Console 手动创建 `kb-source`。
 
-### 5. 初始化数据库
+### 6. 初始化数据库
+
+如果没有使用 `pnpm dev:reset`，需要手动初始化数据库和开发账号：
 
 ```bash
 pnpm db:migrate
@@ -186,7 +200,7 @@ pnpm --filter @kb/auth seed:dev-auth
 
 `seed:dev-auth` 在 `NODE_ENV=production` 下会拒绝执行。
 
-### 6. 启动应用
+### 7. 启动应用
 
 ```bash
 pnpm dev
@@ -205,7 +219,7 @@ Next.js 已配置 `/api/:path*` rewrite 到 `http://localhost:4000/api/:path*`�
 
 如需让 `/chat` 跑通真实问答，至少需要启用 chat Provider；embedding Provider 用于向量检索，rerank Provider 用于重排序。rerank 不可用时系统会回退到融合排序，并把依据标签限制在 `依据有限`。
 
-### 7. 手动验证聊天问答
+### 8. 手动验证聊天问答
 
 ```bash
 pnpm dev
@@ -220,7 +234,7 @@ pnpm dev
 5. 提交一个知识库无法支撑的问题，检查是否返回“知识库中没有找到可支撑答案”。
 6. 对助手回答提交“有帮助/无帮助”反馈，检查反馈状态是否更新。
 
-### 8. 常用质量命令
+### 9. 常用质量命令
 
 ```bash
 pnpm typecheck
