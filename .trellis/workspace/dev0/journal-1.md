@@ -710,3 +710,36 @@ Added pnpm dev:reset to safely reset local Docker Compose middleware with dev-on
 ### Next Steps
 
 - None - task complete
+
+
+## Session 22: Provider config service split
+
+**Date**: 2026-05-28
+**Task**: Provider config service split
+**Branch**: `feat/user-chat-page`
+
+### Summary
+
+Split the ai-providers service implementation into focused provider config, connection, embedding, repository, runtime, shared, and testing modules while keeping public service/runtime entrypoints compatible.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e566d56` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
