@@ -16,6 +16,29 @@ These rules define provider integration for chat, embedding, and rerank.
 
 RAG and ingestion packages call provider interfaces; they do not call vendor SDKs directly.
 
+## Service Module Boundary
+
+`@kb/ai-providers/service` is a public package subpath. Keep
+`src/packages/ai-providers/src/service.ts` as a small compatibility entrypoint
+that re-exports the public service factories and types.
+
+Implementation should stay in focused package-private modules:
+
+- `shared/service-types.ts` for public service/repository/result types.
+- `provider-config/provider-config-service.ts` for provider config list/save orchestration.
+- `provider-config/provider-secrets.ts` for API key decrypt/encrypt and secret metadata.
+- `connection/connection-tester.ts` for provider capability probes and status mapping.
+- `embedding/embedding-service.ts` for embedding calls and response normalization.
+- `provider-http/provider-endpoints.ts` for provider URL/path rules.
+- `repositories/provider-repository-*.ts` for repository implementations.
+- `runtime/runtime-service.ts` for runtime chat/rerank provider adapters while
+  `runtime.ts` remains the public compatibility entrypoint.
+
+Do not import Drizzle tables, security primitives, Zod schemas, or provider
+implementation helpers directly from the service entrypoint. Existing
+consumers should keep importing from `@kb/ai-providers/service` unless a new
+public package subpath is intentionally added.
+
 ## Default Providers
 
 Production v1 defaults:
