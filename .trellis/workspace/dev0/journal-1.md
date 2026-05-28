@@ -743,3 +743,36 @@ Split the ai-providers service implementation into focused provider config, conn
 ### Next Steps
 
 - None - task complete
+
+
+## Session 23: Split ingestion pipeline
+
+**Date**: 2026-05-28
+**Task**: Split ingestion pipeline
+**Branch**: `feat/user-chat-page`
+
+### Summary
+
+Split @kb/ingestion monolithic source into functional modules for contracts, parsing, chunking, pipeline orchestration, repositories, and recovery. Added module layout coverage and preserved ingestion behavior tests. Updated the RAG ingestion spec with the module layout contract.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cde8893` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

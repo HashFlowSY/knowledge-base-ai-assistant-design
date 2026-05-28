@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 22
+- **Total Sessions**: 23
 - **Last Active**: 2026-05-28
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~745 | Active |
+| `journal-1.md` | ~778 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 23 | 2026-05-28 | Split ingestion pipeline | `cde8893` | `feat/user-chat-page` |
 | 22 | 2026-05-28 | Provider config service split | `e566d56` | `feat/user-chat-page` |
 | 21 | 2026-05-27 | Dev middleware reset command | `27630c9` | `feat/user-chat-page` |
 | 20 | 2026-05-26 | User chat RAG page | `a34493b`, `cd2b0e1` | `feat/user-chat-page` |
