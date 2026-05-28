@@ -11,6 +11,65 @@ These rules define the core knowledge ingestion and retrieval pipeline.
 - `src/packages/storage` owns file/object access.
 - `src/packages/knowledge` owns knowledge base, document, source, and permission domain rules.
 
+## Scenario: Ingestion Package Module Layout
+
+### 1. Scope / Trigger
+
+- Trigger: adding or refactoring ingestion package implementation files under `src/packages/ingestion/src`.
+- Scope: parser, chunker, pipeline orchestration, repository adapters, recovery logic, and public package exports.
+
+### 2. Signatures
+
+- Public consumers import only from `@kb/ingestion`.
+- `src/packages/ingestion/src/index.ts` is the public barrel and must re-export public contracts/functions.
+
+### 3. Contracts
+
+- Implementation files must live in functional directories:
+  - `contracts/`
+  - `parsing/`
+  - `chunking/`
+  - `pipeline/`
+  - `repositories/`
+  - `recovery/`
+  - `tests/`
+- Do not place new implementation or test files directly under `src/packages/ingestion/src/` except `index.ts`.
+- Worker and API code must not import package internals such as `@kb/ingestion/pipeline/...`.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| New ingestion implementation file is added | File is placed in the matching functional directory |
+| Public API is needed by worker/API | Export from `index.ts`; consumer imports from `@kb/ingestion` |
+| Helper is only used inside one functional area | Keep helper internal to that directory |
+| Root `src/` receives a non-`index.ts` implementation/test file | Structure test failure |
+
+### 5. Good/Base/Bad Cases
+
+- Good: `src/packages/ingestion/src/parsing/parser.ts`.
+- Base: `src/packages/ingestion/src/contracts/types.ts`.
+- Bad: `src/packages/ingestion/src/parser.ts`.
+
+### 6. Tests Required
+
+- Unit tests for parser/chunker/pipeline behavior stay grouped under `src/packages/ingestion/src/tests/`.
+- A structure test must assert the allowed directories and that `index.ts` stays a small barrel.
+
+### 7. Wrong vs Correct
+
+Wrong:
+
+```typescript
+import { createIngestionPipeline } from "@kb/ingestion/pipeline/pipeline";
+```
+
+Correct:
+
+```typescript
+import { createIngestionPipeline } from "@kb/ingestion";
+```
+
 ## Ingestion Pipeline
 
 The ingestion pipeline has fixed steps:
