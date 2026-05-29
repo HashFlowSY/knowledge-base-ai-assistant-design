@@ -1,5 +1,5 @@
-import type { DocumentFileUploadResult } from "../../../schemas";
-import type { KnowledgeBaseService } from "../../../service-types";
+import type { DocumentFileUploadResult } from "../../../contracts/schemas";
+import type { KnowledgeBaseService } from "../../../service/types";
 
 export type UploadInput = Parameters<KnowledgeBaseService["uploadDocumentFile"]>[0];
 export type UploadResult = Awaited<

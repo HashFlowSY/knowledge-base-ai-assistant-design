@@ -2,11 +2,11 @@ import {
   actorIsKnowledgeBaseMember,
   findTenantKnowledgeBaseRow,
   type KnowledgeDb,
-} from "../../../service-queries";
+} from "../../../service/queries";
 import {
   createForbiddenError,
   createNotFoundError,
-} from "../../../service-errors";
+} from "../../../service/errors";
 import { writeUploadAudit } from "../observability/audit";
 import type { UploadInput, UploadServiceError } from "../shared/types";
 

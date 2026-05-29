@@ -3,7 +3,7 @@ import {
   type IngestionJobPayload,
 } from "@kb/queue";
 
-import type { DocumentFileUploadResult } from "./schemas";
+import type { DocumentFileUploadResult } from "../contracts/schemas";
 
 export function createDocumentFileIngestionPayload(input: {
   upload: DocumentFileUploadResult;

@@ -171,6 +171,35 @@ Rules:
 - Prefer explicit input objects for package functions.
 - Include `tenantId` and `actorId` in package function inputs when authorization or audit decisions depend on them.
 
+### Package Internal Organization
+
+For domain packages that expose both browser-safe contracts and server-only
+services, keep the package root small:
+
+```text
+src/packages/<domain>/src/
+├── index.ts          # browser-safe public contracts
+├── service.ts        # server-only service entry
+├── contracts/        # schemas, public inferred types, contract tests
+├── service/          # server-only errors, queries, mappers, helpers, types
+├── operations/       # feature-scoped service operations
+└── ingestion/        # queue payload builders or ingestion adapters
+```
+
+Rules:
+
+- Root files should be entry points only. Move implementation files into a
+  functional directory.
+- Keep browser-safe schemas and inferred types under `contracts/`; do not import
+  `service/` files from the browser-safe root unless they are type-only and
+  browser-safe.
+- Put database-backed queries, service errors, mappers, and helper functions
+  under `service/`.
+- Put operation handlers under `operations/<feature>/` rather than keeping many
+  standalone operation files directly under `operations/`.
+- Put queue payload builders and ingestion-specific adapters under
+  `ingestion/` when they are owned by the domain package.
+
 ## Scenario: Browser-Safe Package Entry Points
 
 ### 1. Scope / Trigger

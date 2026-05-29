@@ -6,28 +6,28 @@ import {
   assertKnowledgeBaseNameAvailable,
   assertMemberIdsAreValid,
   insertKnowledgeBaseMembers,
-} from "./create-knowledge-base";
+} from "./create";
 import {
   createForbiddenError,
   createInternalError,
   createNotFoundError,
   fromServiceException,
   toServiceException,
-} from "../service-errors";
+} from "../../service/errors";
 import {
   createKnowledgeBaseSlug,
   groupMembersByKnowledgeBaseId,
-} from "../service-helpers";
+} from "../../service/helpers";
 import {
   findTenantKnowledgeBaseRow,
   listKnowledgeBaseDocumentCounts,
   listKnowledgeBaseMemberRows,
-} from "../service-queries";
-import { toKnowledgeBaseDetail } from "../service-mappers";
+} from "../../service/queries";
+import { toKnowledgeBaseDetail } from "../../service/mappers";
 import type {
   KnowledgeBaseService,
   KnowledgeBaseServiceOptions,
-} from "../service-types";
+} from "../../service/types";
 
 export async function updateKnowledgeBaseOperation(
   options: KnowledgeBaseServiceOptions,

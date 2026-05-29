@@ -1,15 +1,15 @@
-import { groupMembersByKnowledgeBaseId } from "../service-helpers";
-import { createNotFoundError } from "../service-errors";
+import { createNotFoundError } from "../../service/errors";
+import { groupMembersByKnowledgeBaseId } from "../../service/helpers";
 import {
   findVisibleKnowledgeBaseRow,
   listKnowledgeBaseDocumentCounts,
   listKnowledgeBaseMemberRows,
-} from "../service-queries";
-import { toKnowledgeBaseDetail } from "../service-mappers";
+} from "../../service/queries";
+import { toKnowledgeBaseDetail } from "../../service/mappers";
 import type {
   KnowledgeBaseService,
   KnowledgeBaseServiceOptions,
-} from "../service-types";
+} from "../../service/types";
 
 export async function getKnowledgeBaseOperation(
   options: KnowledgeBaseServiceOptions,

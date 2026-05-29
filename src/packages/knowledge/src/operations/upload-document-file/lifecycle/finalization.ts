@@ -2,9 +2,9 @@ import { eq, sql } from "drizzle-orm";
 
 import { documentSources, ingestionJobs, type ProjectDb } from "@kb/db";
 
-import type { DocumentFileUploadResult } from "../../../schemas";
-import { createDocumentFileIngestionPayload } from "../../../ingestion-queue";
-import type { KnowledgeBaseServiceOptions } from "../../../service-types";
+import type { DocumentFileUploadResult } from "../../../contracts/schemas";
+import { createDocumentFileIngestionPayload } from "../../../ingestion/queue-payload";
+import type { KnowledgeBaseServiceOptions } from "../../../service/types";
 import { markUploadQueueEnqueueFailed } from "./failures";
 import { findUploadResultBySourceId } from "../metadata/results";
 import { logUploadFailure, writeUploadAudit } from "../observability/audit";

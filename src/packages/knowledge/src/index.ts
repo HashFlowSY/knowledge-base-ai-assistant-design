@@ -11,7 +11,7 @@ export {
   normalizeKnowledgeBaseMemberIds,
   normalizeKnowledgeBaseName,
   updateKnowledgeBaseInputSchema,
-} from "./schemas";
+} from "./contracts/schemas";
 export type {
   CreateKnowledgeBaseInput,
   DocumentFileUploadResult,
@@ -21,8 +21,8 @@ export type {
   KnowledgeBasesPage,
   KnowledgeBaseSummary,
   UpdateKnowledgeBaseInput,
-} from "./schemas";
-export type { KnowledgeActor } from "./service-types";
+} from "./contracts/schemas";
+export type { KnowledgeActor } from "./service/types";
 
 export const knowledgeBaseScopeSchema = z.object({
   tenantId: z.string().min(1),

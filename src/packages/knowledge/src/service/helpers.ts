@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
-import type { KnowledgeBaseMemberSummary } from "./schemas";
-import type { KnowledgeBaseMemberRow, KnowledgeBaseRow } from "./service-mappers";
+import type { KnowledgeBaseMemberSummary } from "../contracts/schemas";
+import type { KnowledgeBaseMemberRow, KnowledgeBaseRow } from "./mappers";
 
 export function createKnowledgeBaseSlug(name: string): string {
   const base = name

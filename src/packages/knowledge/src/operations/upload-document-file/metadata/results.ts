@@ -2,8 +2,8 @@ import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import { documents, documentSources, ingestionJobs } from "@kb/db";
 
-import type { DocumentFileUploadResult } from "../../../schemas";
-import type { KnowledgeDb } from "../../../service-queries";
+import type { DocumentFileUploadResult } from "../../../contracts/schemas";
+import type { KnowledgeDb } from "../../../service/queries";
 import type {
   UploadInput,
   UploadResultRow,

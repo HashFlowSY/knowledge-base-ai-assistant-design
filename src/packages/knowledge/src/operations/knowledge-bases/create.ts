@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 
 import { knowledgeBaseMembers, knowledgeBases } from "@kb/db";
 
-import { normalizeKnowledgeBaseName } from "../schemas";
+import { normalizeKnowledgeBaseName } from "../../contracts/schemas";
 import {
   createConflictError,
   createForbiddenError,
@@ -10,23 +10,23 @@ import {
   createInvalidMembersError,
   fromServiceException,
   toServiceException,
-} from "../service-errors";
+} from "../../service/errors";
 import {
   createKnowledgeBaseSlug,
   groupMembersByKnowledgeBaseId,
-} from "../service-helpers";
+} from "../../service/helpers";
 import {
   findDuplicateKnowledgeBaseName,
   listKnowledgeBaseDocumentCounts,
   listKnowledgeBaseMemberRows,
   listValidMemberIds,
   type KnowledgeDb,
-} from "../service-queries";
-import { toKnowledgeBaseSummary } from "../service-mappers";
+} from "../../service/queries";
+import { toKnowledgeBaseSummary } from "../../service/mappers";
 import type {
   KnowledgeBaseService,
   KnowledgeBaseServiceOptions,
-} from "../service-types";
+} from "../../service/types";
 
 export async function createKnowledgeBaseOperation(
   options: KnowledgeBaseServiceOptions,

@@ -1,7 +1,7 @@
 import { recordAuditLog } from "@kb/audit";
 
-import type { KnowledgeDb } from "../../../service-queries";
-import type { KnowledgeBaseServiceOptions } from "../../../service-types";
+import type { KnowledgeDb } from "../../../service/queries";
+import type { KnowledgeBaseServiceOptions } from "../../../service/types";
 import type { UploadInput } from "../shared/types";
 
 export function logUploadFailure(

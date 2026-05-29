@@ -1,19 +1,19 @@
-import { createKnowledgeBaseOperation } from "./operations/create-knowledge-base";
-import { getKnowledgeBaseOperation } from "./operations/get-knowledge-base";
-import { listKnowledgeBasesOperation } from "./operations/list-knowledge-bases";
-import { uploadDocumentFileOperation } from "./operations/upload-document-file";
-import { updateKnowledgeBaseOperation } from "./operations/update-knowledge-base";
+import { createKnowledgeBaseOperation } from "./operations/knowledge-bases/create";
+import { getKnowledgeBaseOperation } from "./operations/knowledge-bases/get";
+import { listKnowledgeBasesOperation } from "./operations/knowledge-bases/list";
+import { updateKnowledgeBaseOperation } from "./operations/knowledge-bases/update";
+import { uploadDocumentFileOperation } from "./operations/upload-document-file/index";
 import type {
   KnowledgeBaseService,
   KnowledgeBaseServiceOptions,
-} from "./service-types";
+} from "./service/types";
 
 export type {
   KnowledgeActor,
   KnowledgeBaseService,
   KnowledgeBaseServiceOptions,
-} from "./service-types";
-export type { KnowledgeBaseServiceError } from "./service-errors";
+} from "./service/types";
+export type { KnowledgeBaseServiceError } from "./service/errors";
 
 export function createKnowledgeBaseService(
   options: KnowledgeBaseServiceOptions,

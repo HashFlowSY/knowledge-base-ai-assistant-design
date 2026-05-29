@@ -10,8 +10,8 @@ import {
   normalizeKnowledgeBaseMemberIds,
   normalizeKnowledgeBaseName,
   updateKnowledgeBaseInputSchema,
-} from "./index";
-import { createDocumentFileIngestionPayload } from "./ingestion-queue";
+} from "../index";
+import { createDocumentFileIngestionPayload } from "../ingestion/queue-payload";
 
 describe("@kb/knowledge", () => {
   it("defines knowledge-base authorization scope identifiers", () => {

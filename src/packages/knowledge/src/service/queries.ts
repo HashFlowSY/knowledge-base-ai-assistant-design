@@ -22,9 +22,9 @@ import {
   type ProjectDb,
 } from "@kb/db";
 
-import type { KnowledgeBaseListQuery } from "./schemas";
-import type { KnowledgeBaseMemberRow, KnowledgeBaseRow } from "./service-mappers";
-import type { KnowledgeActor } from "./service-types";
+import type { KnowledgeBaseListQuery } from "../contracts/schemas";
+import type { KnowledgeBaseMemberRow, KnowledgeBaseRow } from "./mappers";
+import type { KnowledgeActor } from "./types";
 
 export type ProjectDbTransaction = Parameters<
   Parameters<ProjectDb["transaction"]>[0]

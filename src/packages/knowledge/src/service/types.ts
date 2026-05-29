@@ -11,8 +11,8 @@ import type {
   KnowledgeBaseSummary,
   KnowledgeBasesPage,
   UpdateKnowledgeBaseInput,
-} from "./schemas";
-import type { KnowledgeBaseServiceError } from "./service-errors";
+} from "../contracts/schemas";
+import type { KnowledgeBaseServiceError } from "./errors";
 
 export interface KnowledgeActor {
   user: { id: string };

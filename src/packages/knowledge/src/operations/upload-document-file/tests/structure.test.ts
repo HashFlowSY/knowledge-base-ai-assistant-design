@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -22,10 +22,7 @@ const uploadOperationRoot = resolve(
   repoRoot,
   "src/packages/knowledge/src/operations/upload-document-file",
 );
-
-function readProjectFile(relativePath: string): string {
-  return readFileSync(resolve(repoRoot, relativePath), "utf8");
-}
+const operationsRoot = resolve(repoRoot, "src/packages/knowledge/src/operations");
 
 describe("document upload operation module structure", () => {
   it("keeps the upload operation split by functional responsibility", () => {
@@ -52,18 +49,25 @@ describe("document upload operation module structure", () => {
       .map((entry) => entry.name)
       .sort();
 
-    expect(rootFileNames).toEqual(["index.ts", "structure.test.ts"]);
+    expect(rootFileNames).toEqual(["index.ts"]);
   });
 
-  it("keeps the legacy upload operation entry as a thin compatibility wrapper", () => {
-    const legacySource = readProjectFile(
-      "src/packages/knowledge/src/operations/upload-document-file.ts",
-    );
-    const implementationLines = legacySource
-      .split("\n")
-      .filter((line) => line.trim().length > 0);
+  it("keeps operation roots grouped by feature directories", () => {
+    const operationRootFiles = readdirSync(operationsRoot, {
+      withFileTypes: true,
+    })
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
+      .sort();
 
-    expect(implementationLines.length).toBeLessThanOrEqual(20);
-    expect(legacySource).toContain('from "./upload-document-file/index"');
+    expect(operationRootFiles).toEqual([]);
+    expect(
+      existsSync(
+        resolve(
+          repoRoot,
+          "src/packages/knowledge/src/operations/upload-document-file.ts",
+        ),
+      ),
+    ).toBe(false);
   });
 });

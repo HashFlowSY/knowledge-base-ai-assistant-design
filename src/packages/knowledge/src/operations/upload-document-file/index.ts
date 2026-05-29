@@ -17,8 +17,8 @@ import { logUploadFailure, writeUploadAudit } from "./observability/audit";
 import {
   createInternalError,
   fromServiceException,
-} from "../../service-errors";
-import type { KnowledgeBaseServiceOptions } from "../../service-types";
+} from "../../service/errors";
+import type { KnowledgeBaseServiceOptions } from "../../service/types";
 import type {
   ReservedUpload,
   UploadInput,

@@ -1,17 +1,17 @@
 import {
   getKnowledgeBaseIds,
   groupMembersByKnowledgeBaseId,
-} from "../service-helpers";
+} from "../../service/helpers";
 import {
   listKnowledgeBaseDocumentCounts,
   listKnowledgeBaseMemberRows,
   listVisibleKnowledgeBaseRows,
-} from "../service-queries";
-import { toKnowledgeBaseSummary } from "../service-mappers";
+} from "../../service/queries";
+import { toKnowledgeBaseSummary } from "../../service/mappers";
 import type {
   KnowledgeBaseService,
   KnowledgeBaseServiceOptions,
-} from "../service-types";
+} from "../../service/types";
 
 export async function listKnowledgeBasesOperation(
   options: KnowledgeBaseServiceOptions,

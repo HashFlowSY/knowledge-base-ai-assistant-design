@@ -2,7 +2,7 @@ import type {
   KnowledgeBaseDetail,
   KnowledgeBaseMemberSummary,
   KnowledgeBaseSummary,
-} from "./schemas";
+} from "../contracts/schemas";
 
 export interface KnowledgeBaseRow {
   createdAt: Date;
