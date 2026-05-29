@@ -1,0 +1,31 @@
+{
+  "id": "split-document-upload-backend",
+  "name": "split-document-upload-backend",
+  "title": "拆分文档上传后端链路",
+  "description": "",
+  "status": "in_progress",
+  "dev_type": null,
+  "scope": null,
+  "package": null,
+  "priority": "P2",
+  "creator": "dev0",
+  "assignee": "dev0",
+  "createdAt": "2026-05-30",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "main",
+  "worktree_path": null,
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "children": [],
+  "parent": null,
+  "relatedFiles": [
+    "src/packages/knowledge/src/operations/upload-document-file.ts",
+    "src/packages/knowledge/src/operations/upload-document-file/",
+    "src/apps/api/src/modules/documents/procedures/upload-document-file.test.ts",
+    "src/apps/api/src/modules/documents/procedures/upload-document-file/"
+  ],
+  "notes": "Implementation and verification complete; awaiting commit confirmation.",
+  "meta": {}
+}
