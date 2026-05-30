@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
-import { WorkspaceMvpPage } from "../../features/workspace/workspace-mvp-page";
+import { WorkspacePage } from "../../features/workspace/workspace-page";
 
 export default function Page(): ReactElement {
-  return <WorkspaceMvpPage />;
+  return <WorkspacePage />;
 }

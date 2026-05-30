@@ -22,10 +22,64 @@ function readProjectFile(relativePath: string): string {
   return readFileSync(resolve(findRepoRoot(process.cwd()), relativePath), "utf8");
 }
 
+function projectFileExists(relativePath: string): boolean {
+  return existsSync(resolve(findRepoRoot(process.cwd()), relativePath));
+}
+
 describe("workspace page executable contract", () => {
+  it("uses stable workspace page naming without the MVP entrypoint", () => {
+    const workspaceRouteSource = readProjectFile("src/apps/web/src/app/workspace/page.tsx");
+    const workspaceSource = readProjectFile(
+      "src/apps/web/src/features/workspace/workspace-page.tsx",
+    );
+
+    expect(
+      projectFileExists("src/apps/web/src/features/workspace/workspace-mvp-page.tsx"),
+    ).toBe(false);
+    expect(workspaceRouteSource).toContain("WorkspacePage");
+    expect(workspaceRouteSource).toContain("features/workspace/workspace-page");
+    expect(workspaceRouteSource).not.toContain("WorkspaceMvpPage");
+    expect(workspaceSource).toContain("export function WorkspacePage");
+    expect(workspaceSource.toLowerCase()).not.toContain("mvp");
+  });
+
+  it("keeps workspace features split into single-purpose component files", () => {
+    const componentExports: Record<string, string> = {
+      "src/apps/web/src/features/workspace/knowledge-base-dialog.tsx":
+        "KnowledgeBaseDialog",
+      "src/apps/web/src/features/workspace/knowledge-base-list-item.tsx":
+        "KnowledgeBaseListItem",
+      "src/apps/web/src/features/workspace/knowledge-base-list.tsx":
+        "KnowledgeBaseList",
+      "src/apps/web/src/features/workspace/knowledge-base-summary.tsx":
+        "KnowledgeBaseSummary",
+      "src/apps/web/src/features/workspace/member-picker.tsx": "MemberPicker",
+      "src/apps/web/src/features/workspace/query-error-state.tsx": "QueryErrorState",
+      "src/apps/web/src/features/workspace/upload-document-dialog.tsx":
+        "UploadDocumentDialog",
+      "src/apps/web/src/features/workspace/workspace-metric-tile.tsx":
+        "WorkspaceMetricTile",
+      "src/apps/web/src/features/workspace/workspace-summary-empty-state.tsx":
+        "WorkspaceSummaryEmptyState",
+      "src/apps/web/src/features/workspace/workspace-summary-panel.tsx":
+        "WorkspaceSummaryPanel",
+      "src/apps/web/src/features/workspace/workspace-text-field.tsx":
+        "WorkspaceTextField",
+      "src/apps/web/src/features/workspace/workspace-textarea-field.tsx":
+        "WorkspaceTextareaField",
+    };
+
+    for (const [relativePath, componentName] of Object.entries(componentExports)) {
+      const source = readProjectFile(relativePath);
+
+      expect(source).toContain(`export function ${componentName}`);
+      expect(source).not.toContain("export function WorkspacePage");
+    }
+  });
+
   it("removes the workspace page from the frontend mock store", () => {
     const workspaceSource = readProjectFile(
-      "src/apps/web/src/features/workspace/workspace-mvp-page.tsx",
+      "src/apps/web/src/features/workspace/workspace-page.tsx",
     );
     const workspaceRouteSource = readProjectFile("src/apps/web/src/app/workspace/page.tsx");
 
@@ -38,7 +92,7 @@ describe("workspace page executable contract", () => {
 
   it("does not reference visibility-based workspace access in the real knowledge-base page", () => {
     const workspaceSource = readProjectFile(
-      "src/apps/web/src/features/workspace/workspace-mvp-page.tsx",
+      "src/apps/web/src/features/workspace/workspace-page.tsx",
     );
 
     expect(workspaceSource).not.toContain("visibility");
@@ -47,7 +101,7 @@ describe("workspace page executable contract", () => {
 
   it("does not render workspace pagination or recent-update controls", () => {
     const workspaceSource = readProjectFile(
-      "src/apps/web/src/features/workspace/workspace-mvp-page.tsx",
+      "src/apps/web/src/features/workspace/workspace-page.tsx",
     );
     const knowledgeCopySource = readProjectFile("src/apps/web/src/copy/knowledge.ts");
 
@@ -59,14 +113,13 @@ describe("workspace page executable contract", () => {
   });
 
   it("uses sliding infinite-scroll display for the workspace knowledge-base list", () => {
-    const workspaceSource = readProjectFile(
-      "src/apps/web/src/features/workspace/workspace-mvp-page.tsx",
+    const listSource = readProjectFile(
+      "src/apps/web/src/features/workspace/knowledge-base-list.tsx",
     );
     const knowledgeHookSource = readProjectFile("src/apps/web/src/features/knowledge/knowledge-hooks.ts");
 
-    expect(workspaceSource).toContain("useInfiniteKnowledgeBases");
-    expect(workspaceSource).toContain("fetchNextPage");
-    expect(workspaceSource).toContain("onScroll={handleKnowledgeBaseListScroll}");
+    expect(listSource).toContain("fetchNextPage");
+    expect(listSource).toContain("onScroll={handleKnowledgeBaseListScroll}");
     expect(knowledgeHookSource).toContain("useInfiniteQuery");
     expect(knowledgeHookSource).toContain("getNextPageParam");
   });
@@ -80,15 +133,18 @@ describe("workspace page executable contract", () => {
 
   it("connects workspace file upload to the real document upload workflow", () => {
     const workspaceSource = readProjectFile(
-      "src/apps/web/src/features/workspace/workspace-mvp-page.tsx",
+      "src/apps/web/src/features/workspace/workspace-page.tsx",
+    );
+    const uploadDialogSource = readProjectFile(
+      "src/apps/web/src/features/workspace/upload-document-dialog.tsx",
     );
     const knowledgeHookSource = readProjectFile("src/apps/web/src/features/knowledge/knowledge-hooks.ts");
     const knowledgeCopySource = readProjectFile("src/apps/web/src/copy/knowledge.ts");
 
     expect(workspaceSource).toContain("UploadDocumentDialog");
     expect(workspaceSource).toContain("mode: \"upload\"");
-    expect(workspaceSource).toContain("validateDocumentUploadInput");
-    expect(workspaceSource).toContain("formatDocumentUploadSuccessNotice");
+    expect(uploadDialogSource).toContain("validateDocumentUploadInput");
+    expect(uploadDialogSource).toContain("formatDocumentUploadSuccessNotice");
     expect(workspaceSource).not.toContain("disabledReason={knowledgeCopy.disabled.uploadPending}");
     expect(knowledgeHookSource).toContain("useUploadDocumentFile");
     expect(knowledgeHookSource).toContain("documentFileUploadResultSchema");
