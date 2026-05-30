@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 25
+- **Total Sessions**: 26
 - **Last Active**: 2026-05-30
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~847 | Active |
+| `journal-1.md` | ~881 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 26 | 2026-05-30 | Remove frontend mock logic | `9e40c26`, `0a32c54` | `main` |
 | 25 | 2026-05-30 | Split Admin Console Frontend | `8ab48e2`, `16e1032` | `main` |
 | 24 | 2026-05-30 | Split knowledge upload and workspace page | `6ee7ecf`, `7dcb310`, `09af779` | `main` |
 | 23 | 2026-05-28 | Split ingestion pipeline | `cde8893` | `feat/user-chat-page` |

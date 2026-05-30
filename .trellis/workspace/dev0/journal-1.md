@@ -845,3 +845,37 @@ Split the Admin console frontend page into focused provider/user components, pre
 ### Next Steps
 
 - None - task complete
+
+
+## Session 26: Remove frontend mock logic
+
+**Date**: 2026-05-30
+**Task**: Remove frontend mock logic
+**Branch**: `main`
+
+### Summary
+
+Removed frontend mock store, mock-backed document/task/log routes, related demo copy, and updated web contracts and tests.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9e40c26` | (see git log) |
+| `0a32c54` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
