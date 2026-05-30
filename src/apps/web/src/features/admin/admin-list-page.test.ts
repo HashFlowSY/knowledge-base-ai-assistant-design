@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import { createSeedMockState, mockStoreReducer } from "../mock/store";
@@ -18,6 +20,15 @@ import {
 } from "./user-ui-helpers";
 
 describe("admin list page helpers", () => {
+  it("keeps the route-level admin page module small after component extraction", () => {
+    const source = readFileSync(
+      new URL("./admin-list-page.tsx", import.meta.url),
+      "utf8",
+    );
+
+    expect(source.trimEnd().split("\n").length).toBeLessThan(150);
+  });
+
   it("parses positive pagination integers with a fallback", () => {
     expect(parsePositiveInt("3", 1)).toBe(3);
     expect(parsePositiveInt("0", 1)).toBe(1);

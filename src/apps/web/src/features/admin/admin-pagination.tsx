@@ -1,7 +1,8 @@
 import type { ReactElement } from "react";
 
 import { Button } from "../ui/button";
-import { SelectField, type SelectFieldOption } from "../ui/select-field";
+import { SelectField } from "../ui/select-field";
+import { toSelectOptions } from "./select-options";
 
 export function AdminPagination({
   currentPage,
@@ -49,8 +50,4 @@ export function AdminPagination({
       </div>
     </div>
   );
-}
-
-function toSelectOptions(options: [string, string][]): SelectFieldOption[] {
-  return options.map(([value, label]) => ({ label, value }));
 }
