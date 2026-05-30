@@ -776,3 +776,38 @@ Split @kb/ingestion monolithic source into functional modules for contracts, par
 ### Next Steps
 
 - None - task complete
+
+
+## Session 24: Split knowledge upload and workspace page
+
+**Date**: 2026-05-30
+**Task**: Split knowledge upload and workspace page
+**Branch**: `main`
+
+### Summary
+
+Completed and archived the document upload backend split and workspace knowledge frontend split tasks.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6ee7ecf` | (see git log) |
+| `7dcb310` | (see git log) |
+| `09af779` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
