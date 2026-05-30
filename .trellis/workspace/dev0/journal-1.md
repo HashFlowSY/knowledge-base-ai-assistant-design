@@ -811,3 +811,37 @@ Completed and archived the document upload backend split and workspace knowledge
 ### Next Steps
 
 - None - task complete
+
+
+## Session 25: Split Admin Console Frontend
+
+**Date**: 2026-05-30
+**Task**: Split Admin Console Frontend
+**Branch**: `main`
+
+### Summary
+
+Split the Admin console frontend page into focused provider/user components, preserved route exports and behavior, verified web tests, lint, typecheck, and build.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8ab48e2` | (see git log) |
+| `16e1032` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
