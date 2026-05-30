@@ -3,7 +3,7 @@ import type { SessionPayload } from "@kb/auth";
 import { commonCopy } from "../../copy/common";
 import { ApiClientError } from "../api/client";
 
-const ADMIN_ROUTES = ["/logs", "/providers", "/users", "/audit"] as const;
+const ADMIN_ROUTES = ["/providers", "/users", "/audit"] as const;
 
 export type AppShellSessionGateDecision =
   | { kind: "loading" }

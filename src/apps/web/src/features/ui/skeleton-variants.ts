@@ -1,4 +1,4 @@
-export type AppShellSkeletonVariant = "workspace" | "table" | "chat" | "document";
+export type AppShellSkeletonVariant = "workspace" | "table" | "chat";
 
 export function shellSkeletonVariantForPath(path: string): AppShellSkeletonVariant {
   const [pathname] = path.split("?");
@@ -8,13 +8,9 @@ export function shellSkeletonVariantForPath(path: string): AppShellSkeletonVaria
   }
 
   if (
-    pathname === "/tasks" ||
-    pathname === "/logs" ||
     pathname === "/providers" ||
     pathname === "/users" ||
     pathname === "/audit" ||
-    pathname?.startsWith("/tasks/") ||
-    pathname?.startsWith("/logs/") ||
     pathname?.startsWith("/providers/") ||
     pathname?.startsWith("/users/") ||
     pathname?.startsWith("/audit/")

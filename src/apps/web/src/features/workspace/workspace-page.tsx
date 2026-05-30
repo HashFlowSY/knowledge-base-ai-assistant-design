@@ -13,7 +13,7 @@ import {
   useKnowledgeBase,
 } from "../knowledge/knowledge-hooks";
 import { ProtectedPage } from "../shell/protected-page";
-import { Button, ButtonLink } from "../ui/button";
+import { Button } from "../ui/button";
 import { Notice } from "../ui/notice";
 import { Panel, PanelHeader } from "../ui/panel";
 import { KnowledgeBaseDialog } from "./knowledge-base-dialog";
@@ -25,13 +25,11 @@ import { dedupeKnowledgeBases } from "./workspace-formatters";
 import {
   workspaceContentClassName,
   workspacePageGridClassName,
-  workspaceSummaryGridClassName,
 } from "./workspace-layout";
 import {
   normalizeSearchParam,
   updateQueryParam,
 } from "./workspace-query-params";
-import { WorkspaceSummaryPanel } from "./workspace-summary-panel";
 import type { WorkspaceDialogState } from "./workspace-types";
 
 const knowledgeBaseListPageSize = 8;
@@ -67,7 +65,6 @@ export function WorkspacePage(): ReactElement {
     knowledgeBaseIdFromUrl ?? knowledgeBaseItems[0]?.id ?? null;
   const selectedKnowledgeBaseQuery = useKnowledgeBase(selectedKnowledgeBaseId);
   const isAdmin = sessionQuery.data?.role === "admin";
-  const showProcessingLogs = isAdmin;
 
   useEffect(() => {
     if (knowledgeBaseIdFromUrl === null && knowledgeBaseItems[0] !== undefined) {
@@ -199,30 +196,6 @@ export function WorkspacePage(): ReactElement {
               </div>
             )}
           </Panel>
-
-          <div className={workspaceSummaryGridClassName(showProcessingLogs)}>
-            <WorkspaceSummaryPanel
-              action={
-                selectedKnowledgeBaseId === null ? null : (
-                  <ButtonLink href="/chat" variant="primary">
-                    {knowledgeCopy.openChat}
-                  </ButtonLink>
-                )
-              }
-              message={knowledgeCopy.empty.documentsPending}
-              title={knowledgeCopy.documentsTitle}
-            />
-            <WorkspaceSummaryPanel
-              message={knowledgeCopy.empty.tasksPending}
-              title={knowledgeCopy.recentTasks}
-            />
-            {showProcessingLogs ? (
-              <WorkspaceSummaryPanel
-                message={knowledgeCopy.empty.logsPending}
-                title={knowledgeCopy.recentLogs}
-              />
-            ) : null}
-          </div>
         </section>
       </div>
 

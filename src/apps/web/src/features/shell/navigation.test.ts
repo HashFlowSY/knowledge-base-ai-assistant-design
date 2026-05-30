@@ -34,8 +34,6 @@ describe("@kb/web frontend MVP static contracts", () => {
     expect(visibleNavigationItems("admin").map((item) => item.href)).toEqual([
       "/workspace",
       "/chat",
-      "/tasks",
-      "/logs",
       "/providers",
       "/users",
       "/audit",
@@ -43,13 +41,13 @@ describe("@kb/web frontend MVP static contracts", () => {
     expect(visibleNavigationItems("member").map((item) => item.href)).toEqual([
       "/workspace",
       "/chat",
-      "/tasks",
     ]);
   });
 
-  it("keeps standalone document routes unregistered while preserving feature code", () => {
-    expect(existsSync(new URL("../../app/documents/page.tsx", import.meta.url))).toBe(false);
-    expect(existsSync(new URL("../../app/documents/[documentId]/page.tsx", import.meta.url))).toBe(false);
+  it("removes mock-backed documents, tasks, and logs route directories", () => {
+    expect(existsSync(new URL("../../app/documents", import.meta.url))).toBe(false);
+    expect(existsSync(new URL("../../app/tasks", import.meta.url))).toBe(false);
+    expect(existsSync(new URL("../../app/logs", import.meta.url))).toBe(false);
   });
 
   it("does not keep chat links to removed document detail routes", () => {
@@ -62,7 +60,8 @@ describe("@kb/web frontend MVP static contracts", () => {
     expect(shellSkeletonVariantForPath("/workspace")).toBe("workspace");
     expect(shellSkeletonVariantForPath("/chat?sessionId=session-finance-001")).toBe("chat");
     expect(shellSkeletonVariantForPath("/documents")).toBe("workspace");
-    expect(shellSkeletonVariantForPath("/documents/doc-travel-policy")).toBe("workspace");
+    expect(shellSkeletonVariantForPath("/tasks")).toBe("workspace");
+    expect(shellSkeletonVariantForPath("/logs")).toBe("workspace");
     expect(shellSkeletonVariantForPath("/providers/provider-openai-main")).toBe("table");
   });
 });

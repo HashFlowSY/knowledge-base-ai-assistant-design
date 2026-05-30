@@ -20,8 +20,8 @@ export function LoginPage(): ReactElement {
   const loginMutation = useLoginMutation();
   const redirectTo = sanitizeRedirectTo(searchParams.get("redirectTo"));
   const sessionExpired = searchParams.get("sessionExpired") === "1";
-  const [email, setEmail] = useState("admin@example.com");
-  const [password, setPassword] = useState("password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const pending = loginMutation.isPending;
   const loginRedirectTarget = getLoginRedirectTarget({
@@ -95,11 +95,6 @@ export function LoginPage(): ReactElement {
             {pending ? "登录中" : authCopy.submit}
           </Button>
         </form>
-
-        <div className="mt-5 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm leading-6 text-slate-600">
-          <p>{authCopy.adminDemo}</p>
-          <p>{authCopy.memberDemo}</p>
-        </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <Button disabled disabledReason={authCopy.ssoDisabled} variant="secondary">

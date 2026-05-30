@@ -1,9 +1,6 @@
 export const commonCopy = {
   productName: "知识库 AI 助手",
   tenantLabel: "私有部署工作区",
-  mockNotice: "演示环境",
-  resetDemoData: "重置演示数据",
-  roleSwitcher: "模拟角色",
   logout: "退出登录",
   returnWorkspace: "返回工作台",
   enterChat: "进入问答",
@@ -26,7 +23,6 @@ export const commonCopy = {
     empty: "暂无数据",
     error: "加载失败，请重试。",
     disabledFuture: "后续版本接入",
-    demoRecovered: "演示数据已恢复为初始状态。",
   },
 } as const;
 

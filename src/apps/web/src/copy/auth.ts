@@ -1,15 +1,13 @@
 export const authCopy = {
   title: "登录知识库 AI 助手",
-  description: "使用演示账号进入私有部署工作区。",
+  description: "使用已分配的账号进入私有部署工作区。",
   emailLabel: "邮箱",
   passwordLabel: "密码",
   submit: "登录",
-  adminDemo: "管理员：admin@example.com / password123",
-  memberDemo: "成员：member@example.com / password123",
   invalid: "邮箱或密码不正确，请检查后重试。",
   sessionExpired: "登录状态已过期，请重新登录后继续。",
   ssoDisabled: "SSO 登录将在后续版本接入",
   recoveryDisabled: "密码找回将在后续版本接入",
   unauthorizedTitle: "无权访问此页面",
-  unauthorizedDescription: "当前模拟角色没有访问该管理页面的权限。",
+  unauthorizedDescription: "当前账号没有访问该管理页面的权限。",
 } as const;

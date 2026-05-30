@@ -59,10 +59,6 @@ describe("workspace page executable contract", () => {
         "UploadDocumentDialog",
       "src/apps/web/src/features/workspace/workspace-metric-tile.tsx":
         "WorkspaceMetricTile",
-      "src/apps/web/src/features/workspace/workspace-summary-empty-state.tsx":
-        "WorkspaceSummaryEmptyState",
-      "src/apps/web/src/features/workspace/workspace-summary-panel.tsx":
-        "WorkspaceSummaryPanel",
       "src/apps/web/src/features/workspace/workspace-text-field.tsx":
         "WorkspaceTextField",
       "src/apps/web/src/features/workspace/workspace-textarea-field.tsx":
@@ -88,6 +84,10 @@ describe("workspace page executable contract", () => {
     expect(workspaceSource).not.toContain("MockKnowledgeBase");
     expect(workspaceSource).not.toContain("MockDocument");
     expect(workspaceRouteSource).not.toContain("MockDataBoundary");
+    expect(workspaceSource).not.toContain("WorkspaceSummaryPanel");
+    expect(workspaceSource).not.toContain("documentsPending");
+    expect(workspaceSource).not.toContain("tasksPending");
+    expect(workspaceSource).not.toContain("logsPending");
   });
 
   it("does not reference visibility-based workspace access in the real knowledge-base page", () => {

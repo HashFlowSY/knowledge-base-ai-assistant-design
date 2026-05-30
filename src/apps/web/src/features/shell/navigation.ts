@@ -1,8 +1,6 @@
 import {
-  Activity,
   BookOpen,
   KeyRound,
-  ListChecks,
   MessageSquareText,
   ShieldCheck,
   UsersRound,
@@ -33,20 +31,6 @@ export const navigationItems: NavigationItem[] = [
     description: "基于授权知识库提问",
     icon: MessageSquareText,
     adminOnly: false,
-  },
-  {
-    href: "/tasks",
-    label: "任务",
-    description: "查看导入与处理队列",
-    icon: Activity,
-    adminOnly: false,
-  },
-  {
-    href: "/logs",
-    label: "处理日志",
-    description: "排查文档处理事件",
-    icon: ListChecks,
-    adminOnly: true,
   },
   {
     href: "/providers",

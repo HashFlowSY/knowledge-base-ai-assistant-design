@@ -7,7 +7,7 @@ import { ProtectedPage } from "../shell/protected-page";
 import { ProvidersPage } from "./providers-page";
 import { UsersPage } from "./users-page";
 
-export type AdminPageKind = "tasks" | "logs" | "providers" | "users" | "audit";
+export type AdminPageKind = "providers" | "users" | "audit";
 
 export function AdminListPage({ kind }: { kind: AdminPageKind }): ReactElement {
   if (kind === "providers") {
@@ -20,7 +20,7 @@ export function AdminListPage({ kind }: { kind: AdminPageKind }): ReactElement {
         <Panel>
           <PanelHeader description={adminCopy[kind].description} title={adminCopy[kind].title} />
           <div className="p-4">
-            <Notice>该页面已移除前端 mock 数据，等待后续真实 API 接入。</Notice>
+            <Notice>{adminCopy[kind].empty}</Notice>
           </div>
         </Panel>
       </ProtectedPage>
