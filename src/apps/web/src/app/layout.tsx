@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
+
+import { cn } from "@/lib/utils";
 
 import { AppProviders } from "../features/api/app-providers";
 import "./globals.css";
-import { Inter } from "next/font/google";
-import { cn } from "@/lib/utils";
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "知识库 AI 助手",
