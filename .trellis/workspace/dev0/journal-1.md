@@ -918,3 +918,36 @@ Removed frontend mock store, mock-backed document/task/log routes, related demo 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 28: Migrate web UI to shadcn
+
+**Date**: 2026-05-31
+**Task**: Migrate web UI to shadcn
+**Branch**: `feature/ui`
+
+### Summary
+
+Migrated web UI wrappers and feature components to shadcn/ui, moved shared form/action helpers, added Sonner feedback, fixed list/card layout clipping and archived the migration task.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4718d3f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

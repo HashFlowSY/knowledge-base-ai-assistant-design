@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 27
+- **Total Sessions**: 28
 - **Last Active**: 2026-05-31
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~918 | Active |
+| `journal-1.md` | ~953 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 28 | 2026-05-31 | Migrate web UI to shadcn | `4718d3f` | `feature/ui` |
 | 27 | 2026-05-31 | 拆分 API Session Guard 逻辑 | `146cb6d` | `feature/ui` |
 | 26 | 2026-05-30 | Remove frontend mock logic | `9e40c26`, `0a32c54` | `main` |
 | 25 | 2026-05-30 | Split Admin Console Frontend | `8ab48e2`, `16e1032` | `main` |
