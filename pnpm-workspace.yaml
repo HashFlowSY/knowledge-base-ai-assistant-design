@@ -2,6 +2,9 @@ packages:
   - "src/apps/*"
   - "src/packages/*"
 
+allowBuilds:
+  msw: false
+
 overrides:
   "@esbuild-kit/core-utils>esbuild": 0.25.12
   postcss: 8.5.14

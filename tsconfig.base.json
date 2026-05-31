@@ -21,6 +21,7 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
+      "@/*": ["src/apps/web/src/*"],
       "@kb/ai-providers": ["src/packages/ai-providers/src/index.ts"],
       "@kb/ai-providers/runtime": ["src/packages/ai-providers/src/runtime.ts"],
       "@kb/ai-providers/service": ["src/packages/ai-providers/src/service.ts"],
