@@ -54,13 +54,28 @@ Use proper elements:
 
 Do not use clickable `<div>` or `<span>` elements for actions.
 
+## Feedback and Dialogs
+
+Use the global shadcn/ui Sonner `Toaster` for non-blocking success feedback
+after mutations. Do not render success confirmations as inline `Notice`/`Alert`
+blocks inside list panels or page content.
+
+Reserve inline `Notice`/`Alert` blocks for contextual states that need to occupy
+the page or dialog area: loading, empty, error, forbidden, validation, and retry
+states.
+
+Dialog wrappers must keep close controls accessible and localized to the
+application language. Dialog content should be constrained to the viewport and
+scroll internally when form content grows, so close controls and submit actions
+remain reachable.
+
 ### Form Submit Handler Types
 
 Do not import or annotate handlers with React's `FormEvent` type. For form
 submit handlers, use the frontend shared handler type:
 
 ```tsx
-import type { FormSubmitHandler } from "../ui/form-types";
+import type { FormSubmitHandler } from "@/lib/form-types";
 
 const handleSubmit: FormSubmitHandler = (event) => {
   event.preventDefault();

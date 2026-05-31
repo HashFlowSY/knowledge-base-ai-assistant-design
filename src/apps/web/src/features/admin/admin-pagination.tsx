@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
-import { Button } from "../ui/button";
-import { SelectField } from "../ui/select-field";
+import { Button } from "@/components/ui/button";
+import { SelectField } from "@/components/ui/select";
 import { toSelectOptions } from "./select-options";
 
 export function AdminPagination({
@@ -18,12 +18,12 @@ export function AdminPagination({
   updateParam: (key: string, value: string) => void;
 }): ReactElement {
   return (
-    <div className="flex flex-col gap-3 border-t border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-slate-600">
+    <div className="flex flex-col gap-3 border-t border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-muted-foreground">
         共 {total} 条 · 第 {currentPage}/{totalPages} 页
       </p>
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2 text-sm text-slate-600">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
           每页
           <SelectField
             ariaLabel="每页条数"

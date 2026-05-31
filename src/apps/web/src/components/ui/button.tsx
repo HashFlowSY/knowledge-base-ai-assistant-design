@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
+import Link from "next/link"
 import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
@@ -19,6 +20,11 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
+        primary: "bg-primary text-primary-foreground hover:bg-primary/80",
+        danger:
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+        inverse:
+          "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_5%)] aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
       },
       size: {
         default:
@@ -44,12 +50,28 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  disabledReason,
+  title,
+  type = "button",
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    disabledReason?: string
   }) {
   const Comp = asChild ? Slot.Root : "button"
+  const resolvedTitle =
+    props.disabled && disabledReason !== undefined ? disabledReason : title
+  const content = asChild ? (
+    props.children
+  ) : (
+    <>
+      {props.children}
+      {props.disabled && disabledReason !== undefined ? (
+        <span className="sr-only">（{disabledReason}）</span>
+      ) : null}
+    </>
+  )
 
   return (
     <Comp
@@ -57,9 +79,31 @@ function Button({
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
+      title={resolvedTitle}
+      {...(asChild ? {} : { type })}
       {...props}
-    />
+    >
+      {content}
+    </Comp>
   )
 }
 
-export { Button, buttonVariants }
+function ButtonLink({
+  children,
+  className,
+  href,
+  variant = "secondary",
+}: {
+  children: React.ReactNode
+  className?: string
+  href: string
+  variant?: React.ComponentProps<typeof Button>["variant"]
+}) {
+  return (
+    <Button asChild className={className} variant={variant}>
+      <Link href={href}>{children}</Link>
+    </Button>
+  )
+}
+
+export { Button, ButtonLink, buttonVariants }

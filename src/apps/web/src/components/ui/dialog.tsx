@@ -1,10 +1,12 @@
 "use client"
 
 import * as React from "react"
+import type { ReactNode } from "react"
 import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import type { FormSubmitHandler } from "@/lib/form-types"
 import { XIcon } from "lucide-react"
 
 function Dialog({
@@ -61,7 +63,7 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 rounded-4xl bg-popover p-6 text-sm text-popover-foreground shadow-xl ring-1 ring-foreground/5 duration-100 outline-none sm:max-w-md dark:ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-6 overflow-y-auto rounded-4xl bg-popover p-6 text-sm text-popover-foreground shadow-xl ring-1 ring-foreground/5 duration-100 outline-none sm:max-w-md dark:ring-foreground/10 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className
         )}
         {...props}
@@ -76,7 +78,7 @@ function DialogContent({
             >
               <XIcon
               />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">关闭</span>
             </Button>
           </DialogPrimitive.Close>
         )}
@@ -115,7 +117,7 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
-          <Button variant="outline">Close</Button>
+          <Button variant="outline">关闭</Button>
         </DialogPrimitive.Close>
       )}
     </div>
@@ -154,11 +156,53 @@ function DialogDescription({
   )
 }
 
+function DialogFrame({
+  children,
+  description,
+  onClose,
+  onSubmit,
+  title,
+}: {
+  children: ReactNode
+  description?: string
+  onClose: () => void
+  onSubmit?: FormSubmitHandler
+  title: string
+}) {
+  const body = (
+    <>
+      <DialogHeader>
+        <DialogTitle>{title}</DialogTitle>
+        {description === undefined ? null : (
+          <DialogDescription>{description}</DialogDescription>
+        )}
+      </DialogHeader>
+      {children}
+    </>
+  )
+
+  return (
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose()
+        }
+      }}
+    >
+      <DialogContent>
+        {onSubmit === undefined ? body : <form onSubmit={onSubmit}>{body}</form>}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 export {
   Dialog,
   DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFrame,
   DialogFooter,
   DialogHeader,
   DialogOverlay,

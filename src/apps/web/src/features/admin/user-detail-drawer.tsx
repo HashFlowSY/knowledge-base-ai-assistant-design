@@ -2,9 +2,7 @@ import type { ReactElement } from "react";
 
 import type { UserSummary } from "@kb/users";
 
-import { Drawer } from "../ui/drawer";
-import { Notice } from "../ui/notice";
-import { Panel, PanelHeader } from "../ui/panel";
+import { Drawer } from "@/components/ui/sheet";
 
 export function UserDetailDrawer({
   onClose,
@@ -12,16 +10,9 @@ export function UserDetailDrawer({
 }: {
   onClose: () => void;
   selectedUser: UserSummary | null;
-}): ReactElement {
+}): ReactElement | null {
   if (selectedUser === null) {
-    return (
-      <Panel>
-        <PanelHeader title="详情" />
-        <div className="p-4">
-          <Notice>选择一行后查看用户详情。</Notice>
-        </div>
-      </Panel>
-    );
+    return null;
   }
 
   return (
@@ -39,9 +30,9 @@ export function UserDetailDrawer({
 
 function Info({ label, value }: { label: string; value: string }): ReactElement {
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-1 break-words text-sm text-slate-800">{value}</p>
+    <div className="rounded-3xl border border-border bg-muted p-3">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words text-sm text-foreground">{value}</p>
     </div>
   );
 }

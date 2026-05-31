@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -14,13 +17,17 @@ describe("admin list layout", () => {
   it("uses the task page viewport height baseline for every admin list page", () => {
     expect(adminPageGridClassName()).toContain("xl:h-[calc(100vh-121px)]");
     expect(adminPageGridClassName()).not.toContain("xl:min-h-[calc(100vh-121px)]");
-    expect(adminPageGridClassName()).toContain("items-stretch");
     expect(adminListPanelClassName()).toContain("xl:h-full");
     expect(adminListPanelClassName()).toContain("xl:min-h-0");
     expect(adminListPanelClassName()).toContain("xl:flex");
     expect(adminListPanelClassName()).toContain("xl:flex-col");
     expect(adminListPanelClassName()).toContain("overflow-hidden");
     expect(adminListScrollClassName()).toContain("xl:flex-1");
+  });
+
+  it("stacks admin list header, filters, rows, and pagination without card gaps", () => {
+    expect(adminListPanelClassName()).toContain("gap-0");
+    expect(adminListPanelClassName()).toContain("pb-0");
   });
 
   it("uses a readable two-area desktop row instead of compressed multi-column grids", () => {
@@ -34,5 +41,17 @@ describe("admin list layout", () => {
     expect(adminRowPrimaryActionClassName()).toContain("min-h-11");
     expect(adminRowPrimaryActionClassName()).toContain("justify-center");
     expect(adminRowPrimaryActionClassName()).toContain("text-left");
+  });
+
+  it("lets the user management list fill the page when detail opens in a drawer", () => {
+    const userDetailDrawerSource = readFileSync(
+      resolve(__dirname, "user-detail-drawer.tsx"),
+      "utf8",
+    );
+
+    expect(adminPageGridClassName()).not.toContain("xl:grid-cols");
+    expect(adminPageGridClassName()).not.toContain("360px");
+    expect(userDetailDrawerSource).toContain("return null");
+    expect(userDetailDrawerSource).not.toContain("选择一行后查看用户详情。");
   });
 });

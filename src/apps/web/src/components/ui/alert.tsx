@@ -73,4 +73,26 @@ function AlertAction({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-export { Alert, AlertTitle, AlertDescription, AlertAction }
+function Notice({
+  children,
+  tone = "info",
+}: {
+  children: React.ReactNode
+  tone?: "info" | "error" | "success"
+}) {
+  return (
+    <Alert
+      role={tone === "error" ? "alert" : "status"}
+      variant={tone === "error" ? "destructive" : "default"}
+      className={cn(
+        tone === "success" &&
+          "border-primary/20 bg-primary/10 text-foreground",
+        tone === "info" && "bg-muted/50"
+      )}
+    >
+      <AlertDescription>{children}</AlertDescription>
+    </Alert>
+  )
+}
+
+export { Alert, AlertTitle, AlertDescription, AlertAction, Notice }

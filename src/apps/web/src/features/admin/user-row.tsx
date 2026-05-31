@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 
 import type { UserSummary } from "@kb/users";
 
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
   adminRowActionClassName,
   adminRowClassName,
@@ -32,8 +32,8 @@ export function UserRow({
   return (
     <div className={adminRowClassName()}>
       <button className={adminRowPrimaryActionClassName()} onClick={onSelect} type="button">
-        <p className="truncate text-sm font-semibold text-slate-950">{user.name}</p>
-        <p className="mt-1 text-xs text-slate-500">{user.email}</p>
+        <p className="truncate text-sm font-semibold text-foreground">{user.name}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{user.email}</p>
       </button>
       <div className={adminRowSideClassName()}>
         <div className={adminRowMetaClassName()}>

@@ -1,4 +1,4 @@
-import type { SelectFieldPlacement } from "../ui/select-field-styles";
+import type { SelectFieldPlacement } from "@/components/ui/select";
 
 export function chatLayoutGridClassName(): string {
   return "grid min-h-0 items-start gap-4 xl:h-[calc(100vh-121px)] xl:grid-cols-[240px_minmax(520px,1fr)_300px] xl:items-stretch";
@@ -9,7 +9,7 @@ export function chatPanelHeaderClassName(): string {
 }
 
 export function chatPanelClassName(): string {
-  return "flex h-full min-h-0 min-w-0 flex-col overflow-hidden";
+  return "flex h-full min-h-0 min-w-0 flex-col gap-0 overflow-hidden pb-0";
 }
 
 export function chatMessagesFrameClassName(): string {
@@ -17,7 +17,7 @@ export function chatMessagesFrameClassName(): string {
 }
 
 export function chatSessionScrollClassName(): string {
-  return "min-h-0 flex-1 divide-y divide-slate-200";
+  return "min-h-0 flex-1 divide-y divide-border";
 }
 
 export function chatMessageScrollClassName(): string {
@@ -38,8 +38,8 @@ export function chatModeSelectClassName(): string {
 
 export function chatTextareaClassName(): string {
   return [
-    "h-14 min-h-[56px] w-full resize-none rounded-md border border-slate-200 px-3 py-3 text-sm leading-6 outline-none",
-    "focus:border-teal-500 focus:ring-2 focus:ring-teal-100",
+    "h-14 min-h-[56px] w-full resize-none rounded-3xl border border-border px-3 py-3 text-sm leading-6 outline-none",
+    "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30",
   ].join(" ");
 }
 

@@ -4,9 +4,9 @@ import type { ReactElement, UIEvent } from "react";
 import type { KnowledgeBaseSummary } from "@kb/knowledge";
 
 import { knowledgeCopy } from "../../copy/knowledge";
-import { Notice } from "../ui/notice";
-import { Panel, PanelHeader } from "../ui/panel";
-import { ScrollArea } from "../ui/scroll-area";
+import { Notice } from "@/components/ui/alert";
+import { Panel, PanelHeader } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { KnowledgeBaseListItem } from "./knowledge-base-list-item";
 import { QueryErrorState } from "./query-error-state";
 import {
@@ -21,7 +21,6 @@ export function KnowledgeBaseList({
   isFetchingNextPage,
   isInitialLoading,
   items,
-  notice,
   onRetry,
   onSearchChange,
   onSelect,
@@ -34,7 +33,6 @@ export function KnowledgeBaseList({
   isFetchingNextPage: boolean;
   isInitialLoading: boolean;
   items: KnowledgeBaseSummary[];
-  notice: string | null;
   onRetry: () => Promise<unknown>;
   onSearchChange: (value: string) => void;
   onSelect: (knowledgeBaseId: string) => void;
@@ -56,9 +54,9 @@ export function KnowledgeBaseList({
         description={knowledgeCopy.listDescription}
         title={knowledgeCopy.listTitle}
       />
-      <div className="border-b border-slate-200 p-4">
-        <label className="flex min-h-11 items-center gap-2 rounded-md border border-slate-200 bg-white px-3">
-          <Search aria-hidden="true" className="h-4 w-4 text-slate-400" />
+      <div className="border-b border-border p-4">
+        <label className="flex min-h-11 items-center gap-2 rounded-3xl border border-border bg-input/50 px-3">
+          <Search aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
           <span className="sr-only">{knowledgeCopy.searchLabel}</span>
           <input
             aria-label={knowledgeCopy.searchLabel}
@@ -69,11 +67,6 @@ export function KnowledgeBaseList({
           />
         </label>
       </div>
-      {notice === null ? null : (
-        <div className="border-b border-slate-200 p-4">
-          <Notice tone="success">{notice}</Notice>
-        </div>
-      )}
       {isError ? (
         <QueryErrorState
           actionLabel={knowledgeCopy.retry}
@@ -99,7 +92,7 @@ export function KnowledgeBaseList({
           onScroll={handleKnowledgeBaseListScroll}
           size="fill"
         >
-          <div className="divide-y divide-slate-200">
+          <div className="divide-y divide-border">
             {items.map((item) => (
               <KnowledgeBaseListItem
                 active={item.id === selectedKnowledgeBaseId}
@@ -114,7 +107,7 @@ export function KnowledgeBaseList({
               <Notice>{knowledgeCopy.pending.moreKnowledgeBases}</Notice>
             </div>
           ) : hasNextPage ? (
-            <p className="px-4 py-3 text-xs text-slate-500">
+            <p className="px-4 py-3 text-xs text-muted-foreground">
               {knowledgeCopy.listScrollHint}
             </p>
           ) : null}

@@ -22,12 +22,19 @@ describe("workspace layout", () => {
     expect(workspaceContentClassName()).toContain("lg:overflow-y-auto");
   });
 
+  it("keeps workspace content card rings inside the scroll container clip edge", () => {
+    expect(workspaceContentClassName()).toContain("p-px");
+    expect(workspaceContentClassName()).toContain("lg:pr-1");
+  });
+
   it("lets the knowledge base list fill the stretched tab and scroll internally", () => {
     expect(workspaceKnowledgePanelClassName()).toContain("flex");
     expect(workspaceKnowledgePanelClassName()).toContain("h-full");
     expect(workspaceKnowledgePanelClassName()).toContain("min-h-0");
     expect(workspaceKnowledgePanelClassName()).toContain("flex-col");
+    expect(workspaceKnowledgePanelClassName()).toContain("gap-0");
     expect(workspaceKnowledgePanelClassName()).toContain("overflow-hidden");
+    expect(workspaceKnowledgePanelClassName()).toContain("pb-0");
     expect(workspaceKnowledgePanelClassName()).toContain("max-lg:max-h-[min(560px,72vh)]");
     expect(workspaceKnowledgePanelClassName()).toContain("lg:[contain:size]");
 

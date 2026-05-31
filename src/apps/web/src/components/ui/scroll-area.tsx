@@ -5,20 +5,41 @@ import { ScrollArea as ScrollAreaPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
+type ScrollAreaSize = "fill" | "sm" | "md" | "lg" | "xl"
+
+const sizeClassNames: Record<ScrollAreaSize, string> = {
+  fill: "max-h-none",
+  lg: "max-h-[min(520px,74vh)]",
+  md: "max-h-[min(420px,70vh)]",
+  sm: "max-h-[min(320px,64vh)]",
+  xl: "max-h-[min(640px,78vh)]",
+}
+
 function ScrollArea({
+  "aria-label": ariaLabel,
   className,
   children,
+  onScroll,
+  role,
+  size = "md",
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+}: Omit<React.ComponentProps<typeof ScrollAreaPrimitive.Root>, "onScroll"> & {
+  "aria-label"?: string
+  onScroll?: React.UIEventHandler<HTMLDivElement>
+  size?: ScrollAreaSize
+}) {
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      className={cn("relative", className)}
+      aria-label={ariaLabel}
+      role={role ?? (ariaLabel === undefined ? undefined : "region")}
+      className={cn("relative min-h-0", sizeClassNames[size], className)}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+        className="size-full rounded-[inherit] pr-1 transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
+        onScroll={onScroll}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

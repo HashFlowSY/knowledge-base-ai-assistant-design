@@ -1,14 +1,18 @@
 import * as React from "react"
+import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 
 function Card({
+  asChild = false,
   className,
   size = "default",
   ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+}: React.ComponentProps<"div"> & { asChild?: boolean; size?: "default" | "sm" }) {
+  const Comp = asChild ? Slot.Root : "div"
+
   return (
-    <div
+    <Comp
       data-slot="card"
       data-size={size}
       className={cn(
@@ -33,9 +37,15 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitle({
+  asChild = false,
+  className,
+  ...props
+}: React.ComponentProps<"div"> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : "div"
+
   return (
-    <div
+    <Comp
       data-slot="card-title"
       className={cn("font-heading text-base font-medium", className)}
       {...props}
@@ -89,6 +99,51 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+function Panel({
+  children,
+  className,
+  ...props
+}: React.ComponentProps<"section">) {
+  return (
+    <Card asChild className={cn("shadow-sm", className)}>
+      <section {...props}>{children}</section>
+    </Card>
+  )
+}
+
+function PanelHeader({
+  action,
+  children,
+  className,
+  description,
+  title,
+}: {
+  action?: React.ReactNode
+  children?: React.ReactNode
+  className?: string
+  description?: string
+  title: string
+}) {
+  return (
+    <CardHeader className={cn("border-b border-border", className)}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <CardTitle asChild className="text-xl">
+            <h2>{title}</h2>
+          </CardTitle>
+          {description === undefined ? null : (
+            <CardDescription className="mt-1 leading-6">
+              {description}
+            </CardDescription>
+          )}
+          {children}
+        </div>
+        {action === undefined ? null : <CardAction>{action}</CardAction>}
+      </div>
+    </CardHeader>
+  )
+}
+
 export {
   Card,
   CardHeader,
@@ -97,4 +152,6 @@ export {
   CardAction,
   CardDescription,
   CardContent,
+  Panel,
+  PanelHeader,
 }

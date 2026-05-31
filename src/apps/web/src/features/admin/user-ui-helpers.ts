@@ -1,4 +1,4 @@
-import type { SelectFieldOption } from "../ui/select-field";
+import type { SelectFieldOption } from "@/components/ui/select";
 
 export function canRemoveUserAccessFromUi(input: {
   currentUserId: string | null | undefined;

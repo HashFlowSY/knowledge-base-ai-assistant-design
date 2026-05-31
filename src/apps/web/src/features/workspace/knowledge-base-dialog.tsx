@@ -9,10 +9,10 @@ import {
   useKnowledgeBase,
   useUpdateKnowledgeBase,
 } from "../knowledge/knowledge-hooks";
-import { Button } from "../ui/button";
-import { DialogFrame } from "../ui/dialog";
-import type { FormSubmitHandler } from "../ui/form-types";
-import { Notice } from "../ui/notice";
+import { Button } from "@/components/ui/button";
+import { DialogFrame } from "@/components/ui/dialog";
+import type { FormSubmitHandler } from "@/lib/form-types";
+import { Notice } from "@/components/ui/alert";
 import { MemberPicker } from "./member-picker";
 import {
   toKnowledgeBaseErrorCopy,

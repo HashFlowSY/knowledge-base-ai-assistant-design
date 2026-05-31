@@ -4,8 +4,8 @@ import type { ReactElement } from "react";
 
 import { authCopy } from "../../copy/auth";
 import { commonCopy } from "../../copy/common";
-import { ButtonLink } from "../ui/button";
-import { Panel, PanelHeader } from "../ui/panel";
+import { ButtonLink } from "@/components/ui/button";
+import { Panel, PanelHeader } from "@/components/ui/card";
 import { ProtectedPage } from "../shell/protected-page";
 
 export function UnauthorizedPage(): ReactElement {

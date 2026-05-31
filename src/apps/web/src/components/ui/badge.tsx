@@ -46,4 +46,30 @@ function Badge({
   )
 }
 
-export { Badge, badgeVariants }
+type StatusTone = "slate" | "teal" | "red" | "yellow" | "blue"
+
+function StatusPill({
+  children,
+  tone = "slate",
+}: {
+  children: React.ReactNode
+  tone?: StatusTone
+}) {
+  const variant: React.ComponentProps<typeof Badge>["variant"] =
+    tone === "red" ? "destructive" : tone === "teal" ? "default" : "secondary"
+
+  return (
+    <Badge
+      variant={variant}
+      className={cn(
+        tone === "yellow" && "bg-muted text-muted-foreground",
+        tone === "blue" && "bg-accent text-accent-foreground",
+        tone === "slate" && "bg-secondary text-secondary-foreground"
+      )}
+    >
+      {children}
+    </Badge>
+  )
+}
+
+export { Badge, StatusPill, badgeVariants }

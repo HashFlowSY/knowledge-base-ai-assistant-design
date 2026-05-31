@@ -7,7 +7,7 @@ import { adminCopy } from "../../copy/admin";
 import { authCopy } from "../../copy/auth";
 import { chatCopy } from "../../copy/chat";
 import { knowledgeCopy } from "../../copy/knowledge";
-import { shellSkeletonVariantForPath } from "../ui/skeleton-variants";
+import { shellSkeletonVariantForPath } from "../../components/ui/skeleton-variants";
 import { visibleNavigationItems } from "./navigation";
 
 describe("@kb/web frontend MVP static contracts", () => {

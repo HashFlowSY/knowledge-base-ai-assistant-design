@@ -13,6 +13,8 @@ test("redirects unauthenticated root visits to login", async ({ page }) => {
 
 test("admin login renders the workspace heading", async ({ page }) => {
   await page.goto("/login");
+  await page.getByLabel("邮箱").fill("admin@example.com");
+  await page.getByLabel("密码", { exact: true }).fill("password123");
   await page.getByRole("button", { name: "登录", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "知识库工作台" })).toBeVisible();
@@ -27,6 +29,8 @@ test("workspace knowledge-base flows follow real permissions and URL state", asy
   const finalDescription = `更新后的描述 ${suffix}`;
 
   await page.goto("/login");
+  await page.getByLabel("邮箱").fill("admin@example.com");
+  await page.getByLabel("密码", { exact: true }).fill("password123");
   await page.getByRole("button", { name: "登录", exact: true }).click();
 
   await expect(page.getByRole("heading", { name: "知识库工作台" })).toBeVisible();

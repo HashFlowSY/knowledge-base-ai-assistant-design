@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 
-import { Notice } from "../ui/notice";
+import { Notice } from "@/components/ui/alert";
 
 export function AdminEmptyState({ message }: { message: string }): ReactElement {
   return (

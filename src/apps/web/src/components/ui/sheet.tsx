@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import type { ReactNode } from "react"
 import { Dialog as SheetPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
@@ -135,7 +136,39 @@ function SheetDescription({
   )
 }
 
+function Drawer({
+  children,
+  onClose,
+  title,
+}: {
+  children: ReactNode
+  onClose: () => void
+  title: string
+}) {
+  return (
+    <Sheet
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose()
+        }
+      }}
+    >
+      <SheetContent className="w-full sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>{title}</SheetTitle>
+          <SheetDescription>详情信息</SheetDescription>
+        </SheetHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-6">
+          {children}
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
 export {
+  Drawer,
   Sheet,
   SheetTrigger,
   SheetClose,

@@ -1,8 +1,8 @@
 import type { ReactElement } from "react";
 
 import { adminCopy } from "../../copy/admin";
-import { Notice } from "../ui/notice";
-import { Panel, PanelHeader } from "../ui/panel";
+import { Notice } from "@/components/ui/alert";
+import { Panel, PanelHeader } from "@/components/ui/card";
 import { ProtectedPage } from "../shell/protected-page";
 import { ProvidersPage } from "./providers-page";
 import { UsersPage } from "./users-page";

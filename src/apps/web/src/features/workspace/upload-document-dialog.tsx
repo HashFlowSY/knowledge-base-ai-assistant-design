@@ -5,10 +5,10 @@ import { useState, type ChangeEvent, type ReactElement } from "react";
 import { knowledgeCopy } from "../../copy/knowledge";
 import { ApiClientError } from "../api/client";
 import { useUploadDocumentFile } from "../knowledge/knowledge-hooks";
-import { Button } from "../ui/button";
-import { DialogFrame } from "../ui/dialog";
-import type { FormSubmitHandler } from "../ui/form-types";
-import { Notice } from "../ui/notice";
+import { Button } from "@/components/ui/button";
+import { DialogFrame } from "@/components/ui/dialog";
+import type { FormSubmitHandler } from "@/lib/form-types";
+import { Notice } from "@/components/ui/alert";
 import {
   documentUploadAcceptedFileTypes,
   formatDocumentUploadSuccessNotice,
@@ -74,17 +74,17 @@ export function UploadDocumentDialog({
         {error === null ? null : <Notice tone="error">{error}</Notice>}
         <div>
           <label
-            className="block text-sm font-medium text-slate-700"
+            className="block text-sm font-medium text-foreground"
             htmlFor="document-upload-file"
           >
             {knowledgeCopy.uploadFileLabel}
           </label>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
             {knowledgeCopy.uploadFileHelp}
           </p>
           <input
             accept={documentUploadAcceptedFileTypes}
-            className="mt-2 block min-h-11 w-full rounded-md border border-slate-200 px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700"
+            className="mt-2 block min-h-11 w-full rounded-3xl border border-border px-3 py-2 text-sm file:mr-3 file:rounded-3xl file:border-0 file:bg-background file:px-3 file:py-2 file:text-sm file:font-medium file:text-foreground"
             disabled={uploadDocumentFile.isPending}
             id="document-upload-file"
             onChange={handleFileChange}

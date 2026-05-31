@@ -11,8 +11,8 @@ export function WorkspaceMetricTile({
 }): ReactElement {
   return (
     <div className={workspaceMetricTileClassName()}>
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-slate-950">{value}</p>
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
     </div>
   );
 }

@@ -6,6 +6,14 @@ import { Select as SelectPrimitive } from "radix-ui"
 import { cn } from "@/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
+export interface SelectFieldOption {
+  label: string
+  value: string
+}
+
+export type SelectFieldTone = "default" | "inverse"
+export type SelectFieldPlacement = "bottom" | "top"
+
 function Select({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
@@ -181,9 +189,56 @@ function SelectScrollDownButton({
   )
 }
 
+function SelectField({
+  ariaLabel,
+  className,
+  onChange,
+  options,
+  placement = "bottom",
+  tone = "default",
+  value,
+}: {
+  ariaLabel: string
+  className?: string
+  onChange: (value: string) => void
+  options: SelectFieldOption[]
+  placement?: SelectFieldPlacement
+  tone?: SelectFieldTone
+  value: string
+}) {
+  const selected = options.find((option) => option.value === value)
+
+  return (
+    <Select onValueChange={onChange} value={value}>
+      <SelectTrigger
+        aria-label={ariaLabel}
+        className={cn(
+          "min-h-11 w-full",
+          tone === "inverse" &&
+            "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          className
+        )}
+      >
+        <SelectValue placeholder={selected?.label ?? "未选择"} />
+      </SelectTrigger>
+      <SelectContent
+        position="popper"
+        side={placement === "top" ? "top" : "bottom"}
+      >
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  )
+}
+
 export {
   Select,
   SelectContent,
+  SelectField,
   SelectGroup,
   SelectItem,
   SelectLabel,

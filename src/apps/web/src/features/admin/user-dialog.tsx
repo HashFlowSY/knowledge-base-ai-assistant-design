@@ -10,11 +10,11 @@ import type { UserSummary } from "@kb/users";
 
 import { adminCopy } from "../../copy/admin";
 import { ApiClientError } from "../api/client";
-import { Button } from "../ui/button";
-import { DialogFrame } from "../ui/dialog";
-import type { FormSubmitHandler } from "../ui/form-types";
-import { Notice } from "../ui/notice";
-import { SelectField } from "../ui/select-field";
+import { Button } from "@/components/ui/button";
+import { DialogFrame } from "@/components/ui/dialog";
+import type { FormSubmitHandler } from "@/lib/form-types";
+import { Notice } from "@/components/ui/alert";
+import { SelectField } from "@/components/ui/select";
 import { roleOptionsForUser, shouldLogoutAfterUserUpdate } from "./user-ui-helpers";
 import { useCreateUser, useUpdateUser } from "./user-hooks";
 
@@ -107,11 +107,11 @@ export function UserDialog({
       <div className="space-y-4">
         {error === null ? null : <Notice tone="error">{error}</Notice>}
         <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="user-name">
+          <label className="block text-sm font-medium text-foreground" htmlFor="user-name">
             姓名
           </label>
           <input
-            className="mt-2 h-11 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+            className="mt-2 h-11 w-full rounded-3xl border border-border px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
             disabled={pending}
             id="user-name"
             onChange={(event) => setName(event.target.value)}
@@ -119,11 +119,11 @@ export function UserDialog({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="user-email">
+          <label className="block text-sm font-medium text-foreground" htmlFor="user-email">
             邮箱
           </label>
           <input
-            className="mt-2 h-11 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+            className="mt-2 h-11 w-full rounded-3xl border border-border px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
             disabled={pending}
             id="user-email"
             onChange={(event) => setEmail(event.target.value)}
@@ -138,7 +138,7 @@ export function UserDialog({
           value={password}
         />
         <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="user-role">
+          <label className="block text-sm font-medium text-foreground" htmlFor="user-role">
             角色
           </label>
           <SelectField
@@ -187,12 +187,12 @@ function PasswordField({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700" htmlFor={id}>
+      <label className="block text-sm font-medium text-foreground" htmlFor={id}>
         {label}
       </label>
       <div className="relative mt-2">
         <input
-          className="h-11 w-full rounded-md border border-slate-200 px-3 pr-12 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+          className="h-11 w-full rounded-3xl border border-border px-3 pr-12 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
           disabled={disabled}
           id={id}
           onBlur={hidePassword}
@@ -203,7 +203,7 @@ function PasswordField({
         />
         <button
           aria-label="显示密码"
-          className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-slate-500 outline-none transition hover:bg-slate-100 hover:text-slate-700 focus-visible:ring-2 focus-visible:ring-teal-100"
+          className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-3xl text-muted-foreground outline-none transition hover:bg-background hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/30"
           disabled={disabled}
           onBlur={hidePassword}
           onContextMenu={(event) => event.preventDefault()}

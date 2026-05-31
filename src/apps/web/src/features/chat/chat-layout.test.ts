@@ -37,6 +37,8 @@ describe("chat layout", () => {
     expect(chatPanelClassName()).toContain("h-full");
     expect(chatPanelClassName()).not.toContain("min-h-[640px]");
     expect(chatPanelClassName()).toContain("flex-col");
+    expect(chatPanelClassName()).toContain("gap-0");
+    expect(chatPanelClassName()).toContain("pb-0");
     expect(chatSessionScrollClassName()).toContain("flex-1");
     expect(chatCitationScrollClassName()).toContain("flex-1");
   });

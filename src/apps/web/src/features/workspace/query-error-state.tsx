@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
-import { Button } from "../ui/button";
-import { Notice } from "../ui/notice";
+import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/alert";
 
 export function QueryErrorState({
   actionLabel,

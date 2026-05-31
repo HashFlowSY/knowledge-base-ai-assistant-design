@@ -6,16 +6,16 @@ import { useMemo, type ReactElement } from "react";
 import type { ChatCitation, ChatMessage, ChatSessionSummary } from "@kb/rag";
 
 import { chatCopy } from "../../copy/chat";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import {
   cardActionButtonClassName,
   listActionButtonClassName,
-} from "../ui/list-item-styles";
-import { Notice } from "../ui/notice";
-import { Panel, PanelHeader } from "../ui/panel";
-import { ScrollArea } from "../ui/scroll-area";
-import { SelectField } from "../ui/select-field";
-import { StatusPill } from "../ui/status";
+} from "@/lib/action-styles";
+import { Notice } from "@/components/ui/alert";
+import { Panel, PanelHeader } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { SelectField } from "@/components/ui/select";
+import { StatusPill } from "@/components/ui/badge";
 import {
   chatCitationScrollClassName,
   chatPanelClassName,
@@ -63,10 +63,10 @@ export function SessionList({
             onClick={() => onSelect(session.id)}
             type="button"
           >
-            <p className="truncate text-sm font-semibold text-slate-950">
+            <p className="truncate text-sm font-semibold text-foreground">
               {session.title}
             </p>
-            <p className="mt-1 truncate text-xs text-slate-500">
+            <p className="mt-1 truncate text-xs text-muted-foreground">
               {session.messageCount} 条消息
             </p>
           </button>
@@ -91,7 +91,7 @@ export function KnowledgeBasePicker({
   );
 
   return (
-    <div className="border-t border-slate-200 p-4">
+    <div className="border-t border-border p-4">
       <SelectField
         ariaLabel="选择知识库"
         onChange={onChange}
@@ -110,12 +110,12 @@ export function StarterPrompts({
   const prompts = ["如何开始使用知识库？", "哪些信息需要先入库？", "怎样核验回答引用？"];
 
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-      <p className="text-sm font-semibold text-slate-950">选择一个问题开始</p>
+    <div className="rounded-3xl border border-border bg-muted p-4">
+      <p className="text-sm font-semibold text-foreground">选择一个问题开始</p>
       <div className="mt-3 grid gap-2">
         {prompts.map((prompt) => (
           <button
-            className="min-h-11 rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm hover:bg-slate-50"
+            className="min-h-11 rounded-3xl border border-border bg-card px-3 py-2 text-left text-sm hover:bg-muted"
             key={prompt}
             onClick={() => onPick(prompt)}
             type="button"
@@ -141,7 +141,7 @@ export function MessageBubble({
     <article className={`flex ${isAssistant ? "justify-start" : "justify-end"}`}>
       <div className={messageBubbleClassName(isAssistant)}>
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-xs font-medium text-slate-500">
+          <p className="text-xs font-medium text-muted-foreground">
             {isAssistant ? "助手" : "你"}
           </p>
           {message.groundingLabel === null ? null : (
@@ -155,7 +155,7 @@ export function MessageBubble({
             <StatusPill tone="teal">{chatCopy.feedbackSubmitted}</StatusPill>
           )}
         </div>
-        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-800">
+        <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-foreground">
           {message.content}
         </p>
         {isAssistant && message.citations.length === 0 ? (
@@ -167,7 +167,7 @@ export function MessageBubble({
           <div className="mt-3 flex flex-wrap gap-2">
             {message.citations.map((citation) => (
               <button
-                className="min-h-11 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-teal-700"
+                className="min-h-11 rounded-3xl border border-border bg-muted px-3 py-2 text-sm text-primary"
                 key={citation.id}
                 onClick={() => onSelectCitation(citation.id)}
                 type="button"
@@ -216,13 +216,13 @@ export function CitationPanel({
             onClick={() => onSelect(citation.id)}
             type="button"
           >
-            <p className="text-sm font-semibold text-slate-950">
+            <p className="text-sm font-semibold text-foreground">
               {citation.sourceTitle}
             </p>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               {citation.sourceLocator ?? `引用 ${citation.rank}`}
             </p>
-            <p className="mt-2 text-sm leading-6 text-slate-700">
+            <p className="mt-2 text-sm leading-6 text-foreground">
               {citation.snippet}
             </p>
           </button>
@@ -252,10 +252,10 @@ function FeedbackForm({
   onReasonChange: (value: string) => void;
 }): ReactElement {
   return (
-    <div className="border-t border-slate-200 pt-4">
-      <p className="text-sm font-semibold text-slate-950">{chatCopy.feedbackReason}</p>
+    <div className="border-t border-border pt-4">
+      <p className="text-sm font-semibold text-foreground">{chatCopy.feedbackReason}</p>
       <textarea
-        className="mt-2 min-h-24 w-full rounded-md border border-slate-200 p-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+        className="mt-2 min-h-24 w-full rounded-3xl border border-border p-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
         onChange={(event) => onReasonChange(event.target.value)}
         placeholder="可选，说明原因"
         value={feedbackReason}
@@ -280,7 +280,7 @@ function FeedbackForm({
         </Button>
       </div>
       {answer.feedback === null ? null : (
-        <p className="mt-2 text-sm text-teal-700">{chatCopy.submittedHint}</p>
+        <p className="mt-2 text-sm text-primary">{chatCopy.submittedHint}</p>
       )}
     </div>
   );
@@ -288,7 +288,7 @@ function FeedbackForm({
 
 function messageBubbleClassName(isAssistant: boolean): string {
   return [
-    "max-w-[min(760px,92%)] rounded-md border p-3",
-    isAssistant ? "border-slate-200 bg-white" : "border-teal-200 bg-teal-50",
+    "max-w-[min(760px,92%)] rounded-3xl border p-3",
+    isAssistant ? "border-border bg-card" : "border-primary/20 bg-primary/10",
   ].join(" ");
 }

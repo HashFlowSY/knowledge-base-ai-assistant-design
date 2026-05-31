@@ -1,9 +1,9 @@
 export function adminPageGridClassName(): string {
-  return "grid min-h-0 items-stretch gap-4 xl:h-[calc(100vh-121px)] xl:grid-cols-[minmax(0,1fr)_360px]";
+  return "min-h-0 xl:h-[calc(100vh-121px)]";
 }
 
 export function adminListPanelClassName(): string {
-  return "min-w-0 overflow-hidden xl:flex xl:h-full xl:min-h-0 xl:flex-col";
+  return "min-w-0 gap-0 overflow-hidden pb-0 xl:flex xl:h-full xl:min-h-0 xl:flex-col";
 }
 
 export function adminListScrollClassName(): string {
@@ -19,7 +19,7 @@ export function adminRowPrimaryActionClassName(): string {
 }
 
 export function adminRowMetaClassName(): string {
-  return "flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-600";
+  return "flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground";
 }
 
 export function adminRowActionClassName(): string {

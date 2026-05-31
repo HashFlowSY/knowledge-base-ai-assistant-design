@@ -7,11 +7,11 @@ import { useState, type ReactElement } from "react";
 import { chatCopy } from "../../copy/chat";
 import { useKnowledgeBases } from "../knowledge/knowledge-hooks";
 import { ProtectedPage } from "../shell/protected-page";
-import { Button } from "../ui/button";
-import type { FormSubmitHandler } from "../ui/form-types";
-import { Notice } from "../ui/notice";
-import { Panel, PanelHeader } from "../ui/panel";
-import { ScrollArea } from "../ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import type { FormSubmitHandler } from "@/lib/form-types";
+import { Notice } from "@/components/ui/alert";
+import { Panel, PanelHeader } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   chatComposerGridClassName,
   chatLayoutGridClassName,
@@ -178,7 +178,7 @@ export function ChatPage(): ReactElement {
                 <Notice tone="error">{chatCopy.failed}</Notice>
               ) : null}
             </ScrollArea>
-            <form className="border-t border-slate-200 p-4" onSubmit={handleSubmit}>
+            <form className="border-t border-border p-4" onSubmit={handleSubmit}>
               <div className={chatComposerGridClassName()}>
                 <label className="block lg:col-span-2">
                   <span className="sr-only">{chatCopy.composerLabel}</span>

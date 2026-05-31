@@ -3,6 +3,7 @@
 import { FileUp, Globe2, Pencil, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactElement } from "react";
+import { toast } from "sonner";
 
 import { knowledgeBaseListQuerySchema } from "@kb/knowledge";
 
@@ -13,9 +14,9 @@ import {
   useKnowledgeBase,
 } from "../knowledge/knowledge-hooks";
 import { ProtectedPage } from "../shell/protected-page";
-import { Button } from "../ui/button";
-import { Notice } from "../ui/notice";
-import { Panel, PanelHeader } from "../ui/panel";
+import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/ui/alert";
+import { Panel, PanelHeader } from "@/components/ui/card";
 import { KnowledgeBaseDialog } from "./knowledge-base-dialog";
 import { KnowledgeBaseList } from "./knowledge-base-list";
 import { KnowledgeBaseSummary } from "./knowledge-base-summary";
@@ -40,7 +41,6 @@ export function WorkspacePage(): ReactElement {
   const router = useRouter();
   const sessionQuery = useSessionQuery();
   const [dialog, setDialog] = useState<WorkspaceDialogState>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const query = knowledgeBaseListQuerySchema.parse(Object.fromEntries(searchParams));
   const knowledgeBaseIdFromUrl = normalizeSearchParam(
     searchParams.get("knowledgeBaseId"),
@@ -95,6 +95,10 @@ export function WorkspacePage(): ReactElement {
     }
   }
 
+  function showSuccessNotice(message: string): void {
+    toast.success(message);
+  }
+
   return (
     <ProtectedPage>
       <div className={workspacePageGridClassName()}>
@@ -107,7 +111,6 @@ export function WorkspacePage(): ReactElement {
             knowledgeBasesQuery.isLoading && knowledgeBasesQuery.data === undefined
           }
           items={knowledgeBaseItems}
-          notice={notice}
           onRetry={() => knowledgeBasesQuery.refetch()}
           onSearchChange={(value) => updateParam("search", value)}
           onSelect={selectKnowledgeBase}
@@ -203,14 +206,14 @@ export function WorkspacePage(): ReactElement {
         <UploadDocumentDialog
           knowledgeBaseId={dialog.knowledgeBaseId}
           onClose={() => setDialog(null)}
-          onNotice={setNotice}
+          onNotice={showSuccessNotice}
         />
       ) : (
         <KnowledgeBaseDialog
           knowledgeBaseId={dialog.mode === "edit" ? dialog.knowledgeBaseId : null}
           mode={dialog.mode}
           onClose={() => setDialog(null)}
-          onNotice={setNotice}
+          onNotice={showSuccessNotice}
           onSelectKnowledgeBase={selectKnowledgeBase}
         />
       )}

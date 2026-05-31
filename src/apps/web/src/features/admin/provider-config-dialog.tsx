@@ -8,10 +8,10 @@ import {
   type ProviderSummary,
 } from "@kb/ai-providers";
 
-import { Button } from "../ui/button";
-import { DialogFrame } from "../ui/dialog";
-import type { FormSubmitHandler } from "../ui/form-types";
-import { Notice } from "../ui/notice";
+import { Button } from "@/components/ui/button";
+import { DialogFrame } from "@/components/ui/dialog";
+import type { FormSubmitHandler } from "@/lib/form-types";
+import { Notice } from "@/components/ui/alert";
 import type { ProviderFormValues } from "./provider-hooks";
 import { providerFormStatusForSave } from "./provider-page-view";
 
@@ -104,9 +104,9 @@ export function ProviderConfigDialog({
 
 function Info({ label, value }: { label: string; value: string }): ReactElement {
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className="mt-1 break-words text-sm text-slate-800">{value}</p>
+    <div className="rounded-3xl border border-border bg-muted p-3">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mt-1 break-words text-sm text-foreground">{value}</p>
     </div>
   );
 }
@@ -126,11 +126,11 @@ function FormField({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-slate-700" htmlFor={id}>
+      <label className="block text-sm font-medium text-foreground" htmlFor={id}>
         {label}
       </label>
       <input
-        className="mt-2 h-11 w-full rounded-md border border-slate-200 px-3 text-sm outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"
+        className="mt-2 h-11 w-full rounded-3xl border border-border px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
         id={id}
         onChange={(event) => onChange(event.target.value)}
         type={type}

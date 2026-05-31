@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 import type { KnowledgeBaseDetail } from "@kb/knowledge";
 
 import { knowledgeCopy } from "../../copy/knowledge";
-import { ButtonLink } from "../ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import {
   formatMemberSummary,
   formatTimestamp,
@@ -20,10 +20,10 @@ export function KnowledgeBaseSummary({
     <div className="p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <h2 className="text-xl font-semibold text-slate-950">
+          <h2 className="text-xl font-semibold text-foreground">
             {knowledgeBase.name}
           </h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
             {knowledgeBase.description ?? knowledgeCopy.labels.noDescription}
           </p>
         </div>
@@ -48,21 +48,21 @@ export function KnowledgeBaseSummary({
         />
       </div>
       <div className="mt-4 space-y-2">
-        <p className="text-xs font-medium text-slate-500">
+        <p className="text-xs font-medium text-muted-foreground">
           {knowledgeCopy.members.searchLabel}
         </p>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-muted-foreground">
           {formatMemberSummary(knowledgeBase.members, knowledgeBase.memberCount)}
         </p>
         {knowledgeBase.members.length === 0 ? null : (
           <ul className="space-y-2">
             {knowledgeBase.members.map((member) => (
               <li
-                className="rounded-md border border-slate-200 px-3 py-2"
+                className="rounded-3xl border border-border px-3 py-2"
                 key={member.id}
               >
-                <p className="text-sm font-medium text-slate-950">{member.name}</p>
-                <p className="mt-1 text-xs text-slate-500">{member.email}</p>
+                <p className="text-sm font-medium text-foreground">{member.name}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{member.email}</p>
               </li>
             ))}
           </ul>
