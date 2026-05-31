@@ -879,3 +879,42 @@ Removed frontend mock store, mock-backed document/task/log routes, related demo 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 27: 拆分 API Session Guard 逻辑
+
+**Date**: 2026-05-31
+**Task**: 拆分 API Session Guard 逻辑
+**Branch**: `feature/ui`
+
+### Summary
+
+拆分 API Session Guard 职责并保持公开导出与 HTTP 行为兼容；完成 API 包 typecheck、lint、test 验证。
+
+### Main Changes
+
+- API session guard split into focused admin, knowledge-base, rate-limit, request, audit, and shared type modules.
+- Stable public exports from src/apps/api/src/guards/session.ts remain compatible.
+- Verification run: pnpm --filter @kb/api typecheck; pnpm --filter @kb/api lint; pnpm --filter @kb/api test (20 files / 66 tests).
+- Spec update reviewed: no new API contract or project convention was introduced; no .trellis/spec change needed.
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `146cb6d` | (see git log) |
+
+### Testing
+
+- [OK] `pnpm --filter @kb/api typecheck`
+- [OK] `pnpm --filter @kb/api lint`
+- [OK] `pnpm --filter @kb/api test` (20 files / 66 tests)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
