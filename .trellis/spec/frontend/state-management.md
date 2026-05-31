@@ -25,7 +25,7 @@ The API owns pagination, sorting, filtering, and search semantics. The frontend 
 
 For user management, task queues, document logs, and audit-like lists:
 
-- Use shadcn/ui Table for markup.
+- Use shadcn/ui Table from `@/components/ui/table` for markup.
 - Use a project-level lightweight list component for repeated layout patterns.
 - Do not add an extra table state library by default.
 

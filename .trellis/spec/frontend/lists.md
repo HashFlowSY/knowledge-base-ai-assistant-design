@@ -15,7 +15,7 @@ Applies to:
 
 ## Stack
 
-- shadcn/ui Table for table markup.
+- shadcn/ui Table from `@/components/ui/table` for table markup.
 - TanStack Query for server state.
 - URL query parameters for list state.
 - Project-level lightweight list components for repeated patterns.
@@ -68,6 +68,9 @@ Use `placeholderData` to keep previous page data while loading the next page whe
 
 ## Table UI
 
+shadcn Table owns markup and visual structure only. URL search params,
+TanStack Query, and the API contract own state and data semantics.
+
 Every list page must handle:
 
 - loading state.
@@ -77,6 +80,9 @@ Every list page must handle:
 - pagination summary.
 
 Column headers with sorting must expose the active sort state.
+
+Repeated list page shells belong in project-level feature components or helpers,
+not in `src/apps/web/src/components/ui/table.tsx`.
 
 ## Row Actions
 
@@ -89,4 +95,3 @@ Admin-only row actions must be hidden or disabled in the UI and still rejected b
 High-volume append-only lists may use cursor pagination.
 
 Audit/log rows should avoid rendering huge metadata inline. Use compact summaries and a detail drawer/dialog when needed.
-

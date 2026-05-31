@@ -8,6 +8,17 @@ Production v1 UI is Chinese.
 
 Do not add an i18n framework for v1 unless the product scope changes.
 
+## shadcn And Wrapper Copy
+
+Visible text and screen-reader text in shadcn-based wrappers must be Chinese.
+
+Generated default strings such as `Close` must be replaced with product copy
+such as `关闭` before production use.
+
+Do not leave English visible UI text in production components unless it is a
+product term such as `API Key`, `Provider`, `Base URL`, a provider name, or a
+model id.
+
 ## Copy Ownership
 
 UI copy should be centralized by feature or shared module instead of scattered across components.
@@ -86,4 +97,3 @@ Use consistent terms:
 - `审计日志`
 
 Avoid mixing synonyms for the same concept across pages.
-

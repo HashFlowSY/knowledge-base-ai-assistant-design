@@ -14,10 +14,30 @@ Before completing frontend work, verify:
 
 - [ ] Server Components are used by default.
 - [ ] `"use client"` appears only where interactivity, hooks, or browser APIs require it.
-- [ ] Clickable actions use `<button>`, not `<div>`.
+- [ ] Styled clickable actions use `Button` or `ButtonLink` from
+  `@/components/ui/button`.
+- [ ] Rendered actions are semantic `<button>` or link elements, not clickable
+  `<div>` or `<span>`.
 - [ ] Forms have labels and accessible error messages.
 - [ ] `next/image` is used for images.
 - [ ] Loading, empty, and error states are handled.
+
+## shadcn/ui Component Contract
+
+- [ ] New shared UI imports use `@/components/ui/*`.
+- [ ] No new `src/apps/web/src/features/ui/*` modules were added.
+- [ ] Business code does not import `../ui/*`.
+- [ ] Business code does not import `radix-ui` directly.
+- [ ] `src/apps/web/src/components/ui/*` contains no API calls, query hooks,
+  auth/session logic, domain entity types, feature copy imports, or
+  page-specific data fetching.
+- [ ] Feature UI and project-authored wrapper styles use semantic tokens instead
+  of new hard-coded `slate`, `teal`, `red`, `blue`, `yellow`, `white`, or
+  `black` visual classes.
+- [ ] Dialog, sheet, alert-dialog, and icon-only button screen-reader labels are
+  Chinese.
+- [ ] Successful mutation feedback uses `toast.success(...)` rather than inline
+  `<Notice tone="success">`.
 
 ## State and API
 
@@ -50,9 +70,10 @@ Before completing frontend work, verify:
 
 Run applicable checks:
 
-- `pnpm lint`
-- `pnpm typecheck`
-- `pnpm build`
+- `pnpm --filter @kb/web lint`
+- `pnpm --filter @kb/web typecheck`
+- `pnpm --filter @kb/web test`
+- `pnpm --filter @kb/web build`
 - Relevant Playwright or component tests when user-facing behavior changes
 
 If a listed script has not been scaffolded yet, mark the frontend quality gate as

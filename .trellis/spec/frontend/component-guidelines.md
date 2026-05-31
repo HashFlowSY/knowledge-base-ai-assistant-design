@@ -42,12 +42,30 @@ Avoid crossing the boundary with:
 
 Convert dates to ISO strings before passing them to client components.
 
+## Shared UI Component System
+
+Shared UI component imports, shadcn configuration, project wrappers, token usage,
+and migration contracts are defined in
+[component-development.md](./component-development.md).
+
+Feature code should import shared controls from `@/components/ui/*`. Do not add
+new `src/apps/web/src/features/ui/*` modules or `../ui/*` imports.
+
+Business components must not import `radix-ui` directly. Radix primitives are
+wrapped by `src/apps/web/src/components/ui/*`.
+
 ## Semantic HTML and Accessibility
 
-Use proper elements:
+These rules describe rendered HTML semantics. Feature and business components
+must use `Button` or `ButtonLink` from `@/components/ui/button` for styled
+actions. Do not write raw styled `<button>` elements to bypass the shadcn/ui
+project wrappers.
 
-- `<button type="button">` for actions.
-- `<a>` or Next.js `Link` for navigation.
+Use proper rendered elements:
+
+- `Button` renders `<button type="button">` for non-submit actions.
+- `Button type="submit"` renders submit actions.
+- `<a>`, Next.js `Link`, or `ButtonLink` renders navigation.
 - `<label>` with `htmlFor` for form controls.
 - `aria-describedby` for field errors.
 - `role="alert"` for validation messages that should be announced.
