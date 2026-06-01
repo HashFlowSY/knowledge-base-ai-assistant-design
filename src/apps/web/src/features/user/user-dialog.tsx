@@ -16,7 +16,7 @@ import type { FormSubmitHandler } from "@/lib/form-types";
 import { Notice } from "@/components/ui/alert";
 import { SelectField } from "@/components/ui/select";
 import { roleOptionsForUser, shouldLogoutAfterUserUpdate } from "./user-ui-helpers";
-import { useCreateUser, useUpdateUser } from "./user-hooks";
+import { useCreateUser, useUpdateUser } from "@/features/hooks/user/user-hooks";
 
 export function UserDialog({
   currentUserId,
@@ -93,13 +93,19 @@ export function UserDialog({
       }
       onClose();
     } catch (caught) {
-      setError(caught instanceof ApiClientError ? caught.response.message : "操作失败，请稍后重试。");
+      setError(
+        caught instanceof ApiClientError
+          ? caught.response.message
+          : "操作失败，请稍后重试。",
+      );
     }
   };
 
   return (
     <DialogFrame
-      description={isCreateMode ? adminCopy.createUserDescription : adminCopy.editUserDescription}
+      description={
+        isCreateMode ? adminCopy.createUserDescription : adminCopy.editUserDescription
+      }
       onClose={onClose}
       onSubmit={handleSubmit}
       title={isCreateMode ? adminCopy.createUser : adminCopy.editUser}
@@ -107,7 +113,10 @@ export function UserDialog({
       <div className="space-y-4">
         {error === null ? null : <Notice tone="error">{error}</Notice>}
         <div>
-          <label className="block text-sm font-medium text-foreground" htmlFor="user-name">
+          <label
+            className="block text-sm font-medium text-foreground"
+            htmlFor="user-name"
+          >
             姓名
           </label>
           <input
@@ -119,7 +128,10 @@ export function UserDialog({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-foreground" htmlFor="user-email">
+          <label
+            className="block text-sm font-medium text-foreground"
+            htmlFor="user-email"
+          >
             邮箱
           </label>
           <input
@@ -138,7 +150,10 @@ export function UserDialog({
           value={password}
         />
         <div>
-          <label className="block text-sm font-medium text-foreground" htmlFor="user-role">
+          <label
+            className="block text-sm font-medium text-foreground"
+            htmlFor="user-role"
+          >
             角色
           </label>
           <SelectField
@@ -153,7 +168,12 @@ export function UserDialog({
           <Button disabled={pending} disabledReason="正在保存用户。" onClick={onClose}>
             取消
           </Button>
-          <Button disabled={pending} disabledReason="正在保存用户。" type="submit" variant="primary">
+          <Button
+            disabled={pending}
+            disabledReason="正在保存用户。"
+            type="submit"
+            variant="primary"
+          >
             保存
           </Button>
         </div>

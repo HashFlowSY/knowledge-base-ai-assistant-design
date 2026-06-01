@@ -15,7 +15,7 @@ import {
 } from "@kb/users";
 import { emptyPayloadSchema } from "@kb/shared";
 
-import { apiClient, parseApiClientResponse } from "../api/client";
+import { apiClient, parseApiClientResponse } from "@/features/api/client";
 
 export const usersQueryKey = (input: ListUsersQuery) => ["users", input] as const;
 

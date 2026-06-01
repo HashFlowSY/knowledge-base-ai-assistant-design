@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { sessionPayloadSchema, type LoginInput, type SessionPayload } from "@kb/auth";
 import { emptyPayloadSchema } from "@kb/shared";
 
-import { apiClient, parseApiClientResponse } from "../api/client";
+import { apiClient, parseApiClientResponse } from "@/features/api/client";
 
 export const authQueryKey = ["auth", "session"] as const;
 

@@ -10,7 +10,7 @@ import { ApiClientError } from "../api/client";
 import { Button } from "@/components/ui/button";
 import type { FormSubmitHandler } from "@/lib/form-types";
 import { Notice } from "@/components/ui/alert";
-import { useLoginMutation, useSessionQuery } from "./auth-hooks";
+import { useLoginMutation, useSessionQuery } from "../hooks/auth/auth-hooks";
 import { getLoginRedirectTarget, sanitizeRedirectTo } from "./login-redirect";
 
 export function LoginPage(): ReactElement {
@@ -44,7 +44,8 @@ export function LoginPage(): ReactElement {
       await loginMutation.mutateAsync({ email, password });
       router.push(redirectTo);
     } catch (caught) {
-      const message = caught instanceof ApiClientError ? caught.response.message : authCopy.invalid;
+      const message =
+        caught instanceof ApiClientError ? caught.response.message : authCopy.invalid;
       setError(message);
     }
   };
@@ -55,7 +56,9 @@ export function LoginPage(): ReactElement {
         <div>
           <p className="text-sm font-medium text-primary">{commonCopy.productName}</p>
           <h1 className="mt-2 text-2xl font-semibold">{authCopy.title}</h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">{authCopy.description}</p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {authCopy.description}
+          </p>
         </div>
 
         <div className="mt-5 space-y-3">
@@ -78,7 +81,10 @@ export function LoginPage(): ReactElement {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground" htmlFor="password">
+            <label
+              className="block text-sm font-medium text-foreground"
+              htmlFor="password"
+            >
               {authCopy.passwordLabel}
             </label>
             <input
@@ -90,7 +96,13 @@ export function LoginPage(): ReactElement {
               value={password}
             />
           </div>
-          <Button className="w-full" disabled={pending} disabledReason="正在验证登录信息。" type="submit" variant="primary">
+          <Button
+            className="w-full"
+            disabled={pending}
+            disabledReason="正在验证登录信息。"
+            type="submit"
+            variant="primary"
+          >
             <LogIn aria-hidden="true" className="h-4 w-4" />
             {pending ? "登录中" : authCopy.submit}
           </Button>

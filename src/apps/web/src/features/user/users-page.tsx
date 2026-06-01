@@ -9,28 +9,28 @@ import type { UserSummary } from "@kb/users";
 import { listUsersQuerySchema } from "@kb/users";
 
 import { adminCopy } from "../../copy/admin";
-import { useSessionQuery } from "../auth/auth-hooks";
+import { useSessionQuery } from "../hooks/auth/auth-hooks";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/alert";
 import { Panel, PanelHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SelectField } from "@/components/ui/select";
 import { ProtectedPage } from "../shell/protected-page";
-import { AdminEmptyState } from "./admin-empty-state";
+import { AdminEmptyState } from "@/features/admin/admin-empty-state";
 import {
   adminListPanelClassName,
   adminListScrollClassName,
   adminPageGridClassName,
-} from "./admin-list-layout";
-import { AdminPagination } from "./admin-pagination";
+} from "@/features/admin/admin-list-layout";
+import { AdminPagination } from "@/features/admin/admin-pagination";
 import { canRemoveUserAccessFromUi } from "./user-ui-helpers";
-import { ConfirmRemoveAccessDialog } from "./confirm-remove-access-dialog";
-import { emptyUsersPage } from "./empty-users-page";
-import { toSelectOptions } from "./select-options";
+import { ConfirmRemoveAccessDialog } from "@/features/user/confirm-remove-access-dialog";
+import { emptyUsersPage } from "@/features/user/empty-users-page";
+import { toSelectOptions } from "@/features/user/select-options";
 import { UserDetailDrawer } from "./user-detail-drawer";
 import { UserDialog } from "./user-dialog";
 import { UserRow } from "./user-row";
-import { useRemoveUserAccess, useUsers } from "./user-hooks";
+import { useRemoveUserAccess, useUsers } from "../hooks/user/user-hooks";
 
 export function UsersPage(): ReactElement {
   const searchParams = useSearchParams();
@@ -134,7 +134,11 @@ export function UsersPage(): ReactElement {
             <AdminEmptyState message={adminCopy.users.empty} />
           ) : (
             <>
-              <ScrollArea aria-label="用户列表" className={adminListScrollClassName()} size="fill">
+              <ScrollArea
+                aria-label="用户列表"
+                className={adminListScrollClassName()}
+                size="fill"
+              >
                 <div className="divide-y divide-border">
                   {usersPage.items.map((user) => (
                     <UserRow
@@ -146,10 +150,12 @@ export function UsersPage(): ReactElement {
                         await removeAccess.mutateAsync(user.id);
                       }}
                       onSelect={() => selectUser(user)}
-                      selfProtected={!canRemoveUserAccessFromUi({
-                        currentUserId: sessionQuery.data?.user.id,
-                        targetUserId: user.id,
-                      })}
+                      selfProtected={
+                        !canRemoveUserAccessFromUi({
+                          currentUserId: sessionQuery.data?.user.id,
+                          targetUserId: user.id,
+                        })
+                      }
                       user={user}
                     />
                   ))}

@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState, type ReactElement } from "react";
 
 import { knowledgeCopy } from "../../copy/knowledge";
-import { useUsers } from "../admin/user-hooks";
+import { useUsers } from "../hooks/user/user-hooks";
 import {
   useCreateKnowledgeBase,
   useKnowledgeBase,
   useUpdateKnowledgeBase,
-} from "../knowledge/knowledge-hooks";
+} from "@/features/hooks/knowledge/knowledge-hooks";
 import { Button } from "@/components/ui/button";
 import { DialogFrame } from "@/components/ui/dialog";
 import type { FormSubmitHandler } from "@/lib/form-types";
@@ -17,10 +17,10 @@ import { MemberPicker } from "./member-picker";
 import {
   toKnowledgeBaseErrorCopy,
   toMemberOption,
-} from "./workspace-formatters";
-import { WorkspaceTextField } from "./workspace-text-field";
-import { WorkspaceTextareaField } from "./workspace-textarea-field";
-import type { MemberOption } from "./workspace-types";
+} from "../workspace/workspace-formatters";
+import { WorkspaceTextField } from "../workspace/workspace-text-field";
+import { WorkspaceTextareaField } from "../workspace/workspace-textarea-field";
+import type { MemberOption } from "../workspace/workspace-types";
 
 export function KnowledgeBaseDialog({
   knowledgeBaseId,
@@ -50,9 +50,7 @@ export function KnowledgeBaseDialog({
       page: 1,
       pageSize: 8,
       sort: "name" as const,
-      ...(memberSearch.trim().length === 0
-        ? {}
-        : { search: memberSearch.trim() }),
+      ...(memberSearch.trim().length === 0 ? {} : { search: memberSearch.trim() }),
     }),
     [memberSearch],
   );

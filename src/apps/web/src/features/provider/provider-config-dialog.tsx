@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { DialogFrame } from "@/components/ui/dialog";
 import type { FormSubmitHandler } from "@/lib/form-types";
 import { Notice } from "@/components/ui/alert";
-import type { ProviderFormValues } from "./provider-hooks";
-import { providerFormStatusForSave } from "./provider-page-view";
+import type { ProviderFormValues } from "@/features/hooks/provider/provider-hooks";
+import { providerFormStatusForSave } from "@/features/provider/provider-page-view";
 
 export function ProviderConfigDialog({
   isSaving,
@@ -30,13 +30,19 @@ export function ProviderConfigDialog({
   onSave: (input: ProviderFormValues) => Promise<void>;
   provider: ProviderSummary;
 }): ReactElement {
-  const [displayName, setDisplayName] = useState(provider.displayName ?? modelServiceKindLabels[kind]);
-  const [providerName, setProviderName] = useState(provider.provider ?? providerNameForKind(kind));
+  const [displayName, setDisplayName] = useState(
+    provider.displayName ?? modelServiceKindLabels[kind],
+  );
+  const [providerName, setProviderName] = useState(
+    provider.provider ?? providerNameForKind(kind),
+  );
   const [modelId, setModelId] = useState(provider.modelId ?? "");
   const [baseUrl, setBaseUrl] = useState(provider.baseUrl ?? "");
   const [apiKey, setApiKey] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const title = provider.configured ? `编辑${modelServiceKindLabels[kind]}` : `配置${modelServiceKindLabels[kind]}`;
+  const title = provider.configured
+    ? `编辑${modelServiceKindLabels[kind]}`
+    : `配置${modelServiceKindLabels[kind]}`;
 
   const handleSubmit: FormSubmitHandler = (event) => {
     event.preventDefault();
@@ -67,7 +73,9 @@ export function ProviderConfigDialog({
         onClose();
       })
       .catch((saveError: unknown) => {
-        setError(saveError instanceof Error ? saveError.message : "保存失败，请稍后重试。");
+        setError(
+          saveError instanceof Error ? saveError.message : "保存失败，请稍后重试。",
+        );
       });
   };
 
@@ -185,8 +193,10 @@ function isValidHttpUrl(value: string): boolean {
 }
 
 function slugifyFieldId(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "") || "field";
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "field"
+  );
 }

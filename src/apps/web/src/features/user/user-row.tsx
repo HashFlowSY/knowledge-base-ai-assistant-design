@@ -10,7 +10,7 @@ import {
   adminRowMetaClassName,
   adminRowPrimaryActionClassName,
   adminRowSideClassName,
-} from "./admin-list-layout";
+} from "@/features/admin/admin-list-layout";
 
 export function UserRow({
   onConfirm,
@@ -31,7 +31,11 @@ export function UserRow({
 }): ReactElement {
   return (
     <div className={adminRowClassName()}>
-      <button className={adminRowPrimaryActionClassName()} onClick={onSelect} type="button">
+      <button
+        className={adminRowPrimaryActionClassName()}
+        onClick={onSelect}
+        type="button"
+      >
         <p className="truncate text-sm font-semibold text-foreground">{user.name}</p>
         <p className="mt-1 text-xs text-muted-foreground">{user.email}</p>
       </button>

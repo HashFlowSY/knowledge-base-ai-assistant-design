@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 
 import { Button } from "@/components/ui/button";
 import { SelectField } from "@/components/ui/select";
-import { toSelectOptions } from "./select-options";
+import { toSelectOptions } from "@/features/user/select-options";
 
 export function AdminPagination({
   currentPage,
@@ -29,7 +29,11 @@ export function AdminPagination({
             ariaLabel="每页条数"
             className="w-20"
             onChange={(value) => updateParam("pageSize", value)}
-            options={toSelectOptions([["5", "5"], ["8", "8"], ["12", "12"]])}
+            options={toSelectOptions([
+              ["5", "5"],
+              ["8", "8"],
+              ["12", "12"],
+            ])}
             value={pageSize.toString()}
           />
         </div>

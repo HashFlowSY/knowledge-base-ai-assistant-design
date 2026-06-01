@@ -4,12 +4,9 @@ import type { KnowledgeBaseDetail } from "@kb/knowledge";
 
 import { knowledgeCopy } from "../../copy/knowledge";
 import { ButtonLink } from "@/components/ui/button";
-import {
-  formatMemberSummary,
-  formatTimestamp,
-} from "./workspace-formatters";
-import { workspaceMetricGridClassName } from "./workspace-layout";
-import { WorkspaceMetricTile } from "./workspace-metric-tile";
+import { formatMemberSummary, formatTimestamp } from "../workspace/workspace-formatters";
+import { workspaceMetricGridClassName } from "../workspace/workspace-layout";
+import { WorkspaceMetricTile } from "../workspace/workspace-metric-tile";
 
 export function KnowledgeBaseSummary({
   knowledgeBase,
@@ -20,9 +17,7 @@ export function KnowledgeBaseSummary({
     <div className="p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <h2 className="text-xl font-semibold text-foreground">
-            {knowledgeBase.name}
-          </h2>
+          <h2 className="text-xl font-semibold text-foreground">{knowledgeBase.name}</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
             {knowledgeBase.description ?? knowledgeCopy.labels.noDescription}
           </p>
@@ -57,10 +52,7 @@ export function KnowledgeBaseSummary({
         {knowledgeBase.members.length === 0 ? null : (
           <ul className="space-y-2">
             {knowledgeBase.members.map((member) => (
-              <li
-                className="rounded-3xl border border-border px-3 py-2"
-                key={member.id}
-              >
+              <li className="rounded-3xl border border-border px-3 py-2" key={member.id}>
                 <p className="text-sm font-medium text-foreground">{member.name}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{member.email}</p>
               </li>

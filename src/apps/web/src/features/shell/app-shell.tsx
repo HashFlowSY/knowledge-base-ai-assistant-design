@@ -9,14 +9,16 @@ import { useEffect, useState, type ReactElement, type ReactNode } from "react";
 import type { SessionPayload } from "@kb/auth";
 
 import { commonCopy } from "../../copy/common";
-import { authQueryKey, useLogoutMutation, useSessionQuery } from "../auth/auth-hooks";
+import {
+  authQueryKey,
+  useLogoutMutation,
+  useSessionQuery,
+} from "../hooks/auth/auth-hooks";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/alert";
 import { AppShellSkeleton, shellSkeletonVariantForPath } from "@/components/ui/skeleton";
 import { visibleNavigationItems } from "./navigation";
-import {
-  getAppShellSessionGateDecision,
-} from "./session-gate";
+import { getAppShellSessionGateDecision } from "./session-gate";
 
 export function AppShell({ children }: { children: ReactNode }): ReactElement {
   const pathname = usePathname();
@@ -76,7 +78,11 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
                 <p className="text-sm font-semibold">{commonCopy.productName}</p>
                 <p className="text-xs text-muted-foreground">{commonCopy.tenantLabel}</p>
               </div>
-              <Button aria-label="打开导航" onClick={() => setMobileOpen(true)} variant="secondary">
+              <Button
+                aria-label="打开导航"
+                onClick={() => setMobileOpen(true)}
+                variant="secondary"
+              >
                 <Menu aria-hidden="true" className="h-4 w-4" />
                 导航
               </Button>
@@ -97,7 +103,9 @@ export function AppShell({ children }: { children: ReactNode }): ReactElement {
             </div>
           ) : null}
 
-          <div className="mx-auto max-w-[1500px] px-4 py-4 sm:px-6 lg:px-8">{children}</div>
+          <div className="mx-auto max-w-[1500px] px-4 py-4 sm:px-6 lg:px-8">
+            {children}
+          </div>
         </section>
       </div>
     </main>
@@ -128,13 +136,16 @@ function Sidebar({
           <BookOpen aria-hidden="true" className="h-5 w-5" />
         </div>
         <h2 className="mt-4 text-base font-semibold">{commonCopy.productName}</h2>
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">{commonCopy.tenantLabel}</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">
+          {commonCopy.tenantLabel}
+        </p>
       </div>
 
       <nav aria-label="全局导航" className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
         {items.map((item) => {
           const Icon = item.icon;
-          const active = activePath === item.href || activePath.startsWith(`${item.href}/`);
+          const active =
+            activePath === item.href || activePath.startsWith(`${item.href}/`);
           const closeProps = onClose === undefined ? {} : { onClick: onClose };
           return (
             <Link
@@ -152,7 +163,9 @@ function Sidebar({
               <span
                 className={[
                   "flex h-8 w-8 shrink-0 items-center justify-center rounded-3xl",
-                  active ? "bg-primary/10 text-primary" : "bg-sidebar-accent text-muted-foreground",
+                  active
+                    ? "bg-primary/10 text-primary"
+                    : "bg-sidebar-accent text-muted-foreground",
                 ].join(" ")}
               >
                 <Icon aria-hidden="true" className="h-4 w-4" />

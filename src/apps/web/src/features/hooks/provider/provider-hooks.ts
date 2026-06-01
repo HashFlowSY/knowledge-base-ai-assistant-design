@@ -17,7 +17,7 @@ import {
 } from "@kb/ai-providers";
 import { encryptRsaOaep } from "@kb/security";
 
-import { apiClient, parseApiClientResponse } from "../api/client";
+import { apiClient, parseApiClientResponse } from "@/features/api/client";
 
 export const providersQueryKey = ["providers"] as const;
 

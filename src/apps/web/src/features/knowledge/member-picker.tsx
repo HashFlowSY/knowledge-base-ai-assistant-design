@@ -3,7 +3,7 @@ import type { ReactElement } from "react";
 
 import { knowledgeCopy } from "../../copy/knowledge";
 import { Notice } from "@/components/ui/alert";
-import type { MemberOption } from "./workspace-types";
+import type { MemberOption } from "../workspace/workspace-types";
 
 export function MemberPicker({
   disabled,

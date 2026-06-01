@@ -4,7 +4,7 @@ import type { KnowledgeBaseSummary } from "@kb/knowledge";
 
 import { knowledgeCopy } from "../../copy/knowledge";
 import { listActionButtonClassName } from "@/lib/action-styles";
-import { formatMemberSummary } from "./workspace-formatters";
+import { formatMemberSummary } from "../workspace/workspace-formatters";
 
 export function KnowledgeBaseListItem({
   active,

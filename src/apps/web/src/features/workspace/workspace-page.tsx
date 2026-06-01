@@ -8,18 +8,18 @@ import { toast } from "sonner";
 import { knowledgeBaseListQuerySchema } from "@kb/knowledge";
 
 import { knowledgeCopy } from "../../copy/knowledge";
-import { useSessionQuery } from "../auth/auth-hooks";
+import { useSessionQuery } from "../hooks/auth/auth-hooks";
 import {
   useInfiniteKnowledgeBases,
   useKnowledgeBase,
-} from "../knowledge/knowledge-hooks";
+} from "@/features/hooks/knowledge/knowledge-hooks";
 import { ProtectedPage } from "../shell/protected-page";
 import { Button } from "@/components/ui/button";
 import { Notice } from "@/components/ui/alert";
 import { Panel, PanelHeader } from "@/components/ui/card";
-import { KnowledgeBaseDialog } from "./knowledge-base-dialog";
-import { KnowledgeBaseList } from "./knowledge-base-list";
-import { KnowledgeBaseSummary } from "./knowledge-base-summary";
+import { KnowledgeBaseDialog } from "../knowledge/knowledge-base-dialog";
+import { KnowledgeBaseList } from "../knowledge/knowledge-base-list";
+import { KnowledgeBaseSummary } from "../knowledge/knowledge-base-summary";
 import { QueryErrorState } from "./query-error-state";
 import { UploadDocumentDialog } from "./upload-document-dialog";
 import { dedupeKnowledgeBases } from "./workspace-formatters";
@@ -27,10 +27,7 @@ import {
   workspaceContentClassName,
   workspacePageGridClassName,
 } from "./workspace-layout";
-import {
-  normalizeSearchParam,
-  updateQueryParam,
-} from "./workspace-query-params";
+import { normalizeSearchParam, updateQueryParam } from "./workspace-query-params";
 import type { WorkspaceDialogState } from "./workspace-types";
 
 const knowledgeBaseListPageSize = 8;
@@ -190,9 +187,7 @@ export function WorkspacePage(): ReactElement {
                 <Notice>{knowledgeCopy.pending.knowledgeBaseDetail}</Notice>
               </div>
             ) : selectedKnowledgeBaseQuery.data !== undefined ? (
-              <KnowledgeBaseSummary
-                knowledgeBase={selectedKnowledgeBaseQuery.data}
-              />
+              <KnowledgeBaseSummary knowledgeBase={selectedKnowledgeBaseQuery.data} />
             ) : (
               <div className="p-4">
                 <Notice>{knowledgeCopy.empty.noKnowledgeBaseSelected}</Notice>

@@ -8,11 +8,11 @@ import { Notice } from "@/components/ui/alert";
 import { Panel, PanelHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { KnowledgeBaseListItem } from "./knowledge-base-list-item";
-import { QueryErrorState } from "./query-error-state";
+import { QueryErrorState } from "../workspace/query-error-state";
 import {
   workspaceKnowledgeListClassName,
   workspaceKnowledgePanelClassName,
-} from "./workspace-layout";
+} from "../workspace/workspace-layout";
 
 export function KnowledgeBaseList({
   fetchNextPage,

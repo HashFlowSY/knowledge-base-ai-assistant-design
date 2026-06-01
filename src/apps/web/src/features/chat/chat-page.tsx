@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, type ReactElement } from "react";
 
 import { chatCopy } from "../../copy/chat";
-import { useKnowledgeBases } from "../knowledge/knowledge-hooks";
+import { useKnowledgeBases } from "@/features/hooks/knowledge/knowledge-hooks";
 import { ProtectedPage } from "../shell/protected-page";
 import { Button } from "@/components/ui/button";
 import type { FormSubmitHandler } from "@/lib/form-types";
@@ -60,7 +60,8 @@ export function ChatPage(): ReactElement {
   const selectedSessionId = searchParams.get("sessionId") ?? sessions[0]?.id ?? null;
   const messagesQuery = useChatMessages(selectedSessionId);
   const messages = messagesQuery.data ?? [];
-  const answer = [...messages].reverse().find((message) => message.role === "assistant") ?? null;
+  const answer =
+    [...messages].reverse().find((message) => message.role === "assistant") ?? null;
   const activeCitationId = searchParams.get("citationId");
   const activeCitation =
     answer?.citations.find((citation) => citation.id === activeCitationId) ??
@@ -158,7 +159,11 @@ export function ChatPage(): ReactElement {
                 })
               }
             />
-            <ScrollArea aria-label="问答对话记录" className={chatMessageScrollClassName()} size="fill">
+            <ScrollArea
+              aria-label="问答对话记录"
+              className={chatMessageScrollClassName()}
+              size="fill"
+            >
               {messagesQuery.isLoading ? (
                 <Notice>正在加载对话。</Notice>
               ) : messages.length === 0 ? (

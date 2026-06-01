@@ -4,7 +4,7 @@ import { useState, type ChangeEvent, type ReactElement } from "react";
 
 import { knowledgeCopy } from "../../copy/knowledge";
 import { ApiClientError } from "../api/client";
-import { useUploadDocumentFile } from "../knowledge/knowledge-hooks";
+import { useUploadDocumentFile } from "@/features/hooks/knowledge/knowledge-hooks";
 import { Button } from "@/components/ui/button";
 import { DialogFrame } from "@/components/ui/dialog";
 import type { FormSubmitHandler } from "@/lib/form-types";

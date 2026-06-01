@@ -6,7 +6,7 @@ import {
   createEncryptedProviderApiKeyInput,
   createProviderSaveBody,
   providersQueryKey,
-} from "./provider-hooks";
+} from "../user/provider-hooks";
 
 describe("provider hooks helpers", () => {
   it("uses a stable query key for the fixed provider slots", () => {

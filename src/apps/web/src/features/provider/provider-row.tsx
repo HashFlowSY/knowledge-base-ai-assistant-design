@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 import type { ProviderSummary } from "@kb/ai-providers";
 
 import { Button } from "@/components/ui/button";
-import { adminRowPrimaryActionClassName } from "./admin-list-layout";
+import { adminRowPrimaryActionClassName } from "../admin/admin-list-layout";
 import { providerGridClassName } from "./provider-grid";
 import { providerRowView } from "./provider-page-view";
 
@@ -20,9 +20,7 @@ export function ProviderRow({
   return (
     <div className={`${providerGridClassName()} items-center px-4 py-3 text-sm`}>
       <button className={adminRowPrimaryActionClassName()} onClick={onEdit} type="button">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {view.title}
-        </p>
+        <p className="truncate text-sm font-semibold text-foreground">{view.title}</p>
         <p className="mt-1 text-xs text-muted-foreground">{view.subtitle}</p>
       </button>
       <ProviderCell value={view.providerName} />

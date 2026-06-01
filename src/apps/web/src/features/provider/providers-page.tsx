@@ -10,16 +10,19 @@ import { Notice } from "@/components/ui/alert";
 import { Panel, PanelHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ProtectedPage } from "../shell/protected-page";
-import { adminListPanelClassName, adminListScrollClassName } from "./admin-list-layout";
-import { AdminEmptyState } from "./admin-empty-state";
-import { ProviderConfigDialog } from "../provider/provider-config-dialog";
+import {
+  adminListPanelClassName,
+  adminListScrollClassName,
+} from "../admin/admin-list-layout";
+import { AdminEmptyState } from "../admin/admin-empty-state";
+import { ProviderConfigDialog } from "./provider-config-dialog";
 import {
   useProviders,
   useSaveProviderConfig,
 } from "@/features/hooks/provider/provider-hooks";
-import { providerGridClassName } from "../provider/provider-grid";
-import { providerListColumnLabels } from "../provider/provider-page-view";
-import { ProviderRow } from "../provider/provider-row";
+import { providerGridClassName } from "./provider-grid";
+import { providerListColumnLabels } from "./provider-page-view";
+import { ProviderRow } from "./provider-row";
 
 export function ProvidersPage(): ReactElement {
   const [providerDialog, setProviderDialog] = useState<ProviderSummary | null>(null);

@@ -24,7 +24,7 @@ import {
   type UpdateKnowledgeBaseInput,
 } from "@kb/knowledge";
 
-import { apiClient, parseApiClientResponse } from "../api/client";
+import { apiClient, parseApiClientResponse } from "@/features/api/client";
 
 export type KnowledgeBaseInfiniteListQuery = Omit<KnowledgeBaseListQuery, "page">;
 
@@ -43,7 +43,9 @@ export const infiniteKnowledgeBasesQueryKey = (input: KnowledgeBaseInfiniteListQ
 export const knowledgeBaseQueryKey = (knowledgeBaseId: string | null) =>
   ["knowledge-bases", knowledgeBaseId] as const;
 
-async function fetchKnowledgeBases(input: KnowledgeBaseListQuery): Promise<KnowledgeBasesPage> {
+async function fetchKnowledgeBases(
+  input: KnowledgeBaseListQuery,
+): Promise<KnowledgeBasesPage> {
   const response = await parseApiClientResponse<KnowledgeBasesPage>({
     dataSchema: knowledgeBasesPageSchema,
     response: await apiClient.api["knowledge-bases"].$get({
@@ -170,10 +172,7 @@ export function useUploadDocumentFile() {
         response: await apiClient.api["knowledge-bases"][
           ":knowledgeBaseId"
         ].documents.upload.$post({
-          form:
-            title.length === 0
-              ? { file: input.file }
-              : { file: input.file, title },
+          form: title.length === 0 ? { file: input.file } : { file: input.file, title },
           param: { knowledgeBaseId: input.knowledgeBaseId },
         }),
       });
