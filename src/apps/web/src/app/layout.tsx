@@ -4,14 +4,14 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-import { AppProviders } from "../features/api/app-providers";
+import { AppProviders } from "../features/api/query-providers";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "知识库 AI 助手",
-  description: "企业级知识库 AI 助手功能 MVP",
+  description: "知识库 AI 助手",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }): ReactNode {
