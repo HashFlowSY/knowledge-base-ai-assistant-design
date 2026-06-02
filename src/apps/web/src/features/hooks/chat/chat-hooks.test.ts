@@ -2,13 +2,13 @@ import { readFile } from "node:fs/promises";
 
 import { describe, expect, it } from "vitest";
 
-import { apiClient } from "../api/client";
+import { apiClient } from "../../api/client";
 import {
   chatMessagesQueryKey,
   chatSessionsQueryKey,
   useChatMessages,
   useSubmitChatQuestion,
-} from "./chat-hooks";
+} from "@/features/hooks/chat/chat-hooks";
 
 describe("chat hooks", () => {
   it("builds stable query keys for sessions and messages", () => {
@@ -17,11 +17,7 @@ describe("chat hooks", () => {
       "sessions",
       { knowledgeBaseId: "kb_1" },
     ]);
-    expect(chatMessagesQueryKey("session_1")).toEqual([
-      "chat",
-      "messages",
-      "session_1",
-    ]);
+    expect(chatMessagesQueryKey("session_1")).toEqual(["chat", "messages", "session_1"]);
   });
 
   it("exposes typed chat RPC routes on the browser API client", () => {

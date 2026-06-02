@@ -35,7 +35,7 @@ import {
   useCreateChatSession,
   useSubmitAnswerFeedback,
   useSubmitChatQuestion,
-} from "./chat-hooks";
+} from "../hooks/chat/chat-hooks";
 
 export function ChatPage(): ReactElement {
   const searchParams = useSearchParams();

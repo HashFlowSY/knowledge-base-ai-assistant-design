@@ -21,7 +21,7 @@ import {
   type SubmitChatQuestionInput,
 } from "@kb/rag";
 
-import { apiClient, parseApiClientResponse } from "../api/client";
+import { apiClient, parseApiClientResponse } from "../../api/client";
 
 export interface ChatSessionsQuery {
   knowledgeBaseId?: string;
@@ -130,9 +130,7 @@ export function useSubmitAnswerFeedback(messageId: string | null) {
       const body = submitAnswerFeedbackInputSchema.parse(input);
       const response = await parseApiClientResponse<SubmitAnswerFeedbackResponse>({
         dataSchema: submitAnswerFeedbackResponseSchema,
-        response: await apiClient.api.chat.messages[
-          ":messageId"
-        ].feedback.$post({
+        response: await apiClient.api.chat.messages[":messageId"].feedback.$post({
           json: body,
           param: { messageId },
         }),
