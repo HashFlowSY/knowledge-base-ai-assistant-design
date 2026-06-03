@@ -984,3 +984,37 @@ Aligned ingestion pipeline failures with BullMQ retry/failure state, persisted m
 ### Next Steps
 
 - None - task complete
+
+
+## Session 30: 修复 chat 检索 chunkId 语义不一致
+
+**Date**: 2026-06-03
+**Task**: 修复 chat 检索 chunkId 语义不一致
+**Branch**: `main`
+
+### Summary
+
+修复 ingestion 写入 Meilisearch 时将 contentHash 当作 chunkId 的问题，补充回归测试和 RAG chunkId contract 规范；确认当前旧索引数据仍需重新 ingestion 才会生效。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7d81803` | (see git log) |
+| `9a406e9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
