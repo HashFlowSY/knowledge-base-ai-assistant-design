@@ -1052,3 +1052,37 @@ Normalized chat session counts before API schema parsing, added visible chat ses
 ### Next Steps
 
 - None - task complete
+
+
+## Session 32: Fix QA citation layout and navigation
+
+**Date**: 2026-06-04
+**Task**: Fix QA citation layout and navigation
+**Branch**: `main`
+
+### Summary
+
+Improved chat QA citation spacing, right-panel citation selection, viewport scrolling, top alignment, and documented the ScrollArea/Button contracts.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `cf5778c` | (see git log) |
+| `2b10c9a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
