@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 28
-- **Last Active**: 2026-05-31
+- **Total Sessions**: 29
+- **Last Active**: 2026-06-03
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~953 | Active |
+| `journal-1.md` | ~986 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 29 | 2026-06-03 | Align ingestion retry queue state | `7d81803` | `main` |
 | 28 | 2026-05-31 | Migrate web UI to shadcn | `4718d3f` | `feature/ui` |
 | 27 | 2026-05-31 | 拆分 API Session Guard 逻辑 | `146cb6d` | `feature/ui` |
 | 26 | 2026-05-30 | Remove frontend mock logic | `9e40c26`, `0a32c54` | `main` |

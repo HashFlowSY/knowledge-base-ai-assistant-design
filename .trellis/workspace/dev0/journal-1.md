@@ -951,3 +951,36 @@ Migrated web UI wrappers and feature components to shadcn/ui, moved shared form/
 ### Next Steps
 
 - None - task complete
+
+
+## Session 29: Align ingestion retry queue state
+
+**Date**: 2026-06-03
+**Task**: Align ingestion retry queue state
+**Branch**: `main`
+
+### Summary
+
+Aligned ingestion pipeline failures with BullMQ retry/failure state, persisted max attempts for upload jobs, added bounded retry coverage, and documented the queue-state contract.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7d81803` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
