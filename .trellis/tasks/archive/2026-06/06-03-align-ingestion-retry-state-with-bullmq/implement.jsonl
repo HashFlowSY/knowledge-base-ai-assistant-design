@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/worker-queue.md","reason":"Defines BullMQ ownership, stable job id semantics, bounded retry policy, and PostgreSQL/Redis consistency requirements."}
+{"file":".trellis/spec/backend/rag-ingestion.md","reason":"Defines ingestion package ownership, fixed pipeline steps, retry-safe document-version behavior, and module layout constraints."}
+{"file":".trellis/spec/backend/database.md","reason":"Defines transaction expectations for multi-table state updates such as ingestion job and document status changes."}
+{"file":".trellis/spec/backend/logging.md","reason":"Defines when worker/provider errors should be re-thrown for retry handling and logging expectations."}
+{"file":".trellis/spec/testing/strategy.md","reason":"Defines required testing coverage for retryable ingestion failures and ingestion retry duplication."}
+{"file":".trellis/spec/shared/typescript.md","reason":"Defines typed result/error conventions relevant to pipeline result contract changes."}

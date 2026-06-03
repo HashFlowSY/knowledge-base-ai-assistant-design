@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/worker-queue.md","reason":"Check state consistency, stable job id behavior, bounded retry exhaustion, and recovery duplicate handling."}
+{"file":".trellis/spec/backend/rag-ingestion.md","reason":"Check ingestion pipeline remains retry-safe and public imports/module layout stay within package boundaries."}
+{"file":".trellis/spec/backend/database.md","reason":"Check multi-table updates remain transactional and use the transaction object."}
+{"file":".trellis/spec/backend/logging.md","reason":"Check worker failure paths re-throw where BullMQ retry/failure handling depends on it."}
+{"file":".trellis/spec/testing/strategy.md","reason":"Check tests cover retryable ingestion failure, retry exhaustion, and duplicate retry behavior."}
+{"file":".trellis/spec/shared/typescript.md","reason":"Check typed pipeline result and failure contracts remain explicit and exhaustive."}
