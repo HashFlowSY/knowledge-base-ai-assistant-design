@@ -110,6 +110,41 @@ await db.execute(sql`
 
 Use Drizzle query builder comparisons when possible.
 
+## Aggregate Counts At API Boundaries
+
+PostgreSQL aggregate counts may arrive from drivers as `string` or `bigint` even
+when a Drizzle raw SQL fragment is annotated as `sql<number>`. Before returning
+API DTOs or parsing with Zod schemas that require `number`, normalize count
+values at the mapper boundary or use a Drizzle helper that maps count results to
+numbers.
+
+Good:
+
+```typescript
+function normalizeCount(value: number | string | bigint): number {
+  const count = Number(value);
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new Error("Invalid count value.");
+  }
+
+  return count;
+}
+```
+
+Bad:
+
+```typescript
+const rows = await db
+  .select({ messageCount: sql<number>`count(${chatMessages.id})` })
+  .from(chatSessions);
+
+return { messageCount: rows[0]?.messageCount ?? 0 };
+```
+
+Why: the TypeScript annotation does not coerce the runtime value. Returning a
+string count through an API response can make frontend Zod parsing fail and hide
+otherwise valid list data.
+
 ## Indexes
 
 Add indexes that match query patterns.

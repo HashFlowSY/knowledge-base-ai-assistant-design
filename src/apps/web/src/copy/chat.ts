@@ -2,6 +2,8 @@ export const chatCopy = {
   title: "问答",
   description: "在授权知识库范围内提问，并核验答案引用来源。",
   sessionsDescription: "切换历史会话，或在当前知识库中新建问答上下文。",
+  sessionsFailed: "会话加载失败，请稍后重试。",
+  noSessions: "当前知识库暂无会话。",
   newSession: "新建会话",
   composerLabel: "输入问题",
   composerPlaceholder: "例如：差旅住宿标准是多少？",

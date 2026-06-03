@@ -121,13 +121,13 @@ export async function insertCitations(
 
 export function mapSession(
   row: typeof chatSessions.$inferSelect,
-  messageCount: number,
+  messageCount: number | string | bigint,
 ): ChatSessionSummary {
   return {
     createdAt: row.createdAt.toISOString(),
     id: row.id,
     knowledgeBaseId: row.selectedKnowledgeBaseIds[0] ?? "",
-    messageCount,
+    messageCount: normalizeMessageCount(messageCount),
     title: row.title ?? "新会话",
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -188,4 +188,13 @@ function readGroundingLabel(
 
 export function readRetrievalRunId(metadata: Record<string, unknown>): string | null {
   return typeof metadata.retrievalRunId === "string" ? metadata.retrievalRunId : null;
+}
+
+function normalizeMessageCount(value: number | string | bigint): number {
+  const count = Number(value);
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new Error("Invalid chat session message count.");
+  }
+
+  return count;
 }

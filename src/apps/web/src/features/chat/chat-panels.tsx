@@ -25,12 +25,14 @@ import {
 
 export function SessionList({
   activeId,
+  isError,
   isLoading,
   onNewSession,
   onSelect,
   sessions,
 }: {
   activeId: string | null;
+  isError: boolean;
   isLoading: boolean;
   onNewSession: () => void;
   onSelect: (sessionId: string) => void;
@@ -55,6 +57,12 @@ export function SessionList({
       />
       <ScrollArea aria-label="会话列表" className={chatSessionScrollClassName()} size="fill">
         {isLoading ? <Notice>正在加载会话。</Notice> : null}
+        {!isLoading && isError ? (
+          <Notice tone="error">{chatCopy.sessionsFailed}</Notice>
+        ) : null}
+        {!isLoading && !isError && sessions.length === 0 ? (
+          <Notice>{chatCopy.noSessions}</Notice>
+        ) : null}
         {sessions.map((session) => (
           <button
             aria-pressed={session.id === activeId}

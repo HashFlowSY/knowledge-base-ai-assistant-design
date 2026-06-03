@@ -120,6 +120,7 @@ export function ChatPage(): ReactElement {
       <div className={chatLayoutGridClassName()}>
         <SessionList
           activeId={selectedSessionId}
+          isError={sessionsQuery.isError}
           isLoading={sessionsQuery.isLoading}
           onNewSession={() => {
             if (selectedKnowledgeBaseId.length === 0) {
