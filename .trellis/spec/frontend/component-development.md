@@ -116,7 +116,7 @@ These project wrappers are part of the frontend component API:
 | `DialogFrame` | `@/components/ui/dialog` | Controlled open dialog wrapper with `title`, `description`, `onClose`, and optional `onSubmit`. |
 | `SelectField` | `@/components/ui/select` | Option-array wrapper with `ariaLabel`, `options`, `value`, `onChange`, `placement`, and `tone`. |
 | `Drawer` | `@/components/ui/sheet` | Detail panel wrapper built on `Sheet`. |
-| `ScrollArea` | `@/components/ui/scroll-area` | Supports bounded `size` values and accessible region behavior. |
+| `ScrollArea` | `@/components/ui/scroll-area` | Supports bounded `size` values, accessible region behavior, and `viewportRef` for feature code that must scroll the Radix viewport directly. |
 | `StatusPill` | `@/components/ui/badge` | Project status wrapper built on `Badge`. |
 | `SkeletonBlock`, `AppShellSkeleton` | `@/components/ui/skeleton` | Loading skeleton wrappers built on `Skeleton`. |
 | `Toaster` | `@/components/ui/sonner` | Global Sonner toaster mounted by `AppProviders`. |
@@ -137,6 +137,10 @@ shared wrapper with raw styled `<button>` elements.
 Rules:
 
 - `Button` defaults to `type="button"`.
+- `Button`'s default size is for single-line controls. When a feature renders a
+  `Button` as a multi-line card/list item, its class contract must explicitly
+  override the fixed height and no-wrap behavior, for example with `h-auto` and
+  `whitespace-normal`.
 - Submit buttons must explicitly set `type="submit"`.
 - Disabled buttons that hide why an action is unavailable must pass
   `disabledReason`.
@@ -241,7 +245,17 @@ as values.
 Use `ScrollArea` for bounded scroll regions that need consistent shadcn styling
 or an accessible region label.
 
+Use `viewportRef` when feature code must programmatically scroll the region. The
+ref must attach to `ScrollAreaPrimitive.Viewport`, not the root, so the Radix
+scrollbar thumb stays synchronized with `scrollTop`.
+
 Scrollable flex children must use `min-h-0`.
+
+When a `ScrollArea` needs padding or vertical gaps between rendered items, put
+those spacing classes on an explicit content wrapper inside `ScrollArea`.
+`ScrollArea`'s `className` applies to the Radix root, not to the viewport's
+actual children, so root-level `space-y-*` or item padding will not separate the
+rendered scroll items reliably.
 
 Parent components own external placement and spacing. Shared UI components own
 their internal padding, typography, borders, and interaction states.
