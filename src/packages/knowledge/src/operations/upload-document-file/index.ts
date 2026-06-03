@@ -62,7 +62,13 @@ async function runUploadDocumentFileOperation(
 
   let reservation: ReservedUpload;
   try {
-    reservation = await reserveUploadMetadata(options.db, sourceBucket, input);
+    const queueAttempts = options.ingestionQueue?.attempts;
+    reservation =
+      queueAttempts === undefined
+        ? await reserveUploadMetadata(options.db, sourceBucket, input)
+        : await reserveUploadMetadata(options.db, sourceBucket, input, {
+            maxAttempts: queueAttempts,
+          });
   } catch (error) {
     if (isUniqueViolation(error)) {
       const conflictedDuplicate = await findExistingUploadResult(options.db, input);

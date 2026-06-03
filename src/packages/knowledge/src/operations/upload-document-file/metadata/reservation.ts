@@ -11,10 +11,25 @@ import { createDocumentObjectKey } from "@kb/storage";
 import { documentVersion } from "../shared/constants";
 import type { ReservedUpload, UploadInput } from "../shared/types";
 
+interface IngestionJobReservationValuesInput {
+  documentId: string;
+  input: UploadInput;
+  objectKey: string;
+  sourceBucket: string;
+  sourceId: string;
+  maxAttempts?: number;
+}
+
+type IngestionJobReservationValues = Omit<
+  typeof ingestionJobs.$inferInsert,
+  "updatedAt"
+>;
+
 export async function reserveUploadMetadata(
   db: ProjectDb,
   sourceBucket: string,
   input: UploadInput,
+  options: { maxAttempts?: number } = {},
 ): Promise<ReservedUpload> {
   return db.transaction(async (tx) => {
     const documentRows = await tx
@@ -77,19 +92,16 @@ export async function reserveUploadMetadata(
     const jobRows = await tx
       .insert(ingestionJobs)
       .values({
-        documentId: documentRow.id,
-        knowledgeBaseId: input.knowledgeBaseId,
-        metadata: {
-          bucket: sourceBucket,
-          documentVersion,
+        ...createIngestionJobReservationValues({
+          documentId: documentRow.id,
+          input,
           objectKey,
+          sourceBucket,
           sourceId: sourceRow.id,
-        },
-        requestedByUserId: input.actor.user.id,
-        sourceHash: input.checksum,
-        sourceType: "file",
-        status: "pending_source",
-        tenantId: input.actor.tenant.id,
+          ...(options.maxAttempts === undefined
+            ? {}
+            : { maxAttempts: options.maxAttempts }),
+        }),
         updatedAt: sql`NOW()`,
       })
       .returning({ id: ingestionJobs.id });
@@ -105,4 +117,27 @@ export async function reserveUploadMetadata(
       sourceId: sourceRow.id,
     };
   });
+}
+
+export function createIngestionJobReservationValues(
+  input: IngestionJobReservationValuesInput,
+): IngestionJobReservationValues {
+  return {
+    documentId: input.documentId,
+    knowledgeBaseId: input.input.knowledgeBaseId,
+    ...(input.maxAttempts === undefined
+      ? {}
+      : { maxAttempts: input.maxAttempts }),
+    metadata: {
+      bucket: input.sourceBucket,
+      documentVersion,
+      objectKey: input.objectKey,
+      sourceId: input.sourceId,
+    },
+    requestedByUserId: input.input.actor.user.id,
+    sourceHash: input.input.checksum,
+    sourceType: "file",
+    status: "pending_source",
+    tenantId: input.input.actor.tenant.id,
+  };
 }

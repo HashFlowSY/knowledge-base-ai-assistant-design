@@ -31,6 +31,7 @@ describe("@kb/ingestion pipeline", () => {
       },
     });
     const indexedDocumentIds: string[] = [];
+    const indexedChunkIds: string[] = [];
     const pipeline = createIngestionPipeline({
       chunking: {
         chunkOverlap: 10,
@@ -52,6 +53,9 @@ describe("@kb/ingestion pipeline", () => {
       indexWriter: {
         async indexDocuments(input) {
           indexedDocumentIds.push(...input.documents.map((document) => document.id));
+          indexedChunkIds.push(
+            ...input.documents.map((document) => document.chunkId),
+          );
         },
       },
       repository,
@@ -69,6 +73,7 @@ describe("@kb/ingestion pipeline", () => {
       },
     ]);
     expect(indexedDocumentIds).toEqual(["tenant_1__kb_1__doc_1__1__0"]);
+    expect(indexedChunkIds).toEqual([persistedChunkId(0)]);
     expect(repository.completed).toEqual({
       documentVersion: 1,
       ingestionJobId: "job_1",
@@ -164,8 +169,10 @@ describe("@kb/ingestion pipeline", () => {
     expect(repository.logs).toEqual([]);
   });
 
-  it("fails the job when the embedding provider is not configured", async () => {
+  it("keeps retryable embedding failures retrying before max attempts", async () => {
     const repository = createFakeRepository({
+      attempts: 1,
+      maxAttempts: 3,
       source: {
         body: new TextEncoder().encode("A document that cannot be embedded."),
         mimeType: "text/plain",
@@ -198,6 +205,9 @@ describe("@kb/ingestion pipeline", () => {
     await expect(pipeline.processFileIngestion(filePayload())).resolves.toEqual({
       status: "failed",
       code: "EMBEDDING_PROVIDER_NOT_CONFIGURED",
+      message: "未配置可用的向量模型服务。",
+      retryable: true,
+      shouldRetry: true,
     });
     expect(repository.persisted).toBeNull();
     expect(repository.failed).toMatchObject({
@@ -205,6 +215,57 @@ describe("@kb/ingestion pipeline", () => {
       errorCode: "EMBEDDING_PROVIDER_NOT_CONFIGURED",
       ingestionJobId: "job_1",
       retryable: true,
+      shouldRetry: true,
+    });
+  });
+
+  it("fails retryable embedding failures when max attempts are exhausted", async () => {
+    const repository = createFakeRepository({
+      attempts: 3,
+      maxAttempts: 3,
+      source: {
+        body: new TextEncoder().encode("A document that exhausts embedding attempts."),
+        mimeType: "text/plain",
+        originalFilename: "missing-provider-final.txt",
+      },
+    });
+    const pipeline = createIngestionPipeline({
+      chunking: {
+        chunkOverlap: 5,
+        chunkSize: 80,
+      },
+      embeddingService: {
+        async embed() {
+          return {
+            ok: false,
+            code: "EMBEDDING_PROVIDER_NOT_CONFIGURED",
+            message: "未配置可用的向量模型服务。",
+            retryable: true,
+          };
+        },
+      },
+      indexWriter: {
+        async indexDocuments() {
+          throw new Error("failed embedding must not be indexed");
+        },
+      },
+      repository,
+    });
+
+    await expect(pipeline.processFileIngestion(filePayload())).resolves.toEqual({
+      status: "failed",
+      code: "EMBEDDING_PROVIDER_NOT_CONFIGURED",
+      message: "未配置可用的向量模型服务。",
+      retryable: true,
+      shouldRetry: false,
+    });
+    expect(repository.persisted).toBeNull();
+    expect(repository.failed).toMatchObject({
+      documentVersion: 1,
+      errorCode: "EMBEDDING_PROVIDER_NOT_CONFIGURED",
+      ingestionJobId: "job_1",
+      retryable: true,
+      shouldRetry: false,
     });
   });
 });
@@ -227,7 +288,9 @@ function createVector(value: number): number[] {
 }
 
 function createFakeRepository(input: {
+  attempts?: number;
   claimResult?: Awaited<ReturnType<IngestionPipelineRepository["claimFileJob"]>>;
+  maxAttempts?: number;
   source?: FileIngestionSource;
 }): IngestionPipelineRepository & {
   completed: { ingestionJobId: string; documentVersion: number } | null;
@@ -237,6 +300,7 @@ function createFakeRepository(input: {
         errorCode: string;
         ingestionJobId: string;
         retryable: boolean;
+        shouldRetry: boolean;
       }
     | null;
   logs: IngestionStepLogInput[];
@@ -257,6 +321,8 @@ function createFakeRepository(input: {
             documentVersion: Number(payload.documentVersion),
             ingestionJobId: payload.ingestionJobId,
             knowledgeBaseId: payload.knowledgeBaseId,
+            attempts: input.attempts ?? 1,
+            maxAttempts: input.maxAttempts ?? 3,
             requestedBy: payload.requestedBy,
             sourceObjectKey: payload.sourceObjectKey,
             tenantId: payload.tenantId,
@@ -281,9 +347,21 @@ function createFakeRepository(input: {
     },
     async persistIngestionOutput(persistInput) {
       this.persisted = persistInput;
+      return {
+        chunks: persistInput.chunks.map((chunk) => ({
+          chunkIndex: chunk.chunkIndex,
+          id: persistedChunkId(chunk.chunkIndex),
+        })),
+      };
     },
     async recordStep(logInput) {
       logs.push(logInput);
     },
   };
+}
+
+function persistedChunkId(chunkIndex: number): string {
+  return `00000000-0000-4000-8000-${chunkIndex
+    .toString()
+    .padStart(12, "0")}`;
 }

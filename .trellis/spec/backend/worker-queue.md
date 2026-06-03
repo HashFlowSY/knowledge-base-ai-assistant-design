@@ -200,6 +200,102 @@ Validation and error matrix:
 | Duplicate enqueue for same document version | Stable job id collapses duplicate work |
 | Recovery requeues stale pending job | Worker idempotency prevents duplicate chunks, embeddings, search docs, and audit events |
 
+## Scenario: Align persisted ingestion state with BullMQ job state
+
+### 1. Scope / Trigger
+
+- Trigger: any BullMQ ingestion processor that calls a package pipeline returning
+  a typed success/failure result instead of throwing directly.
+- Scope: `src/apps/worker`, `src/packages/ingestion`, `src/packages/knowledge`,
+  and `@kb/queue` attempts/backoff configuration.
+
+### 2. Signatures
+
+- Pipeline result:
+  ```typescript
+  type IngestionPipelineResult =
+    | { status: "completed" }
+    | { status: "skipped"; reason: "already_claimed" }
+    | {
+        status: "failed";
+        code: string;
+        message: string;
+        retryable: boolean;
+        shouldRetry: boolean;
+      };
+  ```
+- Persisted job context must expose the incremented `attempts` and persisted
+  `maxAttempts` for the claimed PostgreSQL job.
+
+### 3. Contracts
+
+- PostgreSQL remains the durable source of ingestion truth, but BullMQ state must
+  not contradict it for active retry/failure decisions.
+- A retryable pipeline failure before `maxAttempts` writes
+  `ingestion_jobs.status = "retrying"` and the worker must throw a normal error
+  so BullMQ applies attempts/backoff.
+- A non-retryable or exhausted failure writes `ingestion_jobs.status = "failed"`
+  and the worker must throw an unrecoverable/final failure so BullMQ does not
+  keep retrying.
+- Duplicate deliveries that cannot claim the persisted job return
+  `{ status: "skipped", reason: "already_claimed" }` and may resolve normally.
+- New upload-created ingestion jobs must persist `max_attempts` from the same
+  config value used for BullMQ `attempts`, unless intentionally relying on the
+  database default in a test/no-producer runtime.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| Pipeline returns `failed` with `shouldRetry: true` | DB job is `retrying`; BullMQ attempt is failed/delayed, not completed |
+| Pipeline returns `failed` with `shouldRetry: false` | DB job is `failed`; BullMQ job is failed, not completed |
+| Processor returns a failed result normally | Test failure; this creates DB/Redis split-brain |
+| Missing or disabled embedding provider reaches max attempts | DB and BullMQ both end failed |
+| Duplicate delivery cannot claim job | Processor resolves skipped without side effects |
+
+### 5. Good/Base/Bad Cases
+
+- Good: worker maps failed pipeline results to thrown BullMQ errors after the
+  pipeline has recorded persisted job state.
+- Base: duplicate delivery resolves skipped because no business failure occurred.
+- Bad: worker returns `{ status: "failed" }` to BullMQ; BullMQ stores the job in
+  `completed` while PostgreSQL stores `retrying`.
+
+### 6. Tests Required
+
+- Unit test that retryable failure before max attempts returns
+  `shouldRetry: true` and records a retrying failure input.
+- Unit test that retryable failure at max attempts returns `shouldRetry: false`
+  and records a final failure input.
+- Worker unit test that failed pipeline results throw instead of resolving.
+- Upload reservation or service wiring test that configured queue attempts become
+  persisted `ingestion_jobs.max_attempts`.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+new Worker("ingestion", async (job) => {
+  return pipeline.processFileIngestion(job.data);
+});
+```
+
+#### Correct
+
+```typescript
+new Worker("ingestion", async (job) => {
+  const result = await pipeline.processFileIngestion(job.data);
+  if (result.status === "failed") {
+    throw result.shouldRetry
+      ? new Error(result.message)
+      : new UnrecoverableError(result.message);
+  }
+
+  return result;
+});
+```
+
 ## Scenario: BullMQ-safe stable ingestion job ids
 
 ### 1. Scope / Trigger

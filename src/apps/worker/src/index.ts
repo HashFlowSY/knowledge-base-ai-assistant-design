@@ -27,7 +27,7 @@ import {
   objectStorageConfigSchema,
 } from "@kb/storage";
 
-import { startWorkerRuntime } from "./lifecycle";
+import { handleIngestionPipelineResult, startWorkerRuntime } from "./lifecycle";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -84,7 +84,9 @@ const ingestionWorker = new Worker<IngestionJobPayload>(
       throw new Error("URL ingestion is out of scope for this worker.");
     }
 
-    return pipeline.processFileIngestion(payload);
+    return handleIngestionPipelineResult(
+      await pipeline.processFileIngestion(payload),
+    );
   },
   {
     concurrency: config.WORKER_CONCURRENCY,

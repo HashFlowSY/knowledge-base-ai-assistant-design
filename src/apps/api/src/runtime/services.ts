@@ -98,6 +98,9 @@ export function createApiRuntimeServices(
   });
   const packageKnowledgeBaseService = createKnowledgeBaseService({
     db: dbRuntime.db,
+    ingestionQueue: {
+      attempts: input.ingestionQueueConfig.attempts,
+    },
     ingestionQueueProducer,
     logger,
     objectStorage,

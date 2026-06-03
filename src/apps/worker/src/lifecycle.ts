@@ -1,5 +1,8 @@
+import { UnrecoverableError } from "bullmq";
+
 import { createLogger, type Logger } from "@kb/observability";
 import { queueNameSchema, type QueueName } from "@kb/queue";
+import type { IngestionPipelineResult } from "@kb/ingestion";
 
 export interface WorkerRuntimeState {
   service: "worker";
@@ -20,6 +23,21 @@ export interface WorkerManagedResource {
 export interface WorkerRecoveryRunner {
   intervalMs?: number;
   run(): Promise<{ enqueued: number }>;
+}
+
+export function handleIngestionPipelineResult(
+  result: IngestionPipelineResult,
+): IngestionPipelineResult {
+  if (result.status !== "failed") {
+    return result;
+  }
+
+  const message = result.message || result.code;
+  if (result.shouldRetry) {
+    throw new Error(message);
+  }
+
+  throw new UnrecoverableError(message);
 }
 
 export async function startWorkerRuntime(

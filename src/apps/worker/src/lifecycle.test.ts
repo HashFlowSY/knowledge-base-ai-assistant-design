@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { UnrecoverableError } from "bullmq";
 
 import { createLogger, type LogRecord } from "@kb/observability";
 
-import { startWorkerRuntime } from "./lifecycle";
+import { handleIngestionPipelineResult, startWorkerRuntime } from "./lifecycle";
 
 describe("@kb/worker", () => {
   it("starts and stops with structured lifecycle logs", async () => {
@@ -54,5 +55,29 @@ describe("@kb/worker", () => {
 
     expect(recovered).toEqual([1]);
     expect(closed).toEqual(["ingestion-worker", "ingestion-events"]);
+  });
+
+  it("throws retryable pipeline failures so BullMQ can retry the job", () => {
+    expect(() =>
+      handleIngestionPipelineResult({
+        code: "EMBEDDING_PROVIDER_NOT_CONFIGURED",
+        message: "未配置可用的向量模型服务。",
+        retryable: true,
+        shouldRetry: true,
+        status: "failed",
+      }),
+    ).toThrow("未配置可用的向量模型服务。");
+  });
+
+  it("throws unrecoverable pipeline failures when attempts are exhausted", () => {
+    expect(() =>
+      handleIngestionPipelineResult({
+        code: "EMBEDDING_PROVIDER_NOT_CONFIGURED",
+        message: "未配置可用的向量模型服务。",
+        retryable: true,
+        shouldRetry: false,
+        status: "failed",
+      }),
+    ).toThrow(UnrecoverableError);
   });
 });

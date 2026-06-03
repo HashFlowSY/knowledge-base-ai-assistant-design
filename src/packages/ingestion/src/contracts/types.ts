@@ -47,6 +47,8 @@ export interface FileIngestionJobContext {
   documentId: string;
   documentVersion: number;
   ingestionJobId: string;
+  attempts: number;
+  maxAttempts: number;
   requestedBy: string;
   sourceObjectKey: string;
 }
@@ -91,6 +93,15 @@ export interface PersistIngestionOutputInput {
   embeddings: ChunkEmbeddingDraft[];
 }
 
+export interface PersistedDocumentChunk {
+  chunkIndex: number;
+  id: string;
+}
+
+export interface PersistIngestionOutputResult {
+  chunks: PersistedDocumentChunk[];
+}
+
 export interface CompleteIngestionJobInput {
   ingestionJobId: string;
   documentVersion: number;
@@ -102,6 +113,7 @@ export interface FailIngestionJobInput {
   errorCode: string;
   errorMessage: string;
   retryable: boolean;
+  shouldRetry: boolean;
 }
 
 export interface IngestionPipelineRepository {
@@ -110,7 +122,9 @@ export interface IngestionPipelineRepository {
   ): Promise<ClaimFileJobResult>;
   loadFileSource(context: FileIngestionJobContext): Promise<FileIngestionSource>;
   recordStep(input: IngestionStepLogInput): Promise<void>;
-  persistIngestionOutput(input: PersistIngestionOutputInput): Promise<void>;
+  persistIngestionOutput(
+    input: PersistIngestionOutputInput,
+  ): Promise<PersistIngestionOutputResult>;
   completeJob(input: CompleteIngestionJobInput): Promise<void>;
   failJob(input: FailIngestionJobInput): Promise<void>;
 }
@@ -137,12 +151,19 @@ export interface IngestionSearchIndexWriter {
 export interface IngestionPipeline {
   processFileIngestion(
     payload: Extract<IngestionJobPayload, { type: "file_ingestion" }>,
-  ): Promise<
-    | { status: "completed" }
-    | { status: "skipped"; reason: "already_claimed" }
-    | { status: "failed"; code: string }
-  >;
+  ): Promise<IngestionPipelineResult>;
 }
+
+export type IngestionPipelineResult =
+  | { status: "completed" }
+  | { status: "skipped"; reason: "already_claimed" }
+  | {
+      status: "failed";
+      code: string;
+      message: string;
+      retryable: boolean;
+      shouldRetry: boolean;
+    };
 
 export interface IngestionPipelineOptions {
   chunking: {

@@ -40,9 +40,14 @@ export function createDrizzleIngestionRepository(
             inArray(ingestionJobs.status, ["queued", "retrying"]),
           ),
         )
-        .returning({ id: ingestionJobs.id });
+        .returning({
+          attempts: ingestionJobs.attempts,
+          id: ingestionJobs.id,
+          maxAttempts: ingestionJobs.maxAttempts,
+        });
 
-      if (rows[0] === undefined) {
+      const row = rows[0];
+      if (row === undefined) {
         return { status: "already_claimed" };
       }
 
@@ -53,6 +58,8 @@ export function createDrizzleIngestionRepository(
           documentVersion,
           ingestionJobId: payload.ingestionJobId,
           knowledgeBaseId: payload.knowledgeBaseId,
+          attempts: row.attempts,
+          maxAttempts: row.maxAttempts,
           requestedBy: payload.requestedBy,
           sourceObjectKey: payload.sourceObjectKey,
           tenantId: payload.tenantId,
@@ -116,7 +123,7 @@ export function createDrizzleIngestionRepository(
       });
     },
     async persistIngestionOutput(input) {
-      await options.db.transaction(async (tx) => {
+      return options.db.transaction(async (tx) => {
         const existingChunks = await tx
           .select({ id: documentChunks.id })
           .from(documentChunks)
@@ -145,7 +152,7 @@ export function createDrizzleIngestionRepository(
           );
 
         if (input.chunks.length === 0) {
-          return;
+          return { chunks: [] };
         }
 
         const insertedChunks = await tx
@@ -192,6 +199,8 @@ export function createDrizzleIngestionRepository(
             };
           }),
         );
+
+        return { chunks: insertedChunks };
       });
     },
     async completeJob(input) {
@@ -235,10 +244,10 @@ export function createDrizzleIngestionRepository(
         await tx
           .update(ingestionJobs)
           .set({
-            finishedAt: input.retryable ? null : sql`NOW()`,
+            finishedAt: input.shouldRetry ? null : sql`NOW()`,
             lastErrorCode: input.errorCode,
             lastErrorMessage: input.errorMessage,
-            status: input.retryable ? "retrying" : "failed",
+            status: input.shouldRetry ? "retrying" : "failed",
             updatedAt: sql`NOW()`,
           })
           .where(eq(ingestionJobs.id, input.ingestionJobId));

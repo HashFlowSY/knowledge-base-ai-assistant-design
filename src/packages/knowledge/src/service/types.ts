@@ -22,6 +22,9 @@ export interface KnowledgeActor {
 
 export interface KnowledgeBaseServiceOptions {
   db: ProjectDb;
+  ingestionQueue?: {
+    attempts: number;
+  };
   ingestionQueueProducer?: IngestionQueueProducer;
   logger?: Logger;
   objectStorage?: ObjectStorageClient;

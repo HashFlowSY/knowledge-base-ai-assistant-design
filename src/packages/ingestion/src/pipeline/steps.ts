@@ -30,6 +30,7 @@ export async function failPipelineJob(
     code: string;
     message: string;
     retryable: boolean;
+    shouldRetry: boolean;
     step?: PersistedIngestionStep;
   },
 ): Promise<void> {
@@ -40,6 +41,7 @@ export async function failPipelineJob(
       message: input.message,
       metadata: {
         retryable: input.retryable,
+        shouldRetry: input.shouldRetry,
       },
       status: "failed",
       step: input.step,
@@ -53,7 +55,15 @@ export async function failPipelineJob(
     errorMessage: input.message,
     ingestionJobId: context.ingestionJobId,
     retryable: input.retryable,
+    shouldRetry: input.shouldRetry,
   });
+}
+
+export function shouldRetryPipelineFailure(
+  context: FileIngestionJobContext,
+  retryable: boolean,
+): boolean {
+  return retryable && context.attempts < context.maxAttempts;
 }
 
 export function normalizePipelineError(error: unknown): {
