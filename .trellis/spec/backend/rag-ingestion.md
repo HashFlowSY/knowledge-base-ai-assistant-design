@@ -219,6 +219,11 @@ Meilisearch documents must include filterable fields:
 - `documentId`
 - `chunkId`
 
+`chunkId` must be the PostgreSQL `document_chunks.id` UUID. Do not use
+`contentHash`, the Meilisearch document `id`, or any derived search-only key as
+`chunkId`, because RAG writes keyword candidates into `retrieval_results.chunk_id`
+and `answer_citations.chunk_id` as database foreign keys.
+
 Search indexing must never index chunks outside the authorized tenant/knowledge base scope.
 
 Meilisearch writes are asynchronous. The index writer must:
@@ -256,6 +261,9 @@ Authorization filters must be applied before vector/keyword results are returned
 ## Hybrid Search Fusion
 
 Fusion must preserve source metadata needed for citations.
+Vector and keyword candidates must use the same `chunkId` identity:
+`document_chunks.id`. Fusion deduplicates by `chunkId`, so a chunk returned by
+both pgvector and Meilisearch must collapse into one hybrid candidate.
 
 Recommended result shape:
 
