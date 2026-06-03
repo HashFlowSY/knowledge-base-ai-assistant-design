@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 30
+- **Total Sessions**: 31
 - **Last Active**: 2026-06-03
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1020 | Active |
+| `journal-1.md` | ~1054 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 31 | 2026-06-03 | Fix QA sessions list display | `964257d`, `8fd8877` | `main` |
 | 30 | 2026-06-03 | 修复 chat 检索 chunkId 语义不一致 | `7d81803`, `9a406e9` | `main` |
 | 29 | 2026-06-03 | Align ingestion retry queue state | `7d81803` | `main` |
 | 28 | 2026-05-31 | Migrate web UI to shadcn | `4718d3f` | `feature/ui` |

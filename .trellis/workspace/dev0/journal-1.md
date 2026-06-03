@@ -1018,3 +1018,37 @@ Aligned ingestion pipeline failures with BullMQ retry/failure state, persisted m
 ### Next Steps
 
 - None - task complete
+
+
+## Session 31: Fix QA sessions list display
+
+**Date**: 2026-06-03
+**Task**: Fix QA sessions list display
+**Branch**: `main`
+
+### Summary
+
+Normalized chat session counts before API schema parsing, added visible chat session error and empty states, and aligned frontend tests after hook/component path changes.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `964257d` | (see git log) |
+| `8fd8877` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
