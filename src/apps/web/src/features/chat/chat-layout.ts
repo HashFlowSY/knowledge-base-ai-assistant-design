@@ -21,11 +21,19 @@ export function chatSessionScrollClassName(): string {
 }
 
 export function chatMessageScrollClassName(): string {
-  return "min-h-0 flex-1 space-y-4 py-4 pl-4 pr-4";
+  return "min-h-0 flex-1";
+}
+
+export function chatMessageScrollContentClassName(): string {
+  return "space-y-4 py-4 pl-4 pr-4";
 }
 
 export function chatCitationScrollClassName(): string {
-  return "min-h-0 flex-1 space-y-4 py-4 pl-4 pr-4";
+  return "min-h-0 flex-1";
+}
+
+export function chatCitationScrollContentClassName(): string {
+  return "space-y-4 py-4 pl-4 pr-4";
 }
 
 export function chatComposerGridClassName(): string {

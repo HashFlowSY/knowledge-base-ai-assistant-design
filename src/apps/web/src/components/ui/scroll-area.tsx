@@ -22,11 +22,13 @@ function ScrollArea({
   onScroll,
   role,
   size = "md",
+  viewportRef,
   ...props
 }: Omit<React.ComponentProps<typeof ScrollAreaPrimitive.Root>, "onScroll"> & {
   "aria-label"?: string
   onScroll?: React.UIEventHandler<HTMLDivElement>
   size?: ScrollAreaSize
+  viewportRef?: React.Ref<HTMLDivElement>
 }) {
   return (
     <ScrollAreaPrimitive.Root
@@ -40,6 +42,7 @@ function ScrollArea({
         data-slot="scroll-area-viewport"
         className="size-full rounded-[inherit] pr-1 transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-1"
         onScroll={onScroll}
+        ref={viewportRef}
       >
         {children}
       </ScrollAreaPrimitive.Viewport>

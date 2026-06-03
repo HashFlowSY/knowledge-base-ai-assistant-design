@@ -11,7 +11,7 @@ export function listActionButtonClassName(active: boolean): string {
 
 export function cardActionButtonClassName(active: boolean): string {
   return [
-    "block min-h-11 w-full rounded-3xl border p-3 text-left",
+    "block h-auto min-h-11 w-full whitespace-normal break-words rounded-3xl border p-3 text-left",
     active ? "border-ring bg-muted" : "border-border bg-card",
   ].join(" ");
 }

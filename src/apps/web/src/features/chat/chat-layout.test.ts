@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   chatComposerGridClassName,
+  chatCitationScrollContentClassName,
   chatCitationScrollClassName,
   chatPanelHeaderClassName,
   chatLayoutGridClassName,
   chatMessagesFrameClassName,
+  chatMessageScrollContentClassName,
   chatMessageScrollClassName,
   chatModeSelectClassName,
   chatModeSelectPlacement,
@@ -52,13 +54,19 @@ describe("chat layout", () => {
   });
 
   it("keeps chat and citation scroll content visually aligned after scrollbar padding", () => {
-    expect(chatMessageScrollClassName()).toContain("pl-4");
-    expect(chatMessageScrollClassName()).toContain("pr-4");
-    expect(chatMessageScrollClassName()).not.toContain("p-4");
+    expect(chatMessageScrollClassName()).toContain("flex-1");
+    expect(chatMessageScrollClassName()).not.toContain("space-y-4");
+    expect(chatMessageScrollContentClassName()).toContain("space-y-4");
+    expect(chatMessageScrollContentClassName()).toContain("pl-4");
+    expect(chatMessageScrollContentClassName()).toContain("pr-4");
+    expect(chatMessageScrollContentClassName()).not.toContain("p-4");
 
-    expect(chatCitationScrollClassName()).toContain("pl-4");
-    expect(chatCitationScrollClassName()).toContain("pr-4");
-    expect(chatCitationScrollClassName()).not.toContain("p-4");
+    expect(chatCitationScrollClassName()).toContain("flex-1");
+    expect(chatCitationScrollClassName()).not.toContain("space-y-4");
+    expect(chatCitationScrollContentClassName()).toContain("space-y-4");
+    expect(chatCitationScrollContentClassName()).toContain("pl-4");
+    expect(chatCitationScrollContentClassName()).toContain("pr-4");
+    expect(chatCitationScrollContentClassName()).not.toContain("p-4");
   });
 
   it("uses a responsive composer with a multiline question input", () => {

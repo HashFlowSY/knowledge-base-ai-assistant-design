@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageSquarePlus, ThumbsDown, ThumbsUp } from "lucide-react";
-import { useMemo, type ReactElement } from "react";
+import { useLayoutEffect, useMemo, useRef, type ReactElement } from "react";
 
 import type { ChatCitation, ChatMessage, ChatSessionSummary } from "@kb/rag";
 
@@ -17,11 +17,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { SelectField } from "@/components/ui/select";
 import { StatusPill } from "@/components/ui/badge";
 import {
+  chatCitationScrollContentClassName,
   chatCitationScrollClassName,
   chatPanelClassName,
   chatPanelHeaderClassName,
   chatSessionScrollClassName,
 } from "./chat-layout";
+import { scrollElementIntoContainerView } from "./chat-scroll";
 
 export function SessionList({
   activeId,
@@ -174,14 +176,14 @@ export function MessageBubble({
         {message.citations.length > 0 ? (
           <div className="mt-3 flex flex-wrap gap-2">
             {message.citations.map((citation) => (
-              <button
+              <Button
                 className="min-h-11 rounded-3xl border border-border bg-muted px-3 py-2 text-sm text-primary"
                 key={citation.id}
                 onClick={() => onSelectCitation(citation.id)}
-                type="button"
+                variant="secondary"
               >
                 引用 · {citation.sourceLocator ?? `#${citation.rank}`}
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}
@@ -206,6 +208,24 @@ export function CitationPanel({
   onSelect: (citationId: string) => void;
 }): ReactElement {
   const citations = answer?.citations ?? [];
+  const citationViewportRef = useRef<HTMLDivElement | null>(null);
+  const citationContentRef = useRef<HTMLDivElement | null>(null);
+  const activeCitationButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (activeCitation === null) {
+      return;
+    }
+
+    const citationViewport = citationViewportRef.current;
+    const activeCitationButton = activeCitationButtonRef.current;
+
+    if (citationViewport === null || activeCitationButton === null) {
+      return;
+    }
+
+    scrollElementIntoContainerView(citationViewport, activeCitationButton);
+  }, [activeCitation?.id]);
 
   return (
     <Panel className={chatPanelClassName()}>
@@ -214,35 +234,47 @@ export function CitationPanel({
         description="核验来源，并提交答案级反馈。"
         title={chatCopy.citationPanel}
       />
-      <ScrollArea aria-label="引用核验内容" className={chatCitationScrollClassName()} size="fill">
-        {answer === null ? <Notice>选择或生成一条助手答案后查看引用。</Notice> : null}
-        {answer !== null && citations.length === 0 ? <Notice>{chatCopy.noCitation}</Notice> : null}
-        {citations.map((citation) => (
-          <button
-            className={cardActionButtonClassName(citation.id === activeCitation?.id)}
-            key={citation.id}
-            onClick={() => onSelect(citation.id)}
-            type="button"
-          >
-            <p className="text-sm font-semibold text-foreground">
-              {citation.sourceTitle}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {citation.sourceLocator ?? `引用 ${citation.rank}`}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-foreground">
-              {citation.snippet}
-            </p>
-          </button>
-        ))}
-        {answer === null || answer.role !== "assistant" ? null : (
-          <FeedbackForm
-            answer={answer}
-            feedbackReason={feedbackReason}
-            onFeedback={onFeedback}
-            onReasonChange={onReasonChange}
-          />
-        )}
+      <ScrollArea
+        aria-label="引用核验内容"
+        className={chatCitationScrollClassName()}
+        size="fill"
+        viewportRef={citationViewportRef}
+      >
+        <div className={chatCitationScrollContentClassName()} ref={citationContentRef}>
+          {answer === null ? <Notice>选择或生成一条助手答案后查看引用。</Notice> : null}
+          {answer !== null && citations.length === 0 ? <Notice>{chatCopy.noCitation}</Notice> : null}
+          {citations.map((citation) => (
+            <Button
+              className={cardActionButtonClassName(citation.id === activeCitation?.id)}
+              key={citation.id}
+              onClick={() => onSelect(citation.id)}
+              ref={
+                citation.id === activeCitation?.id
+                  ? activeCitationButtonRef
+                  : undefined
+              }
+              variant="outline"
+            >
+              <p className="text-sm font-semibold text-foreground">
+                {citation.sourceTitle}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {citation.sourceLocator ?? `引用 ${citation.rank}`}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-foreground">
+                {citation.snippet}
+              </p>
+            </Button>
+          ))}
+          {answer === null || answer.role !== "assistant" ? null : (
+            <FeedbackForm
+              answer={answer}
+              feedbackReason={feedbackReason}
+              onFeedback={onFeedback}
+              onReasonChange={onReasonChange}
+            />
+          )}
+        </div>
       </ScrollArea>
     </Panel>
   );

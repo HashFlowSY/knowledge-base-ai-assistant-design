@@ -15,6 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   chatComposerGridClassName,
   chatLayoutGridClassName,
+  chatMessageScrollContentClassName,
   chatMessageScrollClassName,
   chatMessagesFrameClassName,
   chatPanelClassName,
@@ -22,6 +23,7 @@ import {
   chatSubmitButtonClassName,
   chatTextareaClassName,
 } from "./chat-layout";
+import { getActiveCitation, getVisibleAnswer } from "./chat-selection";
 import {
   CitationPanel,
   KnowledgeBasePicker,
@@ -60,13 +62,9 @@ export function ChatPage(): ReactElement {
   const selectedSessionId = searchParams.get("sessionId") ?? sessions[0]?.id ?? null;
   const messagesQuery = useChatMessages(selectedSessionId);
   const messages = messagesQuery.data ?? [];
-  const answer =
-    [...messages].reverse().find((message) => message.role === "assistant") ?? null;
   const activeCitationId = searchParams.get("citationId");
-  const activeCitation =
-    answer?.citations.find((citation) => citation.id === activeCitationId) ??
-    answer?.citations[0] ??
-    null;
+  const answer = getVisibleAnswer(messages, activeCitationId);
+  const activeCitation = getActiveCitation(answer, activeCitationId);
   const createSession = useCreateChatSession();
   const submitQuestion = useSubmitChatQuestion();
   const submitFeedback = useSubmitAnswerFeedback(answer?.id ?? null);
@@ -165,24 +163,26 @@ export function ChatPage(): ReactElement {
               className={chatMessageScrollClassName()}
               size="fill"
             >
-              {messagesQuery.isLoading ? (
-                <Notice>正在加载对话。</Notice>
-              ) : messages.length === 0 ? (
-                <StarterPrompts onPick={setQuestion} />
-              ) : (
-                messages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    onSelectCitation={(citationId) =>
-                      updateUrl({ citationId, sessionId: selectedSessionId })
-                    }
-                  />
-                ))
-              )}
-              {submitQuestion.isError ? (
-                <Notice tone="error">{chatCopy.failed}</Notice>
-              ) : null}
+              <div className={chatMessageScrollContentClassName()}>
+                {messagesQuery.isLoading ? (
+                  <Notice>正在加载对话。</Notice>
+                ) : messages.length === 0 ? (
+                  <StarterPrompts onPick={setQuestion} />
+                ) : (
+                  messages.map((message) => (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      onSelectCitation={(citationId) =>
+                        updateUrl({ citationId, sessionId: selectedSessionId })
+                      }
+                    />
+                  ))
+                )}
+                {submitQuestion.isError ? (
+                  <Notice tone="error">{chatCopy.failed}</Notice>
+                ) : null}
+              </div>
             </ScrollArea>
             <form className="border-t border-border p-4" onSubmit={handleSubmit}>
               <div className={chatComposerGridClassName()}>
