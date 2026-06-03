@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { apiClient } from "@/features/api/client";
+import { apiClient } from "../../api/client";
 import {
   infiniteKnowledgeBasesQueryKey,
   knowledgeBaseQueryKey,

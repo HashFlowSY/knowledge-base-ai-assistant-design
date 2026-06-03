@@ -24,7 +24,7 @@ import {
   type UpdateKnowledgeBaseInput,
 } from "@kb/knowledge";
 
-import { apiClient, parseApiClientResponse } from "@/features/api/client";
+import { apiClient, parseApiClientResponse } from "../../api/client";
 
 export type KnowledgeBaseInfiniteListQuery = Omit<KnowledgeBaseListQuery, "page">;
 

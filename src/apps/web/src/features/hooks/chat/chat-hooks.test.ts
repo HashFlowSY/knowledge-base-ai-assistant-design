@@ -8,7 +8,7 @@ import {
   chatSessionsQueryKey,
   useChatMessages,
   useSubmitChatQuestion,
-} from "@/features/hooks/chat/chat-hooks";
+} from "./chat-hooks";
 
 describe("chat hooks", () => {
   it("builds stable query keys for sessions and messages", () => {

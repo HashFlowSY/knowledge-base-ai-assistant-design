@@ -45,7 +45,7 @@ describe("admin list layout", () => {
 
   it("lets the user management list fill the page when detail opens in a drawer", () => {
     const userDetailDrawerSource = readFileSync(
-      resolve(__dirname, "user-detail-drawer.tsx"),
+      resolve(__dirname, "../user/user-detail-drawer.tsx"),
       "utf8",
     );
 

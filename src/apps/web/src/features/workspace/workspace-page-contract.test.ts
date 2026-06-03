@@ -45,15 +45,15 @@ describe("workspace page executable contract", () => {
 
   it("keeps workspace features split into single-purpose component files", () => {
     const componentExports: Record<string, string> = {
-      "src/apps/web/src/features/workspace/knowledge-base-dialog.tsx":
+      "src/apps/web/src/features/knowledge/knowledge-base-dialog.tsx":
         "KnowledgeBaseDialog",
-      "src/apps/web/src/features/workspace/knowledge-base-list-item.tsx":
+      "src/apps/web/src/features/knowledge/knowledge-base-list-item.tsx":
         "KnowledgeBaseListItem",
-      "src/apps/web/src/features/workspace/knowledge-base-list.tsx":
+      "src/apps/web/src/features/knowledge/knowledge-base-list.tsx":
         "KnowledgeBaseList",
-      "src/apps/web/src/features/workspace/knowledge-base-summary.tsx":
+      "src/apps/web/src/features/knowledge/knowledge-base-summary.tsx":
         "KnowledgeBaseSummary",
-      "src/apps/web/src/features/workspace/member-picker.tsx": "MemberPicker",
+      "src/apps/web/src/features/knowledge/member-picker.tsx": "MemberPicker",
       "src/apps/web/src/features/workspace/query-error-state.tsx": "QueryErrorState",
       "src/apps/web/src/features/workspace/upload-document-dialog.tsx":
         "UploadDocumentDialog",
@@ -114,9 +114,11 @@ describe("workspace page executable contract", () => {
 
   it("uses sliding infinite-scroll display for the workspace knowledge-base list", () => {
     const listSource = readProjectFile(
-      "src/apps/web/src/features/workspace/knowledge-base-list.tsx",
+      "src/apps/web/src/features/knowledge/knowledge-base-list.tsx",
     );
-    const knowledgeHookSource = readProjectFile("src/apps/web/src/features/knowledge/knowledge-hooks.ts");
+    const knowledgeHookSource = readProjectFile(
+      "src/apps/web/src/features/hooks/knowledge/knowledge-hooks.ts",
+    );
 
     expect(listSource).toContain("fetchNextPage");
     expect(listSource).toContain("onScroll={handleKnowledgeBaseListScroll}");
@@ -138,7 +140,9 @@ describe("workspace page executable contract", () => {
     const uploadDialogSource = readProjectFile(
       "src/apps/web/src/features/workspace/upload-document-dialog.tsx",
     );
-    const knowledgeHookSource = readProjectFile("src/apps/web/src/features/knowledge/knowledge-hooks.ts");
+    const knowledgeHookSource = readProjectFile(
+      "src/apps/web/src/features/hooks/knowledge/knowledge-hooks.ts",
+    );
     const knowledgeCopySource = readProjectFile("src/apps/web/src/copy/knowledge.ts");
 
     expect(workspaceSource).toContain("UploadDocumentDialog");
