@@ -6,6 +6,8 @@ import type {
   IngestionStepLogStatus,
 } from "../contracts/types";
 
+const genericIngestionFailureMessage = "Document ingestion failed.";
+
 export async function recordStep(
   repository: IngestionPipelineRepository,
   context: FileIngestionJobContext,
@@ -82,14 +84,14 @@ export function normalizePipelineError(error: unknown): {
   if (error instanceof Error) {
     return {
       code: "INGESTION_FAILED",
-      message: error.message,
+      message: genericIngestionFailureMessage,
       retryable: true,
     };
   }
 
   return {
     code: "INGESTION_FAILED",
-    message: String(error),
+    message: genericIngestionFailureMessage,
     retryable: true,
   };
 }

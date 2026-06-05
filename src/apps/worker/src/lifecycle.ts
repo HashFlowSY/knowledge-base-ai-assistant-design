@@ -25,6 +25,11 @@ export interface WorkerRecoveryRunner {
   run(): Promise<{ enqueued: number }>;
 }
 
+export interface WorkerSourceCleanupRunner {
+  intervalMs?: number;
+  run(): Promise<{ cleaned: number; failed: number }>;
+}
+
 export function handleIngestionPipelineResult(
   result: IngestionPipelineResult,
 ): IngestionPipelineResult {
@@ -46,6 +51,7 @@ export async function startWorkerRuntime(
     queues?: QueueName[];
     recovery?: WorkerRecoveryRunner;
     resources?: WorkerManagedResource[];
+    sourceCleanup?: WorkerSourceCleanupRunner;
   } = {},
 ): Promise<WorkerRuntime> {
   const logger = options.logger ?? createLogger({ service: "worker" });
@@ -64,14 +70,37 @@ export async function startWorkerRuntime(
 
   const resources = options.resources ?? [];
   const recovery = options.recovery;
+  const sourceCleanup = options.sourceCleanup;
+  let sourceCleanupRunning = false;
+  const runSourceCleanupOnce = async (): Promise<void> => {
+    if (sourceCleanup === undefined || sourceCleanupRunning) {
+      return;
+    }
+
+    sourceCleanupRunning = true;
+    try {
+      await runSourceCleanup(sourceCleanup, logger);
+    } finally {
+      sourceCleanupRunning = false;
+    }
+  };
   const recoveryInterval =
     recovery === undefined
       ? null
       : setInterval(() => {
           void runRecovery(recovery, logger);
         }, recovery.intervalMs ?? 300_000);
+  const sourceCleanupInterval =
+    sourceCleanup === undefined
+      ? null
+      : setInterval(() => {
+          void runSourceCleanupOnce();
+        }, sourceCleanup.intervalMs ?? recovery?.intervalMs ?? 300_000);
   if (recovery !== undefined) {
     await runRecovery(recovery, logger);
+  }
+  if (sourceCleanup !== undefined) {
+    await runSourceCleanupOnce();
   }
 
   return {
@@ -79,6 +108,9 @@ export async function startWorkerRuntime(
     async stop(reason: string): Promise<WorkerRuntimeState> {
       if (recoveryInterval !== null) {
         clearInterval(recoveryInterval);
+      }
+      if (sourceCleanupInterval !== null) {
+        clearInterval(sourceCleanupInterval);
       }
       for (const resource of resources) {
         await resource.close();
@@ -107,4 +139,27 @@ async function runRecovery(
   logger.info("worker_recovery_completed", {
     enqueued: result.enqueued,
   });
+}
+
+async function runSourceCleanup(
+  sourceCleanup: WorkerSourceCleanupRunner,
+  logger: Logger,
+): Promise<void> {
+  try {
+    const result = await sourceCleanup.run();
+    const eventFields = {
+      cleaned: result.cleaned,
+      failed: result.failed,
+    };
+    if (result.failed > 0) {
+      logger.warn("worker_source_cleanup_completed", eventFields);
+      return;
+    }
+
+    logger.info("worker_source_cleanup_completed", eventFields);
+  } catch {
+    logger.error("worker_source_cleanup_failed", {
+      failed: 1,
+    });
+  }
 }

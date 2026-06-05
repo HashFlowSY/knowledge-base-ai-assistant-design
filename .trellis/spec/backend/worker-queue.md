@@ -200,6 +200,89 @@ Validation and error matrix:
 | Duplicate enqueue for same document version | Stable job id collapses duplicate work |
 | Recovery requeues stale pending job | Worker idempotency prevents duplicate chunks, embeddings, search docs, and audit events |
 
+## Scenario: Retry retained BullMQ failed ingestion jobs
+
+### 1. Scope / Trigger
+
+- Trigger: manual or recovery-driven retry of a persisted ingestion job whose
+  deterministic BullMQ job id may still exist in the `failed` set.
+- Scope: `@kb/queue` ingestion producer and callers that mark PostgreSQL
+  ingestion jobs `queued` or `retrying` before asking Redis to schedule work.
+
+### 2. Signatures
+
+- Producer contract:
+  ```typescript
+  interface IngestionQueueProducer {
+    enqueue(payload: IngestionJobPayload): Promise<void>;
+  }
+  ```
+- BullMQ retained failed-job cleanup:
+  ```typescript
+  await job.remove();
+  await queue.add(payload.type, payload, options);
+  ```
+
+### 3. Contracts
+
+- `@kb/queue` owns the Redis/BullMQ decision. Callers should not duplicate
+  BullMQ state branching in API or domain packages.
+- The producer must compute the stable job id from the parsed
+  `IngestionJobPayload` before enqueueing.
+- If a retained BullMQ job with the same job id is in `failed`, the producer
+  must remove that old Redis job before calling `queue.add` with the current
+  parsed payload and options.
+- PostgreSQL remains the business source of truth; callers must transition the
+  persisted ingestion job to a worker-claimable state (`queued` or `retrying`)
+  before invoking the producer.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| Same stable job id exists in BullMQ `failed` | `job.remove()` first, then normal `queue.add` with the current payload |
+| Same stable job id does not exist in BullMQ | Normal `queue.add` with bounded attempts/backoff and stable `jobId` |
+| Same stable job id is waiting, delayed, active, or completed | Normal `queue.add`; BullMQ stable id deduplication remains the guard |
+| BullMQ remove/add throws | Propagate the error so the caller can mark the persisted job retryable or enqueue-failed |
+
+### 5. Good/Base/Bad Cases
+
+- Good: manual retry marks the database row `queued`, then producer removes the
+  retained failed BullMQ job and enqueues the current payload.
+- Base: new upload has no retained failed BullMQ job and uses `queue.add`.
+- Bad: manual retry calls `retry("failed")` on the retained Redis job and reuses
+  stale Redis data instead of the current payload.
+
+### 6. Tests Required
+
+- Unit test `@kb/queue` producer behavior with a mocked BullMQ queue:
+  same job id in `failed` calls `remove()` and then calls `add` with the current
+  payload.
+- Unit test normal producer behavior:
+  no retained failed job calls `add` with expected attempts, backoff, retention,
+  and stable `jobId`.
+- Recovery or service tests may continue to assert PostgreSQL transitions and
+  caller error handling without mocking BullMQ internals.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+await queue.add(name, payload, createIngestionJobOptions(payload, config));
+```
+
+#### Correct
+
+```typescript
+const options = createIngestionJobOptions(payload, config);
+const existingJob = await queue.getJob(options.jobId);
+if ((await existingJob?.getState()) === "failed") {
+  await existingJob.remove();
+}
+await queue.add(name, payload, options);
+```
+
 ## Scenario: Align persisted ingestion state with BullMQ job state
 
 ### 1. Scope / Trigger

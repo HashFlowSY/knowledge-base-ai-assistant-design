@@ -4,7 +4,6 @@ import { sessionPayloadSchema, type SessionPayload } from "@kb/auth";
 import {
   knowledgeBaseDetailSchema,
   knowledgeBasesPageSchema,
-  knowledgeBaseSummarySchema,
 } from "@kb/knowledge";
 import {
   apiErrorResponseSchema,
@@ -41,6 +40,10 @@ const knowledgeBaseSummary = {
   ],
   name: "采购知识库",
   updatedAt: "2026-05-19T00:00:00.000Z",
+};
+
+const knowledgeBaseDetail = {
+  ...knowledgeBaseSummary,
 };
 
 describe("knowledge-base API", () => {
@@ -107,7 +110,7 @@ describe("knowledge-base API", () => {
           });
           expect(input.knowledgeBaseId).toBe("kb_1");
           return {
-            knowledgeBase: knowledgeBaseSummary,
+            knowledgeBase: knowledgeBaseDetail,
             ok: true,
           };
         },
@@ -196,7 +199,7 @@ describe("knowledge-base API", () => {
           });
           return {
             knowledgeBase: {
-              ...knowledgeBaseSummary,
+              ...knowledgeBaseDetail,
               description: "新版描述",
               memberCount: 0,
               members: [],
@@ -225,7 +228,7 @@ describe("knowledge-base API", () => {
 
     expect(response.status).toBe(200);
     expect(
-      apiSuccessResponseSchema(knowledgeBaseSummarySchema).parse(await response.json())
+      apiSuccessResponseSchema(knowledgeBaseDetailSchema).parse(await response.json())
         .data.name,
     ).toBe("新版知识库");
   });

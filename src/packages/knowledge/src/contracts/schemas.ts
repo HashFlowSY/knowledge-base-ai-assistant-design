@@ -34,6 +34,114 @@ export type KnowledgeBaseMemberSummary = z.infer<
   typeof knowledgeBaseMemberSummarySchema
 >;
 
+const documentUploadStatusSchema = z.enum([
+  "pending",
+  "processing",
+  "ready",
+  "failed",
+  "archived",
+]);
+
+const documentSourceUploadStatusSchema = z.enum([
+  "pending_upload",
+  "available",
+  "upload_failed",
+]);
+
+const documentSourceScanStatusSchema = z.enum([
+  "not_scanned",
+  "pending",
+  "clean",
+  "infected",
+  "scan_failed",
+]);
+
+const documentSourceObjectCleanupStatusSchema = z.enum([
+  "not_required",
+  "pending_cleanup",
+  "cleanup_in_progress",
+  "cleanup_succeeded",
+  "cleanup_failed",
+]);
+
+const ingestionJobStatusSchema = z.enum([
+  "pending_source",
+  "queued",
+  "running",
+  "retrying",
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+const ingestionStepSchema = z.enum([
+  "source_connector",
+  "parser",
+  "normalizer",
+  "chunker",
+  "embedding",
+  "index_writer",
+]);
+
+const nullableProgressCountSchema = z.number().int().min(0).nullable();
+
+export const documentProcessingSummarySchema = z
+  .object({
+    currentVersion: z.number().int().min(1),
+    id: z.string().min(1),
+    job: z
+      .object({
+        attempts: z.number().int().min(0),
+        canRetry: z.boolean(),
+        currentStep: ingestionStepSchema.nullable(),
+        id: z.string().min(1),
+        lastErrorCode: z.string().nullable(),
+        lastErrorMessage: z.string().nullable(),
+        maxAttempts: z.number().int().min(1),
+        status: ingestionJobStatusSchema,
+        updatedAt: isoTimestampSchema,
+      })
+      .strict()
+      .nullable(),
+    progress: z
+      .object({
+        chunkCount: nullableProgressCountSchema,
+        embeddedCount: nullableProgressCountSchema,
+      })
+      .strict(),
+    source: z
+      .object({
+        objectCleanupStatus: documentSourceObjectCleanupStatusSchema,
+      })
+      .strict()
+      .nullable(),
+    status: documentUploadStatusSchema,
+    title: z.string().min(1),
+    updatedAt: isoTimestampSchema,
+  })
+  .strict();
+
+export type DocumentProcessingSummary = z.infer<
+  typeof documentProcessingSummarySchema
+>;
+
+export const documentProcessingPageSchema = pageResultSchema(
+  documentProcessingSummarySchema,
+);
+
+export type DocumentProcessingPage = z.infer<typeof documentProcessingPageSchema>;
+
+export const retryDocumentProcessingResultSchema = z
+  .object({
+    document: documentProcessingSummarySchema,
+    queued: z.boolean(),
+  })
+  .strict();
+
+export type RetryDocumentProcessingResult = z.infer<
+  typeof retryDocumentProcessingResultSchema
+>;
+
 export const knowledgeBaseSummarySchema = z
   .object({
     createdAt: isoTimestampSchema,
@@ -91,6 +199,25 @@ export const knowledgeBaseListQuerySchema = z
 
 export type KnowledgeBaseListQuery = z.infer<typeof knowledgeBaseListQuerySchema>;
 
+export const documentProcessingListQuerySchema = z
+  .object({
+    page: z
+      .union([z.string(), z.number()])
+      .optional()
+      .transform((value) => parsePositiveInteger(value, 1)),
+    pageSize: z
+      .union([z.string(), z.number()])
+      .optional()
+      .transform((value) => {
+        const parsed = parsePositiveInteger(value, 8);
+        return [5, 8, 12].includes(parsed) ? parsed : 8;
+      }),
+  });
+
+export type DocumentProcessingListQuery = z.infer<
+  typeof documentProcessingListQuerySchema
+>;
+
 export const createKnowledgeBaseInputSchema = z
   .object({
     description: descriptionSchema.optional().default(null),
@@ -123,38 +250,6 @@ export const updateKnowledgeBaseInputSchema = z
 export type UpdateKnowledgeBaseInput = z.infer<
   typeof updateKnowledgeBaseInputSchema
 >;
-
-const documentUploadStatusSchema = z.enum([
-  "pending",
-  "processing",
-  "ready",
-  "failed",
-  "archived",
-]);
-
-const documentSourceUploadStatusSchema = z.enum([
-  "pending_upload",
-  "available",
-  "upload_failed",
-]);
-
-const documentSourceScanStatusSchema = z.enum([
-  "not_scanned",
-  "pending",
-  "clean",
-  "infected",
-  "scan_failed",
-]);
-
-const ingestionJobStatusSchema = z.enum([
-  "pending_source",
-  "queued",
-  "running",
-  "retrying",
-  "completed",
-  "failed",
-  "cancelled",
-]);
 
 export const documentFileUploadResultSchema = z
   .object({

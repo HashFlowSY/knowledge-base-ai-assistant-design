@@ -3,6 +3,9 @@ import { z } from "zod";
 export {
   createKnowledgeBaseInputSchema,
   documentFileUploadResultSchema,
+  documentProcessingListQuerySchema,
+  documentProcessingPageSchema,
+  documentProcessingSummarySchema,
   knowledgeBaseDetailSchema,
   knowledgeBaseListQuerySchema,
   knowledgeBaseMemberSummarySchema,
@@ -10,16 +13,21 @@ export {
   knowledgeBaseSummarySchema,
   normalizeKnowledgeBaseMemberIds,
   normalizeKnowledgeBaseName,
+  retryDocumentProcessingResultSchema,
   updateKnowledgeBaseInputSchema,
 } from "./contracts/schemas";
 export type {
   CreateKnowledgeBaseInput,
   DocumentFileUploadResult,
+  DocumentProcessingListQuery,
+  DocumentProcessingPage,
+  DocumentProcessingSummary,
   KnowledgeBaseDetail,
   KnowledgeBaseListQuery,
   KnowledgeBaseMemberSummary,
   KnowledgeBasesPage,
   KnowledgeBaseSummary,
+  RetryDocumentProcessingResult,
   UpdateKnowledgeBaseInput,
 } from "./contracts/schemas";
 export type { KnowledgeActor } from "./service/types";

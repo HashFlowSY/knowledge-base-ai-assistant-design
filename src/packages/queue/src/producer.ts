@@ -25,17 +25,38 @@ export function createBullMqIngestionQueueProducer(
   return {
     async enqueue(payload) {
       const parsed = ingestionJobPayloadSchema.parse(payload);
+      const jobOptions = createIngestionJobOptions(parsed, {
+        attempts: config.attempts,
+        backoffMs: config.backoffMs,
+      });
+
+      await removeFailedIngestionJobIfPresent(queue, jobOptions.jobId);
+
       await queue.add(
         parsed.type,
         parsed,
-        createIngestionJobOptions(parsed, {
-          attempts: config.attempts,
-          backoffMs: config.backoffMs,
-        }),
+        jobOptions,
       );
     },
     async close() {
       await queue.close();
     },
   };
+}
+
+async function removeFailedIngestionJobIfPresent(
+  queue: Queue<IngestionJobPayload>,
+  jobId: string,
+): Promise<void> {
+  const existingJob = await queue.getJob(jobId);
+  if (existingJob === undefined) {
+    return;
+  }
+
+  const state = await existingJob.getState();
+  if (state !== "failed") {
+    return;
+  }
+
+  await existingJob.remove();
 }

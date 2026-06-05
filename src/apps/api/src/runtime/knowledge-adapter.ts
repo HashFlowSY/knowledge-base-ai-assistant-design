@@ -15,6 +15,16 @@ export function createKnowledgeServiceAdapters(
 ): KnowledgeServiceAdapters {
   return {
     documentService: {
+      listDocumentProcessing: (input) =>
+        service.listDocumentProcessing({
+          ...input,
+          actor: normalizeKnowledgeActor(input.actor),
+        }),
+      retryDocumentProcessing: (input) =>
+        service.retryDocumentProcessing({
+          ...input,
+          actor: normalizeKnowledgeActor(input.actor),
+        }),
       uploadDocumentFile: (input) =>
         service.uploadDocumentFile({
           ...input,

@@ -6,10 +6,13 @@ import type { ObjectStorageClient } from "@kb/storage";
 import type {
   CreateKnowledgeBaseInput,
   DocumentFileUploadResult,
+  DocumentProcessingListQuery,
+  DocumentProcessingPage,
   KnowledgeBaseDetail,
   KnowledgeBaseListQuery,
   KnowledgeBaseSummary,
   KnowledgeBasesPage,
+  RetryDocumentProcessingResult,
   UpdateKnowledgeBaseInput,
 } from "../contracts/schemas";
 import type { KnowledgeBaseServiceError } from "./errors";
@@ -64,4 +67,16 @@ export interface KnowledgeBaseService {
   }): Promise<
     { ok: true; result: DocumentFileUploadResult } | KnowledgeBaseServiceError
   >;
+  retryDocumentProcessing(input: {
+    actor: KnowledgeActor;
+    documentId: string;
+    knowledgeBaseId: string;
+  }): Promise<
+    { ok: true; result: RetryDocumentProcessingResult } | KnowledgeBaseServiceError
+  >;
+  listDocumentProcessing(input: {
+    actor: KnowledgeActor;
+    knowledgeBaseId: string;
+    query: DocumentProcessingListQuery;
+  }): Promise<{ ok: true; page: DocumentProcessingPage } | KnowledgeBaseServiceError>;
 }

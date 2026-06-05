@@ -3,12 +3,14 @@ import { describe, expect, it } from "vitest";
 import {
   createKnowledgeBaseInputSchema,
   documentFileUploadResultSchema,
+  documentProcessingPageSchema,
   documentStatusSchema,
   knowledgeBaseDetailSchema,
   knowledgeBaseListQuerySchema,
   knowledgeBaseScopeSchema,
   normalizeKnowledgeBaseMemberIds,
   normalizeKnowledgeBaseName,
+  retryDocumentProcessingResultSchema,
   updateKnowledgeBaseInputSchema,
 } from "../index";
 import { createDocumentFileIngestionPayload } from "../ingestion/queue-payload";
@@ -217,5 +219,138 @@ describe("@kb/knowledge", () => {
 
     expect(parsed).not.toHaveProperty("slug");
     expect(parsed).not.toHaveProperty("visibility");
+    expect(parsed).not.toHaveProperty("documents");
+  });
+
+  it("rejects embedded document processing summaries on knowledge-base details", () => {
+    const timestamp = "2026-05-23T06:00:00.000Z";
+
+    expect(() =>
+      knowledgeBaseDetailSchema.parse({
+        createdAt: timestamp,
+        description: null,
+        documentCount: 1,
+        documents: [],
+        id: "kb_1",
+        memberCount: 0,
+        members: [],
+        name: "采购知识库",
+        updatedAt: timestamp,
+      }),
+    ).toThrow();
+  });
+
+  it("validates paginated document processing summaries independently", () => {
+    const timestamp = "2026-05-23T06:00:00.000Z";
+    const parsed = documentProcessingPageSchema.parse({
+      items: [
+        {
+          currentVersion: 1,
+          id: "doc_1",
+          job: {
+            attempts: 2,
+            canRetry: true,
+            currentStep: "embedding",
+            id: "job_1",
+            lastErrorCode: "PROVIDER_UNAVAILABLE",
+            lastErrorMessage: "模型服务暂时不可用。",
+            maxAttempts: 3,
+            status: "failed",
+            updatedAt: timestamp,
+          },
+          progress: {
+            chunkCount: 23,
+            embeddedCount: 20,
+          },
+          source: {
+            objectCleanupStatus: "not_required",
+          },
+          status: "failed",
+          title: "采购制度",
+          updatedAt: timestamp,
+        },
+      ],
+      page: 1,
+      pageSize: 8,
+      total: 1,
+    });
+
+    expect(parsed.items[0]).toMatchObject({
+      job: { canRetry: true },
+      progress: { chunkCount: 23, embeddedCount: 20 },
+    });
+  });
+
+  it("rejects raw cleanup error messages on public document processing summaries", () => {
+    const timestamp = "2026-05-23T06:00:00.000Z";
+
+    expect(() =>
+      documentProcessingPageSchema.parse({
+        items: [
+          {
+            currentVersion: 1,
+            id: "doc_1",
+            job: null,
+            progress: {
+              chunkCount: null,
+              embeddedCount: null,
+            },
+            source: {
+              objectCleanupErrorMessage:
+                "S3 AccessDenied tenants/tenant_1/private.pdf",
+              objectCleanupStatus: "cleanup_failed",
+            },
+            status: "failed",
+            title: "采购制度",
+            updatedAt: timestamp,
+          },
+        ],
+        page: 1,
+        pageSize: 8,
+        total: 1,
+      }),
+    ).toThrow();
+  });
+
+  it("validates retry results with an explicit queued flag", () => {
+    const timestamp = "2026-05-23T06:00:00.000Z";
+
+    expect(
+      retryDocumentProcessingResultSchema.parse({
+        document: {
+          currentVersion: 1,
+          id: "doc_1",
+          job: {
+            attempts: 2,
+            canRetry: false,
+            currentStep: "source_connector",
+            id: "job_1",
+            lastErrorCode: null,
+            lastErrorMessage: null,
+            maxAttempts: 3,
+            status: "queued",
+            updatedAt: timestamp,
+          },
+          progress: {
+            chunkCount: 23,
+            embeddedCount: 20,
+          },
+          source: {
+            objectCleanupStatus: "not_required",
+          },
+          status: "processing",
+          title: "采购制度",
+          updatedAt: timestamp,
+        },
+        queued: true,
+      }),
+    ).toMatchObject({
+      document: {
+        job: {
+          status: "queued",
+        },
+      },
+      queued: true,
+    });
   });
 });

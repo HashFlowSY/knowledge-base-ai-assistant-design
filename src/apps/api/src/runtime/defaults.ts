@@ -165,6 +165,12 @@ export function createEmptyUserService(): UserService {
 
 export function createEmptyDocumentService(): DocumentService {
   return {
+    async listDocumentProcessing() {
+      return createNotImplementedServiceError();
+    },
+    async retryDocumentProcessing() {
+      return createNotImplementedServiceError();
+    },
     async uploadDocumentFile() {
       return createNotImplementedServiceError();
     },

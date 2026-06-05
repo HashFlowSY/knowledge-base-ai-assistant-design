@@ -332,6 +332,146 @@ type UploadRoute = {
 };
 ```
 
+## Scenario: Document Processing Progress And Retry RPC Contract
+
+### 1. Scope / Trigger
+
+- Trigger: web clients need to render document ingestion progress with sliding
+  pagination inside knowledge-base detail views and manually retry eligible
+  failed jobs.
+- Scope: `src/packages/knowledge` browser-safe contracts, package service
+  queries, `src/apps/api` RPC route schema/procedure, and `src/apps/web`
+  knowledge hooks/components.
+
+### 2. Signatures
+
+- Detail API: `GET /api/knowledge-bases/:knowledgeBaseId` returns
+  `KnowledgeBaseDetail` without embedded document processing rows.
+- Processing list API:
+  `GET /api/knowledge-bases/:knowledgeBaseId/documents/processing?page=&pageSize=`
+  returns `ApiSuccessResponse<PageResult<DocumentProcessingSummary>>`.
+- Retry API:
+  `POST /api/knowledge-bases/:knowledgeBaseId/documents/:documentId/retry`
+  with JSON body `{}`.
+- Retry response: `ApiSuccessResponse<RetryDocumentProcessingResult>` or the
+  standard `ApiErrorResponse`:
+  ```typescript
+  type RetryDocumentProcessingResult = {
+    document: DocumentProcessingSummary;
+    queued: boolean;
+  };
+  ```
+
+### 3. Contracts
+
+- `DocumentProcessingSummary.job.attempts` and `maxAttempts` are the persisted
+  `ingestion_jobs` values; retry APIs must not increment attempts directly.
+- `DocumentProcessingSummary.job.canRetry` is true only when the latest job is
+  `failed`, `attempts < maxAttempts`, the matched source is a file source with
+  `uploadStatus = "available"` and a non-null `objectKey`, and the source
+  object cleanup status is `not_required`.
+- When a latest job exists, processing summary queries must match its source by
+  exact `(documentId, sourceHash)` only. Missing exact source data is an
+  environment/data consistency error and should fail rather than falling back to
+  another source row.
+- Progress fields are counts, not percentages:
+  `progress.chunkCount` and `progress.embeddedCount` may be `null` when the
+  count is not known yet.
+- Running embedding progress should prefer `ingestion_job_logs.metadata`
+  (`chunkCount`, `embeddedCount`) because chunks and embeddings may be
+  persisted together after embedding completes.
+- Retry payloads are derived server-side from tenant, knowledge base, document,
+  source, and persisted ingestion job state. Clients must not provide queue
+  payloads or BullMQ job ids.
+- `RetryDocumentProcessingResult.queued` is true only when the retry request
+  actually moved the persisted job into a worker-claimable retry state and the
+  producer path completed. No-op states such as completed, active, exhausted, or
+  unsupported sources return `queued: false` with the current summary.
+- If the retry producer is missing, treat it as an environment abnormality:
+  return the current summary with `queued: false`, do not mark the persisted job
+  `queued`, and do not consume a retry attempt.
+- Web retry success copy must branch on `queued`: show "requeued" only when
+  `queued === true`; otherwise show neutral current-state copy.
+- Web document-processing list queries should use the shared infinite-query /
+  scroll-area pattern, refetch while any loaded document has an active processing
+  state (`pending`, `processing`, `pending_source`, `queued`, `running`, or
+  `retrying`), and stop polling once loaded documents are terminal.
+
+### 4. Validation & Error Matrix
+
+- Missing/expired session -> `UNAUTHORIZED`.
+- Actor lacks knowledge-base permission or crosses tenant/knowledge-base scope
+  -> `FORBIDDEN` or safe `NOT_FOUND` per existing knowledge-base behavior.
+- Bad origin, `Sec-Fetch-Site`, or non-JSON content type on retry ->
+  `FORBIDDEN` or `UNSUPPORTED_MEDIA_TYPE` before service execution.
+- Unauthenticated retry attempts are rate-limited by IP; authenticated attempts
+  are rate-limited by tenant and actor.
+- Failed job with exhausted attempts -> return current document summary with
+  `canRetry: false` and `queued: false`; do not enqueue.
+- Active `queued`, `running`, or `retrying` job -> return current summary; do
+  not enqueue a duplicate; return `queued: false`.
+- Queue enqueue failure after marking retry queued -> persist
+  `QUEUE_ENQUEUE_FAILED`/retryable state so recovery can requeue; return
+  `queued: false` for the immediate response.
+- Missing retry producer -> return current summary with `queued: false`; do not
+  mark the persisted job queued.
+
+### 5. Good/Base/Bad Cases
+
+- Good: a failed file ingestion job with `attempts: 2`, `maxAttempts: 3`, and
+  source cleanup `not_required` is atomically moved back to `queued` and then
+  enqueued with a server-derived file ingestion payload.
+- Base: a repeated retry call after the first request has already queued the
+  job returns the current `queued` summary with `queued: false` without
+  consuming another attempt.
+- Bad: a retry route accepts `{ jobId, sourceObjectKey }` from the browser and
+  passes those fields into BullMQ.
+- Bad: frontend shows "requeued" toast for every HTTP 200 retry response even
+  when `queued: false`.
+
+### 6. Tests Required
+
+- Knowledge contract tests reject embedded `KnowledgeBaseDetail.documents` and
+  parse `DocumentProcessingPage` independently.
+- Knowledge contract tests parse `RetryDocumentProcessingResult` with a
+  `document` summary and explicit `queued` flag.
+- Knowledge mapper tests assert `canRetry` is false for URL sources, failed
+  uploads, missing source object keys, cleanup-pending sources, and exhausted
+  attempts.
+- API tests cover processing list actor/path/query delegation, retry
+  CSRF/content-type guard, unauthenticated IP rate limit, retry actor/path
+  delegation, `queued` response data, and service error mapping.
+- Frontend hook tests assert the typed RPC processing-list and retry paths exist,
+  the retry mutation hook parses `retryDocumentProcessingResultSchema`, and
+  active processing states enable document-processing list polling.
+- Workspace contract tests assert the selected knowledge-base detail renders
+  document progress counts, not percentages, and exposes retry controls.
+- Frontend display tests assert completed jobs do not reuse active-processing
+  disabled copy.
+- Ingestion pipeline tests assert multi-batch embedding records
+  `embedding.progress` metadata with completed chunk counts.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+await retryQueue.enqueue({
+  jobId: body.jobId,
+  sourceObjectKey: body.sourceObjectKey,
+});
+```
+
+#### Correct
+
+```typescript
+const result = await documentService.retryDocumentProcessing({
+  actor,
+  knowledgeBaseId: params.knowledgeBaseId,
+  documentId: params.documentId,
+});
+```
+
 ## Streaming Chat
 
 Streaming chat endpoints must:

@@ -39,7 +39,11 @@ export interface DocumentChunkDraft {
   metadata: Record<string, unknown>;
 }
 
-export type IngestionStepLogStatus = "started" | "succeeded" | "failed";
+export type IngestionStepLogStatus =
+  | "started"
+  | "progress"
+  | "succeeded"
+  | "failed";
 
 export interface FileIngestionJobContext {
   tenantId: string;
@@ -136,6 +140,43 @@ export interface IngestionRecoveryRepository {
   }): Promise<Extract<IngestionJobPayload, { type: "file_ingestion" }>[]>;
 }
 
+export interface SourceObjectCleanupCandidate {
+  id: string;
+}
+
+export interface SourceObjectCleanupClaim {
+  bucket: string;
+  claimToken: string;
+  id: string;
+  objectKey: string;
+}
+
+export interface IngestionCleanupRepository {
+  listPendingSourceObjectCleanups(input: {
+    limit: number;
+    updatedBefore: Date;
+  }): Promise<SourceObjectCleanupCandidate[]>;
+  claimSourceObjectCleanup(input: {
+    claimToken: string;
+    sourceId: string;
+    updatedBefore: Date;
+  }): Promise<SourceObjectCleanupClaim | null>;
+  softDeleteSourceDocumentForCleanup(input: {
+    claimToken: string;
+    sourceId: string;
+  }): Promise<boolean>;
+  completeSourceObjectCleanup(input: {
+    claimToken: string;
+    sourceId: string;
+  }): Promise<void>;
+  failSourceObjectCleanup(input: {
+    claimToken: string;
+    errorCode: string;
+    errorMessage: string;
+    sourceId: string;
+  }): Promise<void>;
+}
+
 export interface IngestionEmbeddingService {
   embed(input: {
     tenantId: string;
@@ -186,4 +227,12 @@ export interface IngestionRecoveryOptions {
   batchSize: number;
   staleAfterMs: number;
   now?: () => Date;
+}
+
+export interface IngestionSourceCleanupOptions {
+  batchSize: number;
+  now?: () => Date;
+  objectStorage: Pick<ObjectStorageClient, "deleteObject">;
+  repository: IngestionCleanupRepository;
+  staleAfterMs: number;
 }

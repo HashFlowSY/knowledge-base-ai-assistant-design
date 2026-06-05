@@ -8,6 +8,7 @@ import { createEmbeddingService, createDrizzleProviderConfigRepository } from "@
 import { loadRuntimeConfig } from "@kb/config";
 import { createPostgresJsDatabase, databaseConfigSchema } from "@kb/db";
 import {
+  cleanupPendingSourceObjects,
   createDrizzleIngestionRepository,
   createIngestionPipeline,
   recoverIngestionJobs,
@@ -104,6 +105,16 @@ const runtime = await startWorkerRuntime({
       recoverIngestionJobs({
         batchSize: config.INGESTION_REQUEUE_BATCH_SIZE,
         producer: queueProducer,
+        repository,
+        staleAfterMs: config.INGESTION_REQUEUE_STALE_AFTER_MS,
+      }),
+  },
+  sourceCleanup: {
+    intervalMs: config.INGESTION_REQUEUE_STALE_AFTER_MS,
+    run: () =>
+      cleanupPendingSourceObjects({
+        batchSize: config.INGESTION_REQUEUE_BATCH_SIZE,
+        objectStorage,
         repository,
         staleAfterMs: config.INGESTION_REQUEUE_STALE_AFTER_MS,
       }),

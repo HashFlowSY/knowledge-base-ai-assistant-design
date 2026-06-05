@@ -43,6 +43,13 @@
       "when": 1779546778482,
       "tag": "0005_far_doctor_faustus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780672272254,
+      "tag": "0006_nebulous_old_lace",
+      "breakpoints": true
     }
   ]
 }

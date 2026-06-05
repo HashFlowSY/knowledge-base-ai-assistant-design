@@ -205,6 +205,10 @@ tenants/{tenantId}/knowledge-bases/{knowledgeBaseId}/documents/{documentId}/vers
   7. reserve document/source/job in a DB transaction with source `pending_upload` and job `pending_source`;
   8. upload object outside the DB transaction;
   9. finalize source `available`, job `queued`, and `document.uploaded` audit in one DB transaction.
+- Source-object cleanup that soft-deletes a document must also move that source
+  out of the active dedupe set, for example by setting
+  `document_sources.upload_status = 'upload_failed'`, because the active-source
+  unique index cannot see `documents.deleted_at`.
 
 ### 4. Validation & Error Matrix
 
@@ -222,12 +226,15 @@ tenants/{tenantId}/knowledge-bases/{knowledgeBaseId}/documents/{documentId}/vers
 | Object upload failure after reservation | Mark source `upload_failed`, job `failed`, document `failed`, return `INTERNAL_ERROR` |
 | Final DB transaction fails after object upload | Return `INTERNAL_ERROR`, attempt object deletion, mark source/job/document failed |
 | Object deletion after finalization failure also fails | Persist `object_cleanup_status = cleanup_failed` and write `document.upload_cleanup_failed` when DB is available |
+| Re-uploading the same checksum after cleanup soft-deleted the previous document | Create a fresh document/source/job instead of failing on `document_sources_active_source_hash_idx` |
 
 ### 5. Good/Base/Bad Cases
 
 - Good: new upload inserts reservation rows, uploads to the configured bucket/key, then commits source availability, job queueing, and success audit together.
 - Good: repeated clicks with identical bytes collapse through checksum lookup or DB unique conflict handling.
 - Base: failed upload rows are retained for operations visibility but have `upload_status = upload_failed`, so they do not block retry.
+- Base: documents soft-deleted by source cleanup do not block same-checksum
+  uploads in the same knowledge base.
 - Bad: holding a database transaction open while uploading to S3-compatible storage.
 - Bad: using filename/title for duplicate detection.
 - Bad: enqueueing BullMQ while the source is still `pending_upload`.

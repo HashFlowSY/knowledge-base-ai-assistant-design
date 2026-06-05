@@ -1,6 +1,8 @@
 import { createKnowledgeBaseOperation } from "./operations/knowledge-bases/create";
 import { getKnowledgeBaseOperation } from "./operations/knowledge-bases/get";
+import { listDocumentProcessingOperation } from "./operations/document-processing/list";
 import { listKnowledgeBasesOperation } from "./operations/knowledge-bases/list";
+import { retryDocumentProcessingOperation } from "./operations/document-processing/retry";
 import { updateKnowledgeBaseOperation } from "./operations/knowledge-bases/update";
 import { uploadDocumentFileOperation } from "./operations/upload-document-file/index";
 import type {
@@ -21,7 +23,11 @@ export function createKnowledgeBaseService(
   return {
     createKnowledgeBase: (input) => createKnowledgeBaseOperation(options, input),
     getKnowledgeBase: (input) => getKnowledgeBaseOperation(options, input),
+    listDocumentProcessing: (input) =>
+      listDocumentProcessingOperation(options, input),
     listKnowledgeBases: (input) => listKnowledgeBasesOperation(options, input),
+    retryDocumentProcessing: (input) =>
+      retryDocumentProcessingOperation(options, input),
     uploadDocumentFile: (input) => uploadDocumentFileOperation(options, input),
     updateKnowledgeBase: (input) => updateKnowledgeBaseOperation(options, input),
   };

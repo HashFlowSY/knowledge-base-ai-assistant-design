@@ -11,11 +11,14 @@ import type {
 import type {
   CreateKnowledgeBaseInput,
   DocumentFileUploadResult,
+  DocumentProcessingListQuery,
+  DocumentProcessingPage,
   KnowledgeActor,
   KnowledgeBaseDetail,
   KnowledgeBaseListQuery,
   KnowledgeBaseSummary,
   KnowledgeBasesPage,
+  RetryDocumentProcessingResult,
   UpdateKnowledgeBaseInput,
 } from "@kb/knowledge";
 import type {
@@ -37,7 +40,13 @@ import type {
 
 import type { RateLimitConsumeInput } from "../rate-limit";
 
-export type { DocumentFileUploadResult } from "@kb/knowledge";
+export type {
+  DocumentFileUploadResult,
+  DocumentProcessingListQuery,
+  DocumentProcessingPage,
+  DocumentProcessingSummary,
+  RetryDocumentProcessingResult,
+} from "@kb/knowledge";
 
 export interface ApiServiceError {
   ok: false;
@@ -175,10 +184,32 @@ export interface DocumentFileUploadServiceInput {
 }
 
 export interface DocumentService {
+  listDocumentProcessing(input: {
+    actor: KnowledgeActor;
+    knowledgeBaseId: string;
+    query: DocumentProcessingListQuery;
+  }): Promise<
+    | {
+        ok: true;
+        page: DocumentProcessingPage;
+      }
+    | ApiServiceError
+  >;
   uploadDocumentFile(input: DocumentFileUploadServiceInput): Promise<
     | {
         ok: true;
         result: DocumentFileUploadResult;
+      }
+    | ApiServiceError
+  >;
+  retryDocumentProcessing(input: {
+    actor: KnowledgeActor;
+    documentId: string;
+    knowledgeBaseId: string;
+  }): Promise<
+    | {
+        ok: true;
+        result: RetryDocumentProcessingResult;
       }
     | ApiServiceError
   >;

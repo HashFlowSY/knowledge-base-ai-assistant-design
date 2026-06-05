@@ -7,3 +7,4 @@ export * from "./chunking/chunker";
 export * from "./pipeline/pipeline";
 export * from "./repositories/drizzle";
 export * from "./recovery/recovery";
+export * from "./recovery/source-cleanup";

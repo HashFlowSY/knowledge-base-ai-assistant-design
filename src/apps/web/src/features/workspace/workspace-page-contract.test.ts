@@ -51,6 +51,8 @@ describe("workspace page executable contract", () => {
         "KnowledgeBaseListItem",
       "src/apps/web/src/features/knowledge/knowledge-base-list.tsx":
         "KnowledgeBaseList",
+      "src/apps/web/src/features/knowledge/document-processing-list.tsx":
+        "DocumentProcessingList",
       "src/apps/web/src/features/knowledge/knowledge-base-summary.tsx":
         "KnowledgeBaseSummary",
       "src/apps/web/src/features/knowledge/member-picker.tsx": "MemberPicker",
@@ -154,5 +156,34 @@ describe("workspace page executable contract", () => {
     expect(knowledgeHookSource).toContain("documentFileUploadResultSchema");
     expect(knowledgeCopySource).toContain("uploadErrors");
     expect(knowledgeCopySource).toContain("uploadSuccess");
+  });
+
+  it("renders selected knowledge-base document processing progress and retry controls", () => {
+    const summarySource = readProjectFile(
+      "src/apps/web/src/features/knowledge/knowledge-base-summary.tsx",
+    );
+    const documentListSource = readProjectFile(
+      "src/apps/web/src/features/knowledge/document-processing-list.tsx",
+    );
+    const knowledgeHookSource = readProjectFile(
+      "src/apps/web/src/features/hooks/knowledge/knowledge-hooks.ts",
+    );
+    const knowledgeCopySource = readProjectFile("src/apps/web/src/copy/knowledge.ts");
+
+    expect(summarySource).toContain("DocumentProcessingList");
+    expect(documentListSource).toContain(
+      "knowledgeCopy.documentProcessing.progress",
+    );
+    expect(knowledgeCopySource).toContain("已分段");
+    expect(knowledgeCopySource).toContain("已向量化");
+    expect(documentListSource).not.toContain("%");
+    expect(documentListSource).toContain("useInfiniteDocumentProcessing");
+    expect(documentListSource).toContain("useRetryDocumentProcessing");
+    expect(documentListSource).toContain("ScrollArea");
+    expect(summarySource).not.toContain("knowledgeBase.documents");
+    expect(knowledgeHookSource).toContain("documents.processing.$get");
+    expect(knowledgeHookSource).toContain("useRetryDocumentProcessing");
+    expect(knowledgeCopySource).toContain("documentProcessing");
+    expect(knowledgeCopySource).toContain("重试次数已用尽");
   });
 });

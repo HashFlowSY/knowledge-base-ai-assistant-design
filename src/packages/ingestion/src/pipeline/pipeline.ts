@@ -65,6 +65,14 @@ export function createIngestionPipeline(
         const embeddingResult = await embedChunksInBatches({
           chunks,
           embeddingService: options.embeddingService,
+          onProgress: (progress) =>
+            recordStep(
+              options.repository,
+              context,
+              "embedding",
+              "progress",
+              progress,
+            ),
           requestId: context.ingestionJobId,
           tenantId: context.tenantId,
         });
@@ -88,7 +96,10 @@ export function createIngestionPipeline(
             status: "failed",
           };
         }
-        await recordStep(options.repository, context, "embedding", "succeeded");
+        await recordStep(options.repository, context, "embedding", "succeeded", {
+          chunkCount: chunks.length,
+          embeddedCount: embeddingResult.embeddings.length,
+        });
 
         const persistedOutput = await options.repository.persistIngestionOutput({
           chunks,

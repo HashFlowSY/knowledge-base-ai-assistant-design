@@ -52,7 +52,13 @@ export const documentSourceScanStatusEnum = pgEnum("document_source_scan_status"
 
 export const documentSourceObjectCleanupStatusEnum = pgEnum(
   "document_source_object_cleanup_status",
-  ["not_required", "pending_cleanup", "cleanup_succeeded", "cleanup_failed"],
+  [
+    "not_required",
+    "pending_cleanup",
+    "cleanup_in_progress",
+    "cleanup_succeeded",
+    "cleanup_failed",
+  ],
 );
 
 export const knowledgeBases = pgTable(
@@ -208,6 +214,12 @@ export const documentSources = pgTable(
       length: 120,
     }),
     objectCleanupErrorMessage: text("object_cleanup_error_message"),
+    objectCleanupClaimToken: varchar("object_cleanup_claim_token", {
+      length: 120,
+    }),
+    objectCleanupClaimedAt: timestamp("object_cleanup_claimed_at", {
+      withTimezone: true,
+    }),
     metadata: jsonb("metadata").$type<Record<string, unknown>>()
       .notNull()
       .default(emptyJsonObject),

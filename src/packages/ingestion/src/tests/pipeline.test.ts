@@ -140,6 +140,59 @@ describe("@kb/ingestion pipeline", () => {
     expect(repository.persisted?.embeddings).toHaveLength(23);
   });
 
+  it("records embedding progress by completed chunk counts", async () => {
+    const sourceText = Array.from({ length: 23 }, (_, index) =>
+      index.toString().padStart(2, "0").repeat(5),
+    ).join("");
+    const repository = createFakeRepository({
+      source: {
+        body: new TextEncoder().encode(sourceText),
+        mimeType: "text/plain",
+        originalFilename: "large.txt",
+      },
+    });
+    const pipeline = createIngestionPipeline({
+      chunking: {
+        chunkOverlap: 0,
+        chunkSize: 10,
+      },
+      embeddingService: {
+        async embed(input) {
+          return {
+            ok: true,
+            dimensions: 1_024,
+            modelId: "text-embedding-v4",
+            provider: "openai-compatible",
+            providerConfigId: "provider_1",
+            vectors: input.inputs.map((_, index) => createVector(index)),
+          };
+        },
+      },
+      indexWriter: {
+        async indexDocuments() {
+          return undefined;
+        },
+      },
+      repository,
+    });
+
+    await expect(pipeline.processFileIngestion(filePayload())).resolves.toEqual({
+      status: "completed",
+    });
+
+    expect(
+      repository.logs
+        .filter(
+          (log) => log.step === "embedding" && log.status === "progress",
+        )
+        .map((log) => log.metadata),
+    ).toEqual([
+      { chunkCount: 23, embeddedCount: 10 },
+      { chunkCount: 23, embeddedCount: 20 },
+      { chunkCount: 23, embeddedCount: 23 },
+    ]);
+  });
+
   it("skips duplicate BullMQ deliveries that cannot claim the persisted job", async () => {
     const repository = createFakeRepository({
       claimResult: { status: "already_claimed" },
@@ -268,6 +321,57 @@ describe("@kb/ingestion pipeline", () => {
       shouldRetry: false,
     });
   });
+
+  it("normalizes unknown operational errors before returning or persisting failures", async () => {
+    const repository = createFakeRepository({
+      source: {
+        body: new TextEncoder().encode("A document that fails while indexing."),
+        mimeType: "text/plain",
+        originalFilename: "index-failure.txt",
+      },
+    });
+    const pipeline = createIngestionPipeline({
+      chunking: {
+        chunkOverlap: 5,
+        chunkSize: 80,
+      },
+      embeddingService: {
+        async embed(input) {
+          return {
+            ok: true,
+            dimensions: 1_024,
+            modelId: "text-embedding-v4",
+            provider: "openai-compatible",
+            providerConfigId: "provider_1",
+            vectors: input.inputs.map((_, index) => createVector(index)),
+          };
+        },
+      },
+      indexWriter: {
+        async indexDocuments() {
+          throw new Error(
+            "Meilisearch rejected tenants/tenant_1/private-source.txt",
+          );
+        },
+      },
+      repository,
+    });
+
+    await expect(pipeline.processFileIngestion(filePayload())).resolves.toEqual({
+      status: "failed",
+      code: "INGESTION_FAILED",
+      message: "Document ingestion failed.",
+      retryable: true,
+      shouldRetry: true,
+    });
+    expect(repository.failed).toMatchObject({
+      errorCode: "INGESTION_FAILED",
+      errorMessage: "Document ingestion failed.",
+      retryable: true,
+      shouldRetry: true,
+    });
+    expect(JSON.stringify(repository.failed)).not.toContain("tenants/tenant_1");
+  });
 });
 
 function filePayload() {
@@ -298,6 +402,7 @@ function createFakeRepository(input: {
     | {
         documentVersion: number;
         errorCode: string;
+        errorMessage: string;
         ingestionJobId: string;
         retryable: boolean;
         shouldRetry: boolean;

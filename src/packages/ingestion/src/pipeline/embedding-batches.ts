@@ -11,6 +11,10 @@ const defaultEmbeddingBatchSize = 10;
 export async function embedChunksInBatches(input: {
   chunks: DocumentChunkDraft[];
   embeddingService: IngestionEmbeddingService;
+  onProgress?: (progress: {
+    chunkCount: number;
+    embeddedCount: number;
+  }) => Promise<void>;
   requestId: string;
   tenantId: string;
 }): Promise<
@@ -47,6 +51,12 @@ export async function embedChunksInBatches(input: {
         providerId: batchResult.providerConfigId,
       })),
     );
+    if (input.chunks.length > defaultEmbeddingBatchSize) {
+      await input.onProgress?.({
+        chunkCount: input.chunks.length,
+        embeddedCount: embeddings.length,
+      });
+    }
   }
 
   return {

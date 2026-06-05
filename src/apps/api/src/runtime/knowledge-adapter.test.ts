@@ -34,7 +34,9 @@ describe("knowledge service adapters", () => {
         };
       },
       getKnowledgeBase: vi.fn(),
+      listDocumentProcessing: vi.fn(),
       listKnowledgeBases: vi.fn(),
+      retryDocumentProcessing: vi.fn(),
       uploadDocumentFile: vi.fn(),
       updateKnowledgeBase: vi.fn(),
     };
@@ -64,7 +66,9 @@ describe("knowledge service adapters", () => {
     const packageService: PackageKnowledgeBaseService = {
       createKnowledgeBase: vi.fn(),
       getKnowledgeBase: vi.fn(),
+      listDocumentProcessing: vi.fn(),
       listKnowledgeBases: vi.fn(),
+      retryDocumentProcessing: vi.fn(),
       async uploadDocumentFile(input) {
         capturedActors.push(input.actor);
         return {
@@ -100,5 +104,50 @@ describe("knowledge service adapters", () => {
         user: { id: "admin_1" },
       },
     ]);
+  });
+
+  it("passes paginated document processing queries through the document adapter", async () => {
+    const packageService: PackageKnowledgeBaseService = {
+      createKnowledgeBase: vi.fn(),
+      getKnowledgeBase: vi.fn(),
+      async listDocumentProcessing(input) {
+        expect(input).toEqual({
+          actor: {
+            role: "admin",
+            tenant: { id: "tenant_1" },
+            user: { id: "admin_1" },
+          },
+          knowledgeBaseId: "kb_1",
+          query: {
+            page: 2,
+            pageSize: 5,
+          },
+        });
+        return {
+          ok: true,
+          page: {
+            items: [],
+            page: 2,
+            pageSize: 5,
+            total: 0,
+          },
+        };
+      },
+      listKnowledgeBases: vi.fn(),
+      retryDocumentProcessing: vi.fn(),
+      uploadDocumentFile: vi.fn(),
+      updateKnowledgeBase: vi.fn(),
+    };
+
+    const { documentService } = createKnowledgeServiceAdapters(packageService);
+
+    await documentService.listDocumentProcessing({
+      actor: knowledgeActor,
+      knowledgeBaseId: "kb_1",
+      query: {
+        page: 2,
+        pageSize: 5,
+      },
+    });
   });
 });

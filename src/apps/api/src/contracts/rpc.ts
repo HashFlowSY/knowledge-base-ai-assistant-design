@@ -11,9 +11,11 @@ import type {
 import type {
   CreateKnowledgeBaseInput,
   DocumentFileUploadResult,
+  DocumentProcessingPage,
   KnowledgeBaseDetail,
   KnowledgeBaseSummary,
   KnowledgeBasesPage,
+  RetryDocumentProcessingResult,
   UpdateKnowledgeBaseInput,
 } from "@kb/knowledge";
 import type {
@@ -151,6 +153,29 @@ type ApiRouteSchema = {
       },
       ApiSuccessResponse<DocumentFileUploadResult> | ApiErrorResponse,
       200 | 201 | 400 | 401 | 403 | 404 | 409 | 413 | 415 | 429 | 500
+    >;
+  };
+  "/api/knowledge-bases/:knowledgeBaseId/documents/processing": {
+    $get: JsonEndpoint<
+      {
+        param: { knowledgeBaseId: string };
+        query?: {
+          page?: string;
+          pageSize?: string;
+        };
+      },
+      ApiSuccessResponse<DocumentProcessingPage> | ApiErrorResponse,
+      200 | 400 | 401 | 403 | 404 | 429 | 500
+    >;
+  };
+  "/api/knowledge-bases/:knowledgeBaseId/documents/:documentId/retry": {
+    $post: JsonEndpoint<
+      {
+        json: Record<string, never>;
+        param: { documentId: string; knowledgeBaseId: string };
+      },
+      ApiSuccessResponse<RetryDocumentProcessingResult> | ApiErrorResponse,
+      200 | 400 | 401 | 403 | 404 | 415 | 429 | 500
     >;
   };
   "/api/chat/sessions": {

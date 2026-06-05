@@ -7,6 +7,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { formatMemberSummary, formatTimestamp } from "../workspace/workspace-formatters";
 import { workspaceMetricGridClassName } from "../workspace/workspace-layout";
 import { WorkspaceMetricTile } from "../workspace/workspace-metric-tile";
+import { DocumentProcessingList } from "./document-processing-list";
 
 export function KnowledgeBaseSummary({
   knowledgeBase,
@@ -60,6 +61,7 @@ export function KnowledgeBaseSummary({
           </ul>
         )}
       </div>
+      <DocumentProcessingList knowledgeBaseId={knowledgeBase.id} />
     </div>
   );
 }

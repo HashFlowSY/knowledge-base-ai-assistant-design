@@ -49,6 +49,8 @@ describe("@kb/db", () => {
     expect(documentSources.objectCleanupStatus).toBeDefined();
     expect(documentSources.objectCleanupErrorCode).toBeDefined();
     expect(documentSources.objectCleanupErrorMessage).toBeDefined();
+    expect(documentSources.objectCleanupClaimToken).toBeDefined();
+    expect(documentSources.objectCleanupClaimedAt).toBeDefined();
   });
 
   it("exports upload, scan, cleanup, and pending-source job enums", () => {
@@ -67,6 +69,7 @@ describe("@kb/db", () => {
     expect(documentSourceObjectCleanupStatusEnum.enumValues).toEqual([
       "not_required",
       "pending_cleanup",
+      "cleanup_in_progress",
       "cleanup_succeeded",
       "cleanup_failed",
     ]);
