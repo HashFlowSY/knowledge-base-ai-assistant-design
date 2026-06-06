@@ -70,6 +70,37 @@ Correct:
 import { createIngestionPipeline } from "@kb/ingestion";
 ```
 
+### Repository Adapter Naming
+
+Repository adapter files must name the ingestion responsibility they own, not
+only the infrastructure library they use.
+
+Good:
+
+```text
+repositories/drizzle-ingestion-repository.ts
+repositories/drizzle-pipeline-repository.ts
+repositories/drizzle-file-job-repository.ts
+repositories/drizzle-file-source-repository.ts
+repositories/drizzle-ingestion-output-repository.ts
+repositories/drizzle-source-cleanup-repository.ts
+repositories/drizzle-recovery-repository.ts
+```
+
+Base: a small public aggregation factory may combine responsibility-specific
+Drizzle repositories to preserve a narrow package API.
+
+Bad:
+
+```text
+repositories/drizzle.ts
+```
+
+Why: `drizzle.ts` describes the ORM but hides whether the file owns pipeline,
+cleanup, recovery, or another domain responsibility. Long adapter files should
+split by repository contract or by a smaller responsibility inside that
+contract.
+
 ## Ingestion Pipeline
 
 The ingestion pipeline has fixed steps:

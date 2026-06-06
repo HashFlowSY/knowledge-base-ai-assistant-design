@@ -20,8 +20,13 @@ describe("@kb/ingestion module structure", () => {
       "pipeline/pipeline.ts",
       "pipeline/embedding-batches.ts",
       "pipeline/steps.ts",
-      "repositories/drizzle.ts",
-      "repositories/mappers.ts",
+      "repositories/drizzle-file-job-repository.ts",
+      "repositories/drizzle-file-source-repository.ts",
+      "repositories/drizzle-ingestion-repository.ts",
+      "repositories/drizzle-ingestion-output-repository.ts",
+      "repositories/drizzle-pipeline-repository.ts",
+      "repositories/drizzle-recovery-repository.ts",
+      "repositories/drizzle-source-cleanup-repository.ts",
       "recovery/recovery.ts",
     ];
 

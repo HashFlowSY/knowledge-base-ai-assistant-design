@@ -5,6 +5,6 @@ export * from "./parsing/parser";
 export * from "./parsing/text";
 export * from "./chunking/chunker";
 export * from "./pipeline/pipeline";
-export * from "./repositories/drizzle";
+export * from "./repositories/drizzle-ingestion-repository";
 export * from "./recovery/recovery";
 export * from "./recovery/source-cleanup";

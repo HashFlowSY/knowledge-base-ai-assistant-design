@@ -2,10 +2,7 @@ import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  cleanupPendingSourceObjects,
-  type IngestionCleanupRepository,
-} from "../index";
+import { cleanupPendingSourceObjects, type IngestionCleanupRepository } from "../index";
 
 describe("@kb/ingestion recovery", () => {
   it("claims pending source objects before deletion and records cleanup success", async () => {
@@ -183,9 +180,7 @@ describe("@kb/ingestion recovery", () => {
       objectStorage: {
         async deleteObject(input) {
           if (input.key.endsWith("fail.txt")) {
-            throw new Error(
-              "storage unavailable for tenants/tenant_1/fail.txt",
-            );
+            throw new Error("storage unavailable for tenants/tenant_1/fail.txt");
           }
         },
       },
@@ -245,7 +240,7 @@ describe("@kb/ingestion recovery", () => {
 
   it("uses claim tokens and in-progress status for source cleanup state transitions", () => {
     const source = readFileSync(
-      new URL("../repositories/drizzle.ts", import.meta.url),
+      new URL("../repositories/drizzle-source-cleanup-repository.ts", import.meta.url),
       "utf8",
     );
     const claimBlock = source.slice(
@@ -262,7 +257,7 @@ describe("@kb/ingestion recovery", () => {
     );
     const failBlock = source.slice(
       source.indexOf("async failSourceObjectCleanup"),
-      source.indexOf("async listRecoverableFileJobs"),
+      source.length,
     );
 
     expect(claimBlock).toContain('objectCleanupStatus: "cleanup_in_progress"');
@@ -290,7 +285,7 @@ describe("@kb/ingestion recovery", () => {
 
   it("repairs source cleanup success rows whose documents were not soft-deleted", () => {
     const source = readFileSync(
-      new URL("../repositories/drizzle.ts", import.meta.url),
+      new URL("../repositories/drizzle-source-cleanup-repository.ts", import.meta.url),
       "utf8",
     );
     const cleanupListBlock = source.slice(
@@ -306,13 +301,10 @@ describe("@kb/ingestion recovery", () => {
 
   it("releases active upload dedupe keys when exhausted file jobs enter cleanup", () => {
     const source = readFileSync(
-      new URL("../repositories/drizzle.ts", import.meta.url),
+      new URL("../repositories/drizzle-file-job-repository.ts", import.meta.url),
       "utf8",
     );
-    const failJobBlock = source.slice(
-      source.indexOf("async failJob"),
-      source.indexOf("async listPendingSourceObjectCleanups"),
-    );
+    const failJobBlock = source.slice(source.indexOf("async failJob"), source.length);
 
     expect(failJobBlock).toContain('objectCleanupStatus: "pending_cleanup"');
     expect(failJobBlock).toContain('uploadStatus: "upload_failed"');
@@ -320,7 +312,7 @@ describe("@kb/ingestion recovery", () => {
 
   it("releases active upload dedupe keys when soft-deleting source documents", () => {
     const source = readFileSync(
-      new URL("../repositories/drizzle.ts", import.meta.url),
+      new URL("../repositories/drizzle-source-cleanup-repository.ts", import.meta.url),
       "utf8",
     );
     const softDeleteBlock = source.slice(
@@ -354,10 +346,7 @@ function createFakeCleanupRepository(input: {
     errorMessage: string;
     sourceId: string;
   }) => void;
-  onSoftDeleteDocument?: (input: {
-    claimToken: string;
-    sourceId: string;
-  }) => void;
+  onSoftDeleteDocument?: (input: { claimToken: string; sourceId: string }) => void;
 }): IngestionCleanupRepository {
   return {
     async claimSourceObjectCleanup(claimInput) {
