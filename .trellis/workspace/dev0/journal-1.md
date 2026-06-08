@@ -1086,3 +1086,36 @@ Improved chat QA citation spacing, right-panel citation selection, viewport scro
 ### Next Steps
 
 - None - task complete
+
+
+## Session 33: Update README current progress
+
+**Date**: 2026-06-08
+**Task**: Update README current progress
+**Branch**: `main`
+
+### Summary
+
+Updated README to reflect current document-processing status, retry support, ingestion repository split, and narrowed remaining work; archived the Trellis task.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `204e7a5` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

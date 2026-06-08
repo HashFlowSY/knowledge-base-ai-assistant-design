@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 32
-- **Last Active**: 2026-06-04
+- **Total Sessions**: 33
+- **Last Active**: 2026-06-08
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1088 | Active |
+| `journal-1.md` | ~1121 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 33 | 2026-06-08 | Update README current progress | `204e7a5` | `main` |
 | 32 | 2026-06-04 | Fix QA citation layout and navigation | `cf5778c`, `2b10c9a` | `main` |
 | 31 | 2026-06-03 | Fix QA sessions list display | `964257d`, `8fd8877` | `main` |
 | 30 | 2026-06-03 | 修复 chat 检索 chunkId 语义不一致 | `7d81803`, `9a406e9` | `main` |
