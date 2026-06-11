@@ -217,6 +217,11 @@ async function consumeRateLimit(
   rateLimiter: ApiRateLimiter,
   input: RateLimitConsumeInput,
 ): Promise<Response | null> {
+  if (context.get("rateLimitCounted")) {
+    return null;
+  }
+
+  context.set("rateLimitCounted", true);
   const result = await rateLimiter.consume(input);
 
   if (result.allowed) {

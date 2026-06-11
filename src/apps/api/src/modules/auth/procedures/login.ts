@@ -4,58 +4,19 @@ import type { ApiEnv } from "../../../contracts";
 import {
   appendSetCookieHeaders,
   createSuccessResponse,
-  readJsonBody,
   respondWithError,
 } from "../../../http";
-import {
-  getLoginRateLimitEmail,
-  rateLimitLogin,
-  validateJsonMutationRequest,
-} from "../../../guards";
+import { getValidatedInput } from "../../../middleware";
 import type { AuthRouteDependencies } from "../dependencies";
-import { loginInputSchema } from "../types";
+import type { LoginInput } from "../types";
 
 export async function loginProcedure(
   context: Context<ApiEnv>,
   dependencies: AuthRouteDependencies,
 ): Promise<Response> {
-  const csrfResponse = validateJsonMutationRequest(
-    context,
-    dependencies.allowedOrigins,
+  const result = await dependencies.authService.login(
+    getValidatedInput<LoginInput>(context, "loginBody"),
   );
-  if (csrfResponse !== null) {
-    const rateLimitResponse = await rateLimitLogin(
-      context,
-      dependencies.rateLimiter,
-      null,
-    );
-    return rateLimitResponse ?? csrfResponse;
-  }
-
-  const body = await readJsonBody(context.req.raw);
-  const rateLimitResponse = await rateLimitLogin(
-    context,
-    dependencies.rateLimiter,
-    getLoginRateLimitEmail(body),
-  );
-  if (rateLimitResponse !== null) {
-    return rateLimitResponse;
-  }
-
-  const parsed = loginInputSchema.safeParse(body);
-  if (!parsed.success) {
-    return respondWithError(context, {
-      code: "VALIDATION_ERROR",
-      httpStatus: 400,
-      message: "请检查填写内容。",
-      validationErrors: parsed.error.issues.map((issue) => ({
-        path: issue.path,
-        message: issue.message,
-      })),
-    });
-  }
-
-  const result = await dependencies.authService.login(parsed.data);
   if (!result.ok) {
     appendSetCookieHeaders(context, result.setCookieHeaders);
     return respondWithError(context, {

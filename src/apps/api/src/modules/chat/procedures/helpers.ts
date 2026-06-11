@@ -7,19 +7,6 @@ import {
   respondWithServiceError,
   respondWithValidationError,
 } from "../../../http";
-import { requireKnowledgeBaseSession } from "../../../guards";
-import type { ChatRouteDependencies } from "../dependencies";
-
-export async function requireChatActor(
-  context: Context<ApiEnv>,
-  dependencies: ChatRouteDependencies,
-) {
-  return requireKnowledgeBaseSession(
-    context,
-    dependencies.authService,
-    dependencies.rateLimiter,
-  );
-}
 
 export function respondChatSuccess<T>(
   context: Context<ApiEnv>,

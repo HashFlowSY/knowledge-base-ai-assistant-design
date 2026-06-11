@@ -2,7 +2,7 @@ import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
 import { createSuccessResponse, respondWithServiceError } from "../../../http";
-import { requireKnowledgeBaseSession, toKnowledgeActor } from "../../../guards";
+import { getRequiredKnowledgeActor } from "../../../middleware";
 import type { KnowledgeBaseRouteDependencies } from "../dependencies";
 
 type GetKnowledgeBaseContext = Context<
@@ -14,17 +14,8 @@ export async function getKnowledgeBaseProcedure(
   context: GetKnowledgeBaseContext,
   dependencies: KnowledgeBaseRouteDependencies,
 ): Promise<Response> {
-  const authResult = await requireKnowledgeBaseSession(
-    context,
-    dependencies.authService,
-    dependencies.rateLimiter,
-  );
-  if (!authResult.ok) {
-    return authResult.response;
-  }
-
   const result = await dependencies.knowledgeBaseService.getKnowledgeBase({
-    actor: toKnowledgeActor(authResult.actor),
+    actor: getRequiredKnowledgeActor(context),
     knowledgeBaseId: context.req.param("knowledgeBaseId"),
   });
   if (!result.ok) {

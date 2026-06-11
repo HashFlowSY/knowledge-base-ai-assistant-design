@@ -3,21 +3,14 @@ import type { Context } from "hono";
 import type { ApiEnv, ApiServiceError } from "../../../contracts";
 import {
   createSuccessResponse,
-  readJsonBody,
   respondWithServiceError,
-  respondWithValidationError,
 } from "../../../http";
 import {
   getRequestIpSummary,
-  requireAdminKnowledgeBaseSession,
-  respondAfterUnresolvedKnowledgeBaseRateLimit,
-  validateJsonMutationRequest,
 } from "../../../guards";
+import { getRequiredActor, getValidatedInput } from "../../../middleware";
 import type { ProviderRouteDependencies } from "../dependencies";
-import {
-  modelServiceKindSchema,
-  saveProviderConfigInputSchema,
-} from "../types";
+import type { ModelServiceKind, SaveProviderConfigInput } from "../types";
 
 type SaveProviderContext = Context<ApiEnv, "/api/providers/:kind">;
 
@@ -25,62 +18,38 @@ export async function saveProviderProcedure(
   context: SaveProviderContext,
   dependencies: ProviderRouteDependencies,
 ): Promise<Response> {
-  const csrfResponse = validateJsonMutationRequest(
+  const params = getValidatedInput<{ kind: ModelServiceKind }>(
     context,
-    dependencies.allowedOrigins,
+    "providerKindParams",
   );
-  if (csrfResponse !== null) {
-    return respondAfterUnresolvedKnowledgeBaseRateLimit(
-      context,
-      dependencies.rateLimiter,
-      csrfResponse,
-    );
-  }
-
-  const authResult = await requireAdminKnowledgeBaseSession(
+  const body = getValidatedInput<SaveProviderConfigInput>(
     context,
-    dependencies.auditService,
-    dependencies.authService,
-    dependencies.rateLimiter,
+    "saveProviderBody",
   );
-  if (!authResult.ok) {
-    return authResult.response;
-  }
-
-  const parsedKind = modelServiceKindSchema.safeParse(context.req.param("kind"));
-  if (!parsedKind.success) {
-    return respondWithValidationError(context, parsedKind.error);
-  }
-
-  const body = await readJsonBody(context.req.raw);
-  const parsedBody = saveProviderConfigInputSchema.safeParse(body);
-  if (!parsedBody.success) {
-    return respondWithValidationError(context, parsedBody.error);
-  }
 
   const apiKeyResult =
-    parsedBody.data.apiKey.mode === "keep"
+    body.apiKey.mode === "keep"
       ? ({ ok: true, value: { mode: "keep" } } as const)
       : await decryptProviderApiKey(context, dependencies, {
-          ciphertext: parsedBody.data.apiKey.ciphertext,
-          keyId: parsedBody.data.apiKey.keyId,
+          ciphertext: body.apiKey.ciphertext,
+          keyId: body.apiKey.keyId,
         });
   if (!apiKeyResult.ok) {
     return respondWithServiceError(context, apiKeyResult);
   }
 
   const result = await dependencies.providerConfigService.saveProviderConfig({
-    actor: authResult.actor,
+    actor: getRequiredActor(context),
     body: {
-      baseUrl: parsedBody.data.baseUrl,
-      displayName: parsedBody.data.displayName,
-      modelId: parsedBody.data.modelId,
-      provider: parsedBody.data.provider,
-      status: parsedBody.data.status,
+      baseUrl: body.baseUrl,
+      displayName: body.displayName,
+      modelId: body.modelId,
+      provider: body.provider,
+      status: body.status,
       apiKey: apiKeyResult.value,
     },
     ipSummary: getRequestIpSummary(context),
-    kind: parsedKind.data,
+    kind: params.kind,
     requestId: context.get("requestId"),
     userAgentSummary: context.req.header("user-agent") ?? null,
   });

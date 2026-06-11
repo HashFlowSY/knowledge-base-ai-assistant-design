@@ -3,18 +3,14 @@ import type { Context } from "hono";
 import type { ApiEnv } from "../../../contracts";
 import {
   createSuccessResponse,
-  readJsonBody,
   respondWithServiceError,
-  respondWithValidationError,
 } from "../../../http";
 import {
-  requireAdminKnowledgeBaseSession,
-  respondAfterUnresolvedKnowledgeBaseRateLimit,
-  toKnowledgeActor,
-  validateJsonMutationRequest,
-} from "../../../guards";
+  getRequiredKnowledgeActor,
+  getValidatedInput,
+} from "../../../middleware";
 import type { KnowledgeBaseRouteDependencies } from "../dependencies";
-import { updateKnowledgeBaseInputSchema } from "../types";
+import type { UpdateKnowledgeBaseInput } from "../types";
 
 type UpdateKnowledgeBaseContext = Context<
   ApiEnv,
@@ -25,37 +21,12 @@ export async function updateKnowledgeBaseProcedure(
   context: UpdateKnowledgeBaseContext,
   dependencies: KnowledgeBaseRouteDependencies,
 ): Promise<Response> {
-  const csrfResponse = validateJsonMutationRequest(
-    context,
-    dependencies.allowedOrigins,
-  );
-  if (csrfResponse !== null) {
-    return respondAfterUnresolvedKnowledgeBaseRateLimit(
-      context,
-      dependencies.rateLimiter,
-      csrfResponse,
-    );
-  }
-
-  const authResult = await requireAdminKnowledgeBaseSession(
-    context,
-    dependencies.auditService,
-    dependencies.authService,
-    dependencies.rateLimiter,
-  );
-  if (!authResult.ok) {
-    return authResult.response;
-  }
-
-  const body = await readJsonBody(context.req.raw);
-  const parsed = updateKnowledgeBaseInputSchema.safeParse(body);
-  if (!parsed.success) {
-    return respondWithValidationError(context, parsed.error);
-  }
-
   const result = await dependencies.knowledgeBaseService.updateKnowledgeBase({
-    actor: toKnowledgeActor(authResult.actor),
-    body: parsed.data,
+    actor: getRequiredKnowledgeActor(context),
+    body: getValidatedInput<UpdateKnowledgeBaseInput>(
+      context,
+      "updateKnowledgeBaseBody",
+    ),
     knowledgeBaseId: context.req.param("knowledgeBaseId"),
   });
   if (!result.ok) {

@@ -2,25 +2,15 @@ import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
 import { createSuccessResponse, respondWithServiceError } from "../../../http";
-import { requireAdminKnowledgeBaseSession } from "../../../guards";
+import { getRequiredActor } from "../../../middleware";
 import type { ProviderRouteDependencies } from "../dependencies";
 
 export async function listProvidersProcedure(
   context: Context<ApiEnv>,
   dependencies: ProviderRouteDependencies,
 ): Promise<Response> {
-  const authResult = await requireAdminKnowledgeBaseSession(
-    context,
-    dependencies.auditService,
-    dependencies.authService,
-    dependencies.rateLimiter,
-  );
-  if (!authResult.ok) {
-    return authResult.response;
-  }
-
   const result = await dependencies.providerConfigService.listProviderConfigs({
-    actor: authResult.actor,
+    actor: getRequiredActor(context),
   });
   if (!result.ok) {
     return respondWithServiceError(context, result);

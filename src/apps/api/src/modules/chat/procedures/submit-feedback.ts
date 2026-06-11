@@ -1,25 +1,16 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import { respondWithError, respondWithValidationError } from "../../../http";
+import { respondWithError } from "../../../http";
+import { getRequiredActor, getValidatedInput } from "../../../middleware";
 import type { ChatRouteDependencies } from "../dependencies";
-import { submitAnswerFeedbackInputSchema } from "../types";
-import { requireChatActor, respondChatServiceResult } from "./helpers";
+import type { SubmitAnswerFeedbackInput } from "../types";
+import { respondChatServiceResult } from "./helpers";
 
 export async function submitAnswerFeedbackProcedure(
   context: Context<ApiEnv>,
   dependencies: ChatRouteDependencies,
 ): Promise<Response> {
-  const authResult = await requireChatActor(context, dependencies);
-  if (!authResult.ok) {
-    return authResult.response;
-  }
-
-  const parsed = submitAnswerFeedbackInputSchema.safeParse(await context.req.json());
-  if (!parsed.success) {
-    return respondWithValidationError(context, parsed.error);
-  }
-
   const messageId = context.req.param("messageId");
   if (messageId === undefined) {
     return respondWithError(context, {
@@ -30,8 +21,11 @@ export async function submitAnswerFeedbackProcedure(
   }
 
   const result = await dependencies.chatService.submitFeedback({
-    actor: authResult.actor,
-    body: parsed.data,
+    actor: getRequiredActor(context),
+    body: getValidatedInput<SubmitAnswerFeedbackInput>(
+      context,
+      "submitAnswerFeedbackBody",
+    ),
     messageId,
   });
 

@@ -73,6 +73,64 @@ Use Hono context variables for request-scoped values such as:
 
 Do not use Hono context as a replacement for domain service parameters. Pass explicit arguments into package functions.
 
+### Router-Level Middleware Convention
+
+**What**: Shared HTTP concerns for a domain route must be mounted in the domain
+`router.ts`, not repeated at the top of each procedure.
+
+**Why**: This keeps procedures focused on reading already-validated input,
+calling services, and mapping responses. It also makes auth, mutation guards,
+rate limiting, and validation order visible at the route definition.
+
+API middleware belongs under `src/apps/api/src/middleware/`. Procedures should
+read request-scoped values through typed helpers, for example:
+
+```typescript
+router.post(
+  "/api/example",
+  jsonMutationGuard,
+  requireSession,
+  createJsonBodyValidationMiddleware("exampleBody", exampleInputSchema),
+  (context) => exampleProcedure(context, dependencies),
+);
+
+export async function exampleProcedure(context: Context<ApiEnv>): Promise<Response> {
+  const actor = getRequiredActor(context);
+  const body = getValidatedInput<ExampleInput>(context, "exampleBody");
+  // Call package services with explicit actor/body fields.
+}
+```
+
+Route middleware order should follow `api-contract.md`: request context first,
+then mutation/content-type guards, session resolution, rate limiting,
+authorization, validation where it consumes input, and finally the procedure.
+If an early guard counts a rate-limit attempt, later limiters must not consume a
+second key for the same request.
+
+#### Wrong
+
+```typescript
+export async function createExampleProcedure(context: Context<ApiEnv>) {
+  const guard = await requireKnowledgeBaseSession(context, authService, limiter);
+  if (!guard.ok) return guard.response;
+
+  const body = exampleInputSchema.parse(await context.req.json());
+  return createSuccessResponse(context, await service.create(guard.actor, body));
+}
+```
+
+#### Correct
+
+```typescript
+router.post(
+  "/api/example",
+  jsonMutationGuard,
+  requireSession,
+  createJsonBodyValidationMiddleware("exampleBody", exampleInputSchema),
+  createExampleProcedure,
+);
+```
+
 ## API Route Namespace
 
 Internal JSON/API endpoints should live under an API namespace such as `/api`.
@@ -105,4 +163,3 @@ Avoid:
 - Repeating authorization checks in every procedure when a shared helper can express the rule.
 - Putting ingestion, RAG, provider, or permission business logic directly in API handlers.
 - Returning inconsistent error response formats from different modules.
-

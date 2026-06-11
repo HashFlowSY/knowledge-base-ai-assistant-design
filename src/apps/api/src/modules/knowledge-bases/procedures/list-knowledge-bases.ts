@@ -2,29 +2,23 @@ import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
 import { createSuccessResponse, respondWithServiceError } from "../../../http";
-import { requireKnowledgeBaseSession, toKnowledgeActor } from "../../../guards";
+import {
+  getRequiredKnowledgeActor,
+  getValidatedInput,
+} from "../../../middleware";
 import type { KnowledgeBaseRouteDependencies } from "../dependencies";
-import { knowledgeBaseListQuerySchema } from "../types";
+import type { KnowledgeBaseListQuery } from "../types";
 
 export async function listKnowledgeBasesProcedure(
   context: Context<ApiEnv>,
   dependencies: KnowledgeBaseRouteDependencies,
 ): Promise<Response> {
-  const authResult = await requireKnowledgeBaseSession(
-    context,
-    dependencies.authService,
-    dependencies.rateLimiter,
-  );
-  if (!authResult.ok) {
-    return authResult.response;
-  }
-
-  const query = knowledgeBaseListQuerySchema.parse(
-    Object.fromEntries(new URL(context.req.url).searchParams),
-  );
   const result = await dependencies.knowledgeBaseService.listKnowledgeBases({
-    actor: toKnowledgeActor(authResult.actor),
-    query,
+    actor: getRequiredKnowledgeActor(context),
+    query: getValidatedInput<KnowledgeBaseListQuery>(
+      context,
+      "knowledgeBaseListQuery",
+    ),
   });
   if (!result.ok) {
     return respondWithServiceError(context, result);

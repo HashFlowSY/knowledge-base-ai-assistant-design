@@ -2,18 +2,14 @@ import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
 import { respondWithError } from "../../../http";
+import { getRequiredActor } from "../../../middleware";
 import type { ChatRouteDependencies } from "../dependencies";
-import { requireChatActor, respondChatServiceResult } from "./helpers";
+import { respondChatServiceResult } from "./helpers";
 
 export async function listChatMessagesProcedure(
   context: Context<ApiEnv>,
   dependencies: ChatRouteDependencies,
 ): Promise<Response> {
-  const authResult = await requireChatActor(context, dependencies);
-  if (!authResult.ok) {
-    return authResult.response;
-  }
-
   const sessionId = context.req.param("sessionId");
   if (sessionId === undefined) {
     return respondWithError(context, {
@@ -24,7 +20,7 @@ export async function listChatMessagesProcedure(
   }
 
   const result = await dependencies.chatService.listMessages({
-    actor: authResult.actor,
+    actor: getRequiredActor(context),
     sessionId,
   });
 

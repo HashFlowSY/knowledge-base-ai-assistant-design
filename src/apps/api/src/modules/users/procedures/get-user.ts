@@ -2,7 +2,7 @@ import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
 import { createSuccessResponse, respondWithServiceError } from "../../../http";
-import { requireAdminUserManagementSession } from "../../../guards";
+import { getRequiredActor } from "../../../middleware";
 import type { UserRouteDependencies } from "../dependencies";
 
 type GetUserContext = Context<ApiEnv, "/api/users/:userId">;
@@ -11,18 +11,8 @@ export async function getUserProcedure(
   context: GetUserContext,
   dependencies: UserRouteDependencies,
 ): Promise<Response> {
-  const authResult = await requireAdminUserManagementSession(
-    context,
-    dependencies.auditService,
-    dependencies.authService,
-    dependencies.rateLimiter,
-  );
-  if (!authResult.ok) {
-    return authResult.response;
-  }
-
   const result = await dependencies.userService.getUser({
-    actor: authResult.actor,
+    actor: getRequiredActor(context),
     userId: context.req.param("userId"),
   });
   if (!result.ok) {

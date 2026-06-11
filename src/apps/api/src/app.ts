@@ -69,6 +69,7 @@ import { createDocumentsRouter } from "./modules/documents/router";
 import { createChatRouter } from "./modules/chat/router";
 import { createProvidersRouter } from "./modules/providers/router";
 import { createUsersRouter } from "./modules/users/router";
+import { createRequestContextMiddleware } from "./middleware";
 export { healthResponseSchema } from "./modules/health/types";
 export type { HealthResponse } from "./modules/health/types";
 import { createInMemoryUploadConcurrencyLimiter } from "./modules/documents/lib/upload-concurrency";
@@ -119,25 +120,7 @@ export function createApiApp(options: ApiAppOptions = {}): ApiApp {
     options.uploadConcurrencyLimiter ?? createInMemoryUploadConcurrencyLimiter();
   const uploadConfig = options.uploadConfig ?? defaultUploadConfig;
 
-  app.use("*", async (context, next) => {
-    const existingRequestId = context.req.header("x-request-id");
-    const requestId =
-      existingRequestId && existingRequestId.length > 0
-        ? existingRequestId
-        : crypto.randomUUID();
-
-    context.set("requestId", requestId);
-    context.set("logger", logger.child({ requestId }));
-    context.header("X-Request-Id", requestId);
-
-    await next();
-
-    context.get("logger").info("api_request_finished", {
-      method: context.req.method,
-      path: context.req.path,
-      status: context.res.status,
-    });
-  });
+  app.use("*", createRequestContextMiddleware(logger));
 
   app.onError((error, context) => {
     const requestId = context.get("requestId") || crypto.randomUUID();
@@ -205,6 +188,7 @@ export function createApiApp(options: ApiAppOptions = {}): ApiApp {
   app.route(
     "/",
     createChatRouter({
+      allowedOrigins,
       authService,
       chatService,
       rateLimiter,

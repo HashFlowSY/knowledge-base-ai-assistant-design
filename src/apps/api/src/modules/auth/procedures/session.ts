@@ -6,21 +6,12 @@ import {
   createSuccessResponse,
   respondWithError,
 } from "../../../http";
-import { rateLimitAuthSession } from "../../../guards";
 import type { AuthRouteDependencies } from "../dependencies";
 
 export async function sessionProcedure(
   context: Context<ApiEnv>,
   dependencies: AuthRouteDependencies,
 ): Promise<Response> {
-  const rateLimitResponse = await rateLimitAuthSession(
-    context,
-    dependencies.rateLimiter,
-  );
-  if (rateLimitResponse !== null) {
-    return rateLimitResponse;
-  }
-
   const result = await dependencies.authService.getSession({
     cookieHeader: context.req.header("cookie") ?? null,
   });

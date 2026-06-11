@@ -87,6 +87,7 @@ describe("chat API router", () => {
       headers: {
         "content-type": "application/json",
         cookie: "better-auth.session_token=token",
+        origin: "http://localhost:3000",
         "x-request-id": "req_chat_submit",
       },
       method: "POST",
@@ -141,6 +142,7 @@ describe("chat API router", () => {
       headers: {
         "content-type": "application/json",
         cookie: "better-auth.session_token=token",
+        origin: "http://localhost:3000",
         "x-request-id": "req_chat_invalid",
       },
       method: "POST",
@@ -150,6 +152,72 @@ describe("chat API router", () => {
     expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
       code: "VALIDATION_ERROR",
       requestId: "req_chat_invalid",
+    });
+  });
+
+  it("rejects chat mutations from disallowed origins before domain calls", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService: {
+        async submitQuestion() {
+          throw new Error("chat service should not run for invalid origins");
+        },
+      },
+    });
+
+    const response = await app.request("/api/chat/messages", {
+      body: JSON.stringify({
+        knowledgeBaseId: "kb_1",
+        question: "差旅住宿标准是多少？",
+        sessionId: null,
+      }),
+      headers: {
+        "content-type": "application/json",
+        cookie: "better-auth.session_token=token",
+        origin: "https://evil.example",
+        "x-request-id": "req_chat_bad_origin",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(403);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "FORBIDDEN",
+      httpStatus: 403,
+      requestId: "req_chat_bad_origin",
+    });
+  });
+
+  it("rejects chat JSON mutations with unsupported content types before domain calls", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService: {
+        async submitQuestion() {
+          throw new Error("chat service should not run for invalid content types");
+        },
+      },
+    });
+
+    const response = await app.request("/api/chat/messages", {
+      body: JSON.stringify({
+        knowledgeBaseId: "kb_1",
+        question: "差旅住宿标准是多少？",
+        sessionId: null,
+      }),
+      headers: {
+        "content-type": "text/plain",
+        cookie: "better-auth.session_token=token",
+        origin: "http://localhost:3000",
+        "x-request-id": "req_chat_bad_content_type",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(415);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "UNSUPPORTED_MEDIA_TYPE",
+      httpStatus: 415,
+      requestId: "req_chat_bad_content_type",
     });
   });
 });

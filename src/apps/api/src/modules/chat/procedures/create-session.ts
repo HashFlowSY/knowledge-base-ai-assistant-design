@@ -1,31 +1,21 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import { respondWithValidationError } from "../../../http";
+import { getRequiredActor, getValidatedInput } from "../../../middleware";
 import type { ChatRouteDependencies } from "../dependencies";
-import { createChatSessionInputSchema } from "../types";
-import {
-  requireChatActor,
-  respondChatServiceResult,
-} from "./helpers";
+import type { CreateChatSessionInput } from "../types";
+import { respondChatServiceResult } from "./helpers";
 
 export async function createChatSessionProcedure(
   context: Context<ApiEnv>,
   dependencies: ChatRouteDependencies,
 ): Promise<Response> {
-  const authResult = await requireChatActor(context, dependencies);
-  if (!authResult.ok) {
-    return authResult.response;
-  }
-
-  const parsed = createChatSessionInputSchema.safeParse(await context.req.json());
-  if (!parsed.success) {
-    return respondWithValidationError(context, parsed.error);
-  }
-
   const result = await dependencies.chatService.createSession({
-    actor: authResult.actor,
-    body: parsed.data,
+    actor: getRequiredActor(context),
+    body: getValidatedInput<CreateChatSessionInput>(
+      context,
+      "createChatSessionBody",
+    ),
   });
 
   return respondChatServiceResult(context, result);

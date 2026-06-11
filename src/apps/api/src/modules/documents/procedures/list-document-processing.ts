@@ -7,11 +7,11 @@ import {
   respondWithServiceError,
 } from "../../../http";
 import {
-  requireKnowledgeBaseSession,
-  toKnowledgeActor,
-} from "../../../guards";
+  getRequiredKnowledgeActor,
+  getValidatedInput,
+} from "../../../middleware";
 import type { DocumentsRouteDependencies } from "../dependencies";
-import { documentProcessingListQuerySchema } from "../types";
+import type { DocumentProcessingListQuery } from "../types";
 
 type ListDocumentProcessingContext = Context<
   ApiEnv,
@@ -22,15 +22,6 @@ export async function listDocumentProcessingProcedure(
   context: ListDocumentProcessingContext,
   dependencies: DocumentsRouteDependencies,
 ): Promise<Response> {
-  const authResult = await requireKnowledgeBaseSession(
-    context,
-    dependencies.authService,
-    dependencies.rateLimiter,
-  );
-  if (!authResult.ok) {
-    return authResult.response;
-  }
-
   const knowledgeBaseId = context.req.param("knowledgeBaseId");
   if (knowledgeBaseId.length === 0) {
     return respondWithError(context, {
@@ -40,13 +31,13 @@ export async function listDocumentProcessingProcedure(
     });
   }
 
-  const query = documentProcessingListQuerySchema.parse(
-    Object.fromEntries(new URL(context.req.url).searchParams),
-  );
   const result = await dependencies.documentService.listDocumentProcessing({
-    actor: toKnowledgeActor(authResult.actor),
+    actor: getRequiredKnowledgeActor(context),
     knowledgeBaseId,
-    query,
+    query: getValidatedInput<DocumentProcessingListQuery>(
+      context,
+      "documentProcessingListQuery",
+    ),
   });
   if (!result.ok) {
     return respondWithServiceError(context, result);
