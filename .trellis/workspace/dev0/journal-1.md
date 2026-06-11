@@ -1119,3 +1119,36 @@ Updated README to reflect current document-processing status, retry support, ing
 ### Next Steps
 
 - None - task complete
+
+
+## Session 34: API middleware refactor
+
+**Date**: 2026-06-11
+**Task**: API middleware refactor
+**Branch**: `main`
+
+### Summary
+
+Refactored API route guard, validation, rate-limit, auth, and upload preflight logic into router-level middleware; archived api-middleware-refactor task.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f53bd8e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
