@@ -1218,3 +1218,36 @@ Validated chat sessions query input at the router level, tightened knowledgeBase
 ### Next Steps
 
 - None - task complete
+
+
+## Session 37: Fix API UUID path param validation
+
+**Date**: 2026-06-14
+**Task**: Fix API UUID path param validation
+**Branch**: `main`
+
+### Summary
+
+Validated UUID path params at API boundaries, ensured invalid upload UUID params still consume the document upload limiter, added regression tests, and updated API contract guidance.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5337f20` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
