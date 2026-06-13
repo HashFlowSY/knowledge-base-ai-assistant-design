@@ -6,6 +6,7 @@ import {
   createJsonMutationGuardMiddleware,
   createKnowledgeBaseRejectionRateLimitHandler,
   createKnowledgeBaseSessionMiddleware,
+  createParamValidationMiddleware,
   createQueryValidationMiddleware,
 } from "../../middleware";
 import type { ChatRouteDependencies } from "./dependencies";
@@ -15,6 +16,8 @@ import { listChatSessionsProcedure } from "./procedures/list-sessions";
 import { submitAnswerFeedbackProcedure } from "./procedures/submit-feedback";
 import { submitChatQuestionProcedure } from "./procedures/submit-question";
 import {
+  chatMessageFeedbackParamsSchema,
+  chatSessionMessagesParamsSchema,
   createChatSessionInputSchema,
   listChatSessionsQuerySchema,
   submitAnswerFeedbackInputSchema,
@@ -55,8 +58,14 @@ export function createChatRouter(
     ),
     (context) => createChatSessionProcedure(context, dependencies),
   );
-  router.get("/api/chat/sessions/:sessionId/messages", requireSession, (context) =>
-    listChatMessagesProcedure(context, dependencies),
+  router.get(
+    "/api/chat/sessions/:sessionId/messages",
+    requireSession,
+    createParamValidationMiddleware(
+      "chatSessionMessagesParams",
+      chatSessionMessagesParamsSchema,
+    ),
+    (context) => listChatMessagesProcedure(context, dependencies),
   );
   router.post(
     "/api/chat/messages",
@@ -72,6 +81,10 @@ export function createChatRouter(
     "/api/chat/messages/:messageId/feedback",
     jsonMutationGuard,
     requireSession,
+    createParamValidationMiddleware(
+      "chatMessageFeedbackParams",
+      chatMessageFeedbackParamsSchema,
+    ),
     createJsonBodyValidationMiddleware(
       "submitAnswerFeedbackBody",
       submitAnswerFeedbackInputSchema,

@@ -6,6 +6,7 @@ import {
   createFile,
   createStaticAuthService,
   createUploadRequest,
+  documentUploadPath,
   uploadConfig,
 } from "../support/test-helpers";
 
@@ -29,7 +30,7 @@ describe("document upload API concurrency", () => {
     });
 
     const response = await app.request(
-      "/api/knowledge-bases/kb_1/documents/upload",
+      documentUploadPath,
       createUploadRequest({
         contentLength: "300",
         file: createFile("%PDF-1.4\nhello", "policy.pdf", "application/pdf"),

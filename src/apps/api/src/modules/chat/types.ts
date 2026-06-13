@@ -29,3 +29,18 @@ export const listChatSessionsQuerySchema = z.object({
 export type ListChatSessionsQuery = z.infer<
   typeof listChatSessionsQuerySchema
 >;
+
+export const chatSessionMessagesParamsSchema = z.object({
+  sessionId: z.string().uuid(),
+});
+
+export const chatMessageFeedbackParamsSchema = z.object({
+  messageId: z.string().uuid(),
+});
+
+export type ChatSessionMessagesParams = z.infer<
+  typeof chatSessionMessagesParamsSchema
+>;
+export type ChatMessageFeedbackParams = z.infer<
+  typeof chatMessageFeedbackParamsSchema
+>;

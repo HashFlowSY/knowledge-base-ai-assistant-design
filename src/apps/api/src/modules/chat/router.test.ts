@@ -4,24 +4,29 @@ import {
   chatMessagesResponseSchema,
   chatSessionsResponseSchema,
   chatSubmitResponseSchema,
+  submitAnswerFeedbackResponseSchema,
 } from "@kb/rag";
 import { apiErrorResponseSchema, apiSuccessResponseSchema } from "@kb/shared";
 
 import { createApiApp, type ChatService } from "../../app";
 import { adminSession, createStaticAuthService } from "../../testing/fakes";
 
+const KNOWLEDGE_BASE_ID = "11111111-1111-4111-8111-111111111111";
+const SESSION_ID = "22222222-2222-4222-8222-222222222222";
+const MESSAGE_ID = "33333333-3333-4333-8333-333333333333";
+
 const sessionSummary = {
-  id: "chat_1",
+  id: SESSION_ID,
   title: "差旅制度",
-  knowledgeBaseId: "kb_1",
+  knowledgeBaseId: KNOWLEDGE_BASE_ID,
   createdAt: "2026-05-25T00:00:00.000Z",
   updatedAt: "2026-05-25T00:00:00.000Z",
   messageCount: 2,
 };
 
 const assistantMessage = {
-  id: "msg_a",
-  sessionId: "chat_1",
+  id: MESSAGE_ID,
+  sessionId: SESSION_ID,
   role: "assistant" as const,
   content: "差旅住宿标准见引用。",
   sequence: 2,
@@ -31,9 +36,9 @@ const assistantMessage = {
   citations: [
     {
       id: "citation_1",
-      messageId: "msg_a",
+      messageId: MESSAGE_ID,
       retrievalRunId: "run_1",
-      knowledgeBaseId: "kb_1",
+      knowledgeBaseId: KNOWLEDGE_BASE_ID,
       documentId: "doc_1",
       chunkId: "chunk_1",
       sourceTitle: "差旅制度",
@@ -73,16 +78,15 @@ describe("chat API router", () => {
         await response.json(),
       ),
     ).toMatchObject({
-      data: { sessions: [{ id: "chat_1" }] },
+      data: { sessions: [{ id: SESSION_ID }] },
       requestId: "req_chat_sessions",
     });
   });
 
   it("passes a valid knowledge base filter to the chat session service", async () => {
-    const knowledgeBaseId = "11111111-1111-4111-8111-111111111111";
     const chatService: Partial<ChatService> = {
       async listSessions(input) {
-        expect(input.query).toEqual({ knowledgeBaseId });
+        expect(input.query).toEqual({ knowledgeBaseId: KNOWLEDGE_BASE_ID });
         return { ok: true, result: { sessions: [] } };
       },
     };
@@ -92,7 +96,7 @@ describe("chat API router", () => {
     });
 
     const response = await app.request(
-      `/api/chat/sessions?knowledgeBaseId=${knowledgeBaseId}`,
+      `/api/chat/sessions?knowledgeBaseId=${KNOWLEDGE_BASE_ID}`,
       {
         headers: {
           cookie: "better-auth.session_token=token",
@@ -180,7 +184,7 @@ describe("chat API router", () => {
             session: sessionSummary,
             userMessage: {
               id: "msg_u",
-              sessionId: "chat_1",
+              sessionId: SESSION_ID,
               role: "user",
               content: "差旅住宿标准是多少？",
               sequence: 1,
@@ -234,13 +238,13 @@ describe("chat API router", () => {
       authService: createStaticAuthService(adminSession),
       chatService: {
         async listMessages(input) {
-          expect(input.sessionId).toBe("chat_1");
+          expect(input.sessionId).toBe(SESSION_ID);
           return { ok: true, result: { messages: [assistantMessage] } };
         },
       },
     });
 
-    const response = await app.request("/api/chat/sessions/chat_1/messages", {
+    const response = await app.request(`/api/chat/sessions/${SESSION_ID}/messages`, {
       headers: {
         cookie: "better-auth.session_token=token",
         "x-request-id": "req_chat_messages",
@@ -251,7 +255,117 @@ describe("chat API router", () => {
     expect(
       apiSuccessResponseSchema(chatMessagesResponseSchema).parse(await response.json())
         .data.messages[0],
-    ).toMatchObject({ id: "msg_a", citations: [{ id: "citation_1" }] });
+    ).toMatchObject({ id: MESSAGE_ID, citations: [{ id: "citation_1" }] });
+  });
+
+  it("returns a validation envelope for non-UUID chat session message params", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService: {
+        async listMessages() {
+          throw new Error("chat service should not run for invalid path params");
+        },
+      },
+    });
+
+    const response = await app.request("/api/chat/sessions/not-a-uuid/messages", {
+      headers: {
+        cookie: "better-auth.session_token=token",
+        "x-request-id": "req_chat_messages_invalid_param",
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 400,
+      requestId: "req_chat_messages_invalid_param",
+    });
+  });
+
+  it("submits answer feedback through a validated message path param", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService: {
+        async submitFeedback(input) {
+          expect(input.messageId).toBe(MESSAGE_ID);
+          expect(input.body).toEqual({
+            citationIds: [],
+            rating: "useful",
+            reason: null,
+          });
+          return {
+            ok: true,
+            result: {
+              feedback: {
+                id: "feedback_1",
+                messageId: MESSAGE_ID,
+                rating: "useful",
+                reason: null,
+                citationIds: [],
+                createdAt: "2026-05-25T00:00:03.000Z",
+              },
+            },
+          };
+        },
+      },
+    });
+
+    const response = await app.request(
+      `/api/chat/messages/${MESSAGE_ID}/feedback`,
+      {
+        body: JSON.stringify({ rating: "useful" }),
+        headers: {
+          "content-type": "application/json",
+          cookie: "better-auth.session_token=token",
+          origin: "http://localhost:3000",
+          "x-request-id": "req_chat_feedback",
+        },
+        method: "POST",
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(
+      apiSuccessResponseSchema(submitAnswerFeedbackResponseSchema).parse(
+        await response.json(),
+      ),
+    ).toMatchObject({
+      data: { feedback: { rating: "useful" } },
+      requestId: "req_chat_feedback",
+    });
+  });
+
+  it("returns a validation envelope for non-UUID feedback message params", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService: {
+        async submitFeedback() {
+          throw new Error("chat service should not run for invalid path params");
+        },
+      },
+    });
+
+    const response = await app.request(
+      "/api/chat/messages/not-a-uuid/feedback",
+      {
+        body: JSON.stringify({ rating: "useful" }),
+        headers: {
+          "content-type": "application/json",
+          cookie: "better-auth.session_token=token",
+          origin: "http://localhost:3000",
+          "x-request-id": "req_chat_feedback_invalid_param",
+        },
+        method: "POST",
+      },
+    );
+
+    expect(response.status).toBe(400);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 400,
+      requestId: "req_chat_feedback_invalid_param",
+    });
   });
 
   it("returns validation envelopes for invalid chat questions", async () => {

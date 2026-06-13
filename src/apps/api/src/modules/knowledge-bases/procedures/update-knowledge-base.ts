@@ -10,7 +10,7 @@ import {
   getValidatedInput,
 } from "../../../middleware";
 import type { KnowledgeBaseRouteDependencies } from "../dependencies";
-import type { UpdateKnowledgeBaseInput } from "../types";
+import type { KnowledgeBaseParams, UpdateKnowledgeBaseInput } from "../types";
 
 type UpdateKnowledgeBaseContext = Context<
   ApiEnv,
@@ -21,13 +21,17 @@ export async function updateKnowledgeBaseProcedure(
   context: UpdateKnowledgeBaseContext,
   dependencies: KnowledgeBaseRouteDependencies,
 ): Promise<Response> {
+  const params = getValidatedInput<KnowledgeBaseParams>(
+    context,
+    "knowledgeBaseParams",
+  );
   const result = await dependencies.knowledgeBaseService.updateKnowledgeBase({
     actor: getRequiredKnowledgeActor(context),
     body: getValidatedInput<UpdateKnowledgeBaseInput>(
       context,
       "updateKnowledgeBaseBody",
     ),
-    knowledgeBaseId: context.req.param("knowledgeBaseId"),
+    knowledgeBaseId: params.knowledgeBaseId,
   });
   if (!result.ok) {
     return respondWithServiceError(context, result);

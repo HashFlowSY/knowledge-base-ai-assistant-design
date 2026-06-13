@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export {
   createKnowledgeBaseInputSchema,
   knowledgeBaseDetailSchema,
@@ -16,3 +18,9 @@ export type {
   KnowledgeBaseSummary,
   UpdateKnowledgeBaseInput,
 } from "@kb/knowledge";
+
+export const knowledgeBaseParamsSchema = z.object({
+  knowledgeBaseId: z.string().uuid(),
+});
+
+export type KnowledgeBaseParams = z.infer<typeof knowledgeBaseParamsSchema>;

@@ -134,7 +134,7 @@ type ApiRouteSchema = {
     $get: JsonEndpoint<
       { param: { knowledgeBaseId: string } },
       ApiSuccessResponse<KnowledgeBaseDetail> | ApiErrorResponse,
-      200 | 401 | 403 | 404 | 429 | 500
+      200 | 400 | 401 | 403 | 404 | 429 | 500
     >;
     $patch: JsonEndpoint<
       { json: UpdateKnowledgeBaseInput; param: { knowledgeBaseId: string } },
@@ -195,7 +195,7 @@ type ApiRouteSchema = {
     $get: JsonEndpoint<
       { param: { sessionId: string } },
       ApiSuccessResponse<ChatMessagesResponse> | ApiErrorResponse,
-      200 | 401 | 403 | 404 | 429 | 500
+      200 | 400 | 401 | 403 | 404 | 429 | 500
     >;
   };
   "/api/chat/messages": {

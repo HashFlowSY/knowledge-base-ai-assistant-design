@@ -10,6 +10,7 @@ import {
   getValidatedInput,
 } from "../../../middleware";
 import type { DocumentsRouteDependencies } from "../dependencies";
+import type { RetryDocumentProcessingParams } from "../types";
 
 type RetryDocumentProcessingContext = Context<
   ApiEnv,
@@ -20,10 +21,10 @@ export async function retryDocumentProcessingProcedure(
   context: RetryDocumentProcessingContext,
   dependencies: DocumentsRouteDependencies,
 ): Promise<Response> {
-  const params = getValidatedInput<{
-    documentId: string;
-    knowledgeBaseId: string;
-  }>(context, "retryDocumentProcessingParams");
+  const params = getValidatedInput<RetryDocumentProcessingParams>(
+    context,
+    "retryDocumentProcessingParams",
+  );
 
   const result = await dependencies.documentService.retryDocumentProcessing({
     actor: getRequiredKnowledgeActor(context),

@@ -157,6 +157,108 @@ export async function listProcedure(context: Context<ApiEnv>) {
 }
 ```
 
+## Scenario: Router-Level Path Param Validation
+
+### 1. Scope / Trigger
+
+- Trigger: an API route contains user-controlled path params that flow into a
+  service or database call.
+- Applies to resource identifiers such as `:knowledgeBaseId`, `:documentId`,
+  `:sessionId`, and `:messageId` when the backing database column is UUID.
+
+### 2. Signatures
+
+```typescript
+export const exampleResourceParamsSchema = z.object({
+  resourceId: z.string().uuid(),
+});
+
+export type ExampleResourceParams = z.infer<
+  typeof exampleResourceParamsSchema
+>;
+```
+
+### 3. Contracts
+
+- Path-param schemas live in the domain API module `types.ts` unless shared
+  across packages.
+- Route definitions mount `createParamValidationMiddleware("<key>", schema)`
+  after auth/session middleware and before the procedure.
+- Covered routes must not let path-param validation bypass route-level rate
+  limits. If the authenticated actor limiter is part of the same route
+  preflight, consume that limiter before returning a path-param validation
+  error.
+- Procedures read `getValidatedInput<ExampleResourceParams>(context, "<key>")`
+  instead of calling `context.req.param("resourceId")` directly.
+- The Hono RPC status union must include `400` for routes that can reject path
+  param validation.
+- Do not apply UUID validation to path params backed by non-UUID ids, such as
+  Better Auth user ids stored as `text`.
+
+### 4. Validation & Error Matrix
+
+- Valid UUID path param -> request reaches the service with the validated id.
+- Missing or empty path param -> `400 VALIDATION_ERROR`.
+- Malformed path param for a UUID column -> `400 VALIDATION_ERROR` before any
+  service or database call, after the route's expected limiter has been
+  consumed for covered routes.
+- Malformed path param on a rate-limited route whose limiter denies the request
+  -> `429 RATE_LIMITED`.
+- Text-backed ids, enum params, or provider kinds -> validate with their actual
+  schema, not `z.string().uuid()`.
+
+### 5. Good/Base/Bad Cases
+
+- Good: `/api/example/<uuid>` calls the service with `<uuid>`.
+- Base: `/api/users/user_2` remains valid when `userId` is text-backed.
+- Bad: `/api/example/not-a-uuid` returns a validation envelope before service or
+  database access.
+
+### 6. Tests Required
+
+- Assert malformed UUID path params return `400` with
+  `code: "VALIDATION_ERROR"`.
+- Assert malformed UUID path params do not call the domain service.
+- Assert malformed UUID path params still consume the expected route-level
+  limiter when the route is covered by one.
+- Assert valid UUID path params still call the service with the expected typed
+  id.
+- Assert RPC status unions include `400` for routes with path-param validation.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+export async function getExampleProcedure(context: Context<ApiEnv>) {
+  return service.get({
+    resourceId: context.req.param("resourceId"),
+  });
+}
+```
+
+#### Correct
+
+```typescript
+router.get(
+  "/api/example/:resourceId",
+  requireSession,
+  createParamValidationMiddleware(
+    "exampleResourceParams",
+    exampleResourceParamsSchema,
+  ),
+  (context) => getExampleProcedure(context, dependencies),
+);
+
+export async function getExampleProcedure(context: Context<ApiEnv>) {
+  const params = getValidatedInput<ExampleResourceParams>(
+    context,
+    "exampleResourceParams",
+  );
+  return service.get({ resourceId: params.resourceId });
+}
+```
+
 ## Response Rules
 
 Business JSON APIs use a uniform response envelope. Domain-specific success data

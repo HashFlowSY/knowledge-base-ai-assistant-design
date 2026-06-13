@@ -15,9 +15,12 @@ import {
   createStaticAuthService,
 } from "./upload-document-file/support/test-helpers";
 
+const KNOWLEDGE_BASE_ID = "11111111-1111-4111-8111-111111111111";
+const DOCUMENT_ID = "44444444-4444-4444-8444-444444444444";
+
 const documentProcessingSummary = documentProcessingSummarySchema.parse({
   currentVersion: 1,
-  id: "doc_1",
+  id: DOCUMENT_ID,
   job: {
     attempts: 1,
     canRetry: false,
@@ -53,7 +56,7 @@ describe("document processing list API", () => {
               tenant: { id: "tenant_1" },
               user: { id: "admin_1" },
             },
-            knowledgeBaseId: "kb_1",
+            knowledgeBaseId: KNOWLEDGE_BASE_ID,
             query: {
               page: 2,
               pageSize: 5,
@@ -73,7 +76,7 @@ describe("document processing list API", () => {
     });
 
     const response = await app.request(
-      "/api/knowledge-bases/kb_1/documents/processing?page=2&pageSize=5",
+      `/api/knowledge-bases/${KNOWLEDGE_BASE_ID}/documents/processing?page=2&pageSize=5`,
       {
         headers: {
           cookie: "better-auth.session_token=token",
@@ -89,12 +92,40 @@ describe("document processing list API", () => {
       ),
     ).toMatchObject({
       data: {
-        items: [{ id: "doc_1", job: { status: "queued" } }],
+        items: [{ id: DOCUMENT_ID, job: { status: "queued" } }],
         page: 2,
         pageSize: 5,
         total: 6,
       },
       requestId: "req_doc_processing_list",
+    });
+  });
+
+  it("returns a validation envelope for non-UUID processing list knowledge base params", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      documentService: {
+        async listDocumentProcessing() {
+          throw new Error("document service should not run for invalid params");
+        },
+      },
+    });
+
+    const response = await app.request(
+      "/api/knowledge-bases/not-a-uuid/documents/processing?page=2&pageSize=5",
+      {
+        headers: {
+          cookie: "better-auth.session_token=token",
+          "x-request-id": "req_doc_processing_invalid_param",
+        },
+      },
+    );
+
+    expect(response.status).toBe(400);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 400,
+      requestId: "req_doc_processing_invalid_param",
     });
   });
 });
@@ -159,7 +190,7 @@ describe("document processing retry API", () => {
       });
 
       const response = await app.request(
-        "/api/knowledge-bases/kb_1/documents/doc_1/retry",
+        `/api/knowledge-bases/${KNOWLEDGE_BASE_ID}/documents/${DOCUMENT_ID}/retry`,
         {
           body: JSON.stringify({}),
           headers: {
@@ -239,7 +270,7 @@ describe("document processing retry API", () => {
       });
 
       const response = await app.request(
-        "/api/knowledge-bases/kb_1/documents/doc_1/retry",
+        `/api/knowledge-bases/${KNOWLEDGE_BASE_ID}/documents/${DOCUMENT_ID}/retry`,
         {
           body: JSON.stringify({}),
           headers: {
@@ -282,7 +313,7 @@ describe("document processing retry API", () => {
     });
 
     const response = await app.request(
-      "/api/knowledge-bases/kb_1/documents/doc_1/retry",
+      `/api/knowledge-bases/${KNOWLEDGE_BASE_ID}/documents/${DOCUMENT_ID}/retry`,
       {
         body: JSON.stringify({}),
         headers: {
@@ -315,8 +346,8 @@ describe("document processing retry API", () => {
               tenant: { id: "tenant_1" },
               user: { id: "admin_1" },
             },
-            documentId: "doc_1",
-            knowledgeBaseId: "kb_1",
+            documentId: DOCUMENT_ID,
+            knowledgeBaseId: KNOWLEDGE_BASE_ID,
           });
           return {
             ok: true,
@@ -330,7 +361,7 @@ describe("document processing retry API", () => {
     });
 
     const response = await app.request(
-      "/api/knowledge-bases/kb_1/documents/doc_1/retry",
+      `/api/knowledge-bases/${KNOWLEDGE_BASE_ID}/documents/${DOCUMENT_ID}/retry`,
       {
         body: JSON.stringify({}),
         headers: {
@@ -351,7 +382,7 @@ describe("document processing retry API", () => {
     ).toMatchObject({
       data: {
         document: {
-          id: "doc_1",
+          id: DOCUMENT_ID,
           job: { status: "queued" },
         },
         queued: true,
@@ -376,7 +407,7 @@ describe("document processing retry API", () => {
     });
 
     const response = await app.request(
-      "/api/knowledge-bases/kb_1/documents/doc_1/retry",
+      `/api/knowledge-bases/${KNOWLEDGE_BASE_ID}/documents/${DOCUMENT_ID}/retry`,
       {
         body: JSON.stringify({}),
         headers: {
@@ -393,6 +424,49 @@ describe("document processing retry API", () => {
     expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
       code: "NOT_FOUND",
       requestId: "req_doc_retry_not_found",
+    });
+  });
+
+  it.each([
+    {
+      name: "knowledge base id",
+      path: `/api/knowledge-bases/not-a-uuid/documents/${DOCUMENT_ID}/retry`,
+      requestId: "req_doc_retry_invalid_kb_param",
+    },
+    {
+      name: "document id",
+      path: `/api/knowledge-bases/${KNOWLEDGE_BASE_ID}/documents/not-a-uuid/retry`,
+      requestId: "req_doc_retry_invalid_doc_param",
+    },
+  ])("returns a validation envelope for non-UUID retry $name params", async ({
+    path,
+    requestId,
+  }) => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      documentService: {
+        async retryDocumentProcessing() {
+          throw new Error("document service should not run for invalid params");
+        },
+      },
+    });
+
+    const response = await app.request(path, {
+      body: JSON.stringify({}),
+      headers: {
+        "content-type": "application/json",
+        cookie: "better-auth.session_token=token",
+        origin: "http://localhost:3000",
+        "x-request-id": requestId,
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(400);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 400,
+      requestId,
     });
   });
 });

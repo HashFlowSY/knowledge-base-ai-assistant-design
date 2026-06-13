@@ -1,4 +1,5 @@
 import type { Context, MiddlewareHandler } from "hono";
+import type { z } from "zod";
 
 import type { SessionPayload } from "@kb/auth";
 
@@ -9,7 +10,11 @@ import type {
   UploadConcurrencyLimiter,
   UploadConfig,
 } from "../contracts";
-import { appendSetCookieHeaders, respondWithError } from "../http";
+import {
+  appendSetCookieHeaders,
+  respondWithError,
+  respondWithValidationError,
+} from "../http";
 import { rateLimitDocumentUpload } from "../guards";
 import { setAuthenticatedContext } from "./auth";
 import { createDocumentUploadRejectionRateLimitHandler } from "./rate-limit";
@@ -21,6 +26,7 @@ export interface DocumentUploadContext {
 
 export function createDocumentUploadPreflightMiddleware(input: {
   authService: AuthService;
+  paramsSchema: z.ZodType<{ knowledgeBaseId: string }>;
   rateLimiter: ApiRateLimiter;
   uploadConcurrencyLimiter: UploadConcurrencyLimiter;
   uploadConfig: UploadConfig;
@@ -48,15 +54,6 @@ export function createDocumentUploadPreflightMiddleware(input: {
     const actor = sessionResult.payload;
     setAuthenticatedContext(context, actor);
 
-    const knowledgeBaseId = context.req.param("knowledgeBaseId");
-    if (knowledgeBaseId === undefined || knowledgeBaseId.length === 0) {
-      return respondWithError(context, {
-        code: "VALIDATION_ERROR",
-        httpStatus: 400,
-        message: "知识库参数无效。",
-      });
-    }
-
     const rateLimitResponse = await rateLimitDocumentUpload(
       context,
       input.rateLimiter,
@@ -65,6 +62,11 @@ export function createDocumentUploadPreflightMiddleware(input: {
     );
     if (rateLimitResponse !== null) {
       return rateLimitResponse;
+    }
+
+    const params = input.paramsSchema.safeParse(context.req.param());
+    if (!params.success) {
+      return respondWithValidationError(context, params.error);
     }
 
     const reservationResult = input.uploadConcurrencyLimiter.acquire({
@@ -84,7 +86,10 @@ export function createDocumentUploadPreflightMiddleware(input: {
       });
     }
 
-    context.set("documentUpload", { actor, knowledgeBaseId });
+    context.set("documentUpload", {
+      actor,
+      knowledgeBaseId: params.data.knowledgeBaseId,
+    });
     try {
       return await next();
     } finally {

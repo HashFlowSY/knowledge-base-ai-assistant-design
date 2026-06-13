@@ -19,6 +19,10 @@ export const uploadConfig = {
   requestOverheadBytes: 128,
 };
 
+export const knowledgeBaseId = "11111111-1111-4111-8111-111111111111";
+export const documentId = "44444444-4444-4444-8444-444444444444";
+export const documentUploadPath = `/api/knowledge-bases/${knowledgeBaseId}/documents/upload`;
+
 const uploadedAt = "2026-05-23T06:00:00.000Z";
 
 export function createUploadRequest(input: {
@@ -75,8 +79,8 @@ export function createUploadResult(input: {
     document: {
       createdAt: uploadedAt,
       currentVersion: 1,
-      id: "doc_1",
-      knowledgeBaseId: "kb_1",
+      id: documentId,
+      knowledgeBaseId,
       status: "pending",
       title: input.title,
       updatedAt: uploadedAt,
@@ -84,9 +88,9 @@ export function createUploadResult(input: {
     duplicate: false,
     job: {
       createdAt: uploadedAt,
-      documentId: "doc_1",
+      documentId,
       id: "job_1",
-      knowledgeBaseId: "kb_1",
+      knowledgeBaseId,
       queuedAt: uploadedAt,
       sourceHash: input.sourceHash,
       sourceType: "file",
@@ -95,11 +99,11 @@ export function createUploadResult(input: {
     },
     source: {
       bucket: "kb-source",
-      documentId: "doc_1",
+      documentId,
       id: "source_1",
       mimeType: "application/pdf",
       objectKey:
-        "tenants/tenant_1/knowledge-bases/kb_1/documents/doc_1/versions/1/source/policy.pdf",
+        `tenants/tenant_1/knowledge-bases/${knowledgeBaseId}/documents/${documentId}/versions/1/source/policy.pdf`,
       scanStatus: "not_scanned",
       sizeBytes: input.sizeBytes,
       sourceHash: input.sourceHash,

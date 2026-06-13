@@ -13,6 +13,8 @@ import {
   createStaticAuthService,
   createUploadRequest,
   createUploadResult,
+  documentUploadPath,
+  knowledgeBaseId,
   uploadConfig,
 } from "../support/test-helpers";
 
@@ -38,7 +40,7 @@ describe("document upload API successful responses", () => {
     });
 
     const response = await app.request(
-      "/api/knowledge-bases/kb_1/documents/upload",
+      documentUploadPath,
       createUploadRequest({
         contentLength: "300",
         file: createFile(
@@ -68,7 +70,7 @@ describe("document upload API successful responses", () => {
       user: { id: "admin_1" },
     });
     expect(capturedInput).toMatchObject({
-      knowledgeBaseId: "kb_1",
+      knowledgeBaseId,
       mimeType: "application/pdf",
       originalFilename: "Quarterly Policy.pdf",
       sizeBytes: 14,
@@ -99,7 +101,7 @@ describe("document upload API successful responses", () => {
     });
 
     const response = await app.request(
-      "/api/knowledge-bases/kb_1/documents/upload",
+      documentUploadPath,
       createUploadRequest({
         contentLength: "300",
         file: createFile("%PDF-1.4\nhello", "policy.pdf", "application/pdf"),

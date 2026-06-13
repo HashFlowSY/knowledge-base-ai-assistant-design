@@ -7,6 +7,7 @@ import {
   createJsonMutationGuardMiddleware,
   createKnowledgeBaseRejectionRateLimitHandler,
   createKnowledgeBaseSessionMiddleware,
+  createParamValidationMiddleware,
   createQueryValidationMiddleware,
 } from "../../middleware";
 import { createKnowledgeBaseProcedure } from "./procedures/create-knowledge-base";
@@ -16,6 +17,7 @@ import { updateKnowledgeBaseProcedure } from "./procedures/update-knowledge-base
 import type { KnowledgeBaseRouteDependencies } from "./dependencies";
 import {
   createKnowledgeBaseInputSchema,
+  knowledgeBaseParamsSchema,
   knowledgeBaseListQuerySchema,
   updateKnowledgeBaseInputSchema,
 } from "./types";
@@ -59,13 +61,17 @@ export function createKnowledgeBasesRouter(
     ),
     (context) => createKnowledgeBaseProcedure(context, dependencies),
   );
-  router.get("/api/knowledge-bases/:knowledgeBaseId", requireSession, (context) =>
-    getKnowledgeBaseProcedure(context, dependencies),
+  router.get(
+    "/api/knowledge-bases/:knowledgeBaseId",
+    requireSession,
+    createParamValidationMiddleware("knowledgeBaseParams", knowledgeBaseParamsSchema),
+    (context) => getKnowledgeBaseProcedure(context, dependencies),
   );
   router.patch(
     "/api/knowledge-bases/:knowledgeBaseId",
     jsonMutationGuard,
     requireAdmin,
+    createParamValidationMiddleware("knowledgeBaseParams", knowledgeBaseParamsSchema),
     createJsonBodyValidationMiddleware(
       "updateKnowledgeBaseBody",
       updateKnowledgeBaseInputSchema,

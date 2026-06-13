@@ -3,7 +3,6 @@ import type { Context } from "hono";
 import type { ApiEnv } from "../../../contracts";
 import {
   createSuccessResponse,
-  respondWithError,
   respondWithServiceError,
 } from "../../../http";
 import {
@@ -11,7 +10,10 @@ import {
   getValidatedInput,
 } from "../../../middleware";
 import type { DocumentsRouteDependencies } from "../dependencies";
-import type { DocumentProcessingListQuery } from "../types";
+import type {
+  DocumentKnowledgeBaseParams,
+  DocumentProcessingListQuery,
+} from "../types";
 
 type ListDocumentProcessingContext = Context<
   ApiEnv,
@@ -22,18 +24,14 @@ export async function listDocumentProcessingProcedure(
   context: ListDocumentProcessingContext,
   dependencies: DocumentsRouteDependencies,
 ): Promise<Response> {
-  const knowledgeBaseId = context.req.param("knowledgeBaseId");
-  if (knowledgeBaseId.length === 0) {
-    return respondWithError(context, {
-      code: "VALIDATION_ERROR",
-      httpStatus: 400,
-      message: "知识库参数无效。",
-    });
-  }
+  const params = getValidatedInput<DocumentKnowledgeBaseParams>(
+    context,
+    "documentKnowledgeBaseParams",
+  );
 
   const result = await dependencies.documentService.listDocumentProcessing({
     actor: getRequiredKnowledgeActor(context),
-    knowledgeBaseId,
+    knowledgeBaseId: params.knowledgeBaseId,
     query: getValidatedInput<DocumentProcessingListQuery>(
       context,
       "documentProcessingListQuery",

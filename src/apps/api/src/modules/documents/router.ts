@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { z } from "zod";
 
 import type { ApiEnv } from "../../contracts";
 import {
@@ -19,14 +18,11 @@ import { retryDocumentProcessingProcedure } from "./procedures/retry-document-pr
 import { uploadDocumentFileProcedure } from "./procedures/upload-document-file";
 import type { DocumentsRouteDependencies } from "./dependencies";
 import {
+  documentKnowledgeBaseParamsSchema,
   documentProcessingListQuerySchema,
   retryDocumentProcessingBodySchema,
+  retryDocumentProcessingParamsSchema,
 } from "./types";
-
-const retryDocumentProcessingParamsSchema = z.object({
-  documentId: z.string().min(1),
-  knowledgeBaseId: z.string().min(1),
-});
 
 export function createDocumentsRouter(
   dependencies: DocumentsRouteDependencies,
@@ -60,6 +56,7 @@ export function createDocumentsRouter(
     }),
     createDocumentUploadPreflightMiddleware({
       authService: dependencies.authService,
+      paramsSchema: documentKnowledgeBaseParamsSchema,
       rateLimiter: dependencies.rateLimiter,
       uploadConcurrencyLimiter: dependencies.uploadConcurrencyLimiter,
       uploadConfig: dependencies.uploadConfig,
@@ -69,6 +66,10 @@ export function createDocumentsRouter(
   router.get(
     "/api/knowledge-bases/:knowledgeBaseId/documents/processing",
     requireSession,
+    createParamValidationMiddleware(
+      "documentKnowledgeBaseParams",
+      documentKnowledgeBaseParamsSchema,
+    ),
     createQueryValidationMiddleware(
       "documentProcessingListQuery",
       documentProcessingListQuerySchema,
