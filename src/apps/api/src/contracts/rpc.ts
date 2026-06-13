@@ -182,7 +182,7 @@ type ApiRouteSchema = {
     $get: JsonEndpoint<
       { query?: { knowledgeBaseId?: string } },
       ApiSuccessResponse<ChatSessionsResponse> | ApiErrorResponse,
-      200 | 401 | 403 | 429 | 500
+      200 | 400 | 401 | 403 | 429 | 500
     >;
     $post: JsonEndpoint<
       { json: CreateChatSessionInput },

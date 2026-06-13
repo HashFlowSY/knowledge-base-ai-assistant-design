@@ -6,6 +6,7 @@ import {
   createJsonMutationGuardMiddleware,
   createKnowledgeBaseRejectionRateLimitHandler,
   createKnowledgeBaseSessionMiddleware,
+  createQueryValidationMiddleware,
 } from "../../middleware";
 import type { ChatRouteDependencies } from "./dependencies";
 import { createChatSessionProcedure } from "./procedures/create-session";
@@ -15,6 +16,7 @@ import { submitAnswerFeedbackProcedure } from "./procedures/submit-feedback";
 import { submitChatQuestionProcedure } from "./procedures/submit-question";
 import {
   createChatSessionInputSchema,
+  listChatSessionsQuerySchema,
   submitAnswerFeedbackInputSchema,
   submitChatQuestionInputSchema,
 } from "./types";
@@ -34,8 +36,14 @@ export function createChatRouter(
     onRejected: rejectWithKnowledgeBaseRateLimit,
   });
 
-  router.get("/api/chat/sessions", requireSession, (context) =>
-    listChatSessionsProcedure(context, dependencies),
+  router.get(
+    "/api/chat/sessions",
+    requireSession,
+    createQueryValidationMiddleware(
+      "listChatSessionsQuery",
+      listChatSessionsQuerySchema,
+    ),
+    (context) => listChatSessionsProcedure(context, dependencies),
   );
   router.post(
     "/api/chat/sessions",

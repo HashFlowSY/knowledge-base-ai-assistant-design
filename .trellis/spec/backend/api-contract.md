@@ -79,6 +79,84 @@ Validate:
 
 Place schemas in the domain API module `types.ts` or in a shared contract package when used by multiple apps/packages.
 
+## Scenario: Router-Level Query Validation
+
+### 1. Scope / Trigger
+
+- Trigger: an API route accepts user-controlled query params that can affect a
+  service or database call.
+- Applies to list/filter endpoints such as `GET /api/chat/sessions`.
+
+### 2. Signatures
+
+```typescript
+export const listExampleQuerySchema = z.object({
+  resourceId: z.string().trim().uuid().optional(),
+});
+
+export type ListExampleQuery = z.infer<typeof listExampleQuerySchema>;
+```
+
+### 3. Contracts
+
+- Query schemas live in the domain API module `types.ts` unless shared across
+  packages.
+- Route definitions mount `createQueryValidationMiddleware("<key>", schema)`.
+- Procedures read `getValidatedInput<ListExampleQuery>(context, "<key>")`.
+- The Hono RPC status union must include `400` for routes that can reject query
+  validation.
+
+### 4. Validation & Error Matrix
+
+- Missing optional query field -> accepted and represented as `undefined`.
+- Empty query value for a required/UUID-shaped filter -> `400 VALIDATION_ERROR`.
+- Malformed query value that would fail a database column type, such as a
+  non-UUID id for a UUID column -> `400 VALIDATION_ERROR`.
+
+### 5. Good/Base/Bad Cases
+
+- Good: `?resourceId=<uuid>` reaches the service with the trimmed UUID.
+- Base: no query string reaches the service with an empty/default query object.
+- Bad: `?resourceId=` and `?resourceId=not-a-uuid` return validation envelopes
+  before service/database access.
+
+### 6. Tests Required
+
+- Assert invalid empty and malformed query values return `400` with
+  `code: "VALIDATION_ERROR"`.
+- Assert invalid query values do not call the domain service.
+- Assert omitted and valid query values still call the service with the expected
+  typed query object.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+export async function listProcedure(context: Context<ApiEnv>) {
+  const query = listExampleQuerySchema.parse(
+    Object.fromEntries(new URL(context.req.url).searchParams),
+  );
+  return service.list({ query });
+}
+```
+
+#### Correct
+
+```typescript
+router.get(
+  "/api/example",
+  requireSession,
+  createQueryValidationMiddleware("listExampleQuery", listExampleQuerySchema),
+  (context) => listProcedure(context, dependencies),
+);
+
+export async function listProcedure(context: Context<ApiEnv>) {
+  const query = getValidatedInput<ListExampleQuery>(context, "listExampleQuery");
+  return service.list({ query });
+}
+```
+
 ## Response Rules
 
 Business JSON APIs use a uniform response envelope. Domain-specific success data

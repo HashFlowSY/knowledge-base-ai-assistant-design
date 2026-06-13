@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { chatMessagesResponseSchema, chatSubmitResponseSchema } from "@kb/rag";
+import {
+  chatMessagesResponseSchema,
+  chatSessionsResponseSchema,
+  chatSubmitResponseSchema,
+} from "@kb/rag";
 import { apiErrorResponseSchema, apiSuccessResponseSchema } from "@kb/shared";
 
 import { createApiApp, type ChatService } from "../../app";
@@ -43,6 +47,124 @@ const assistantMessage = {
 };
 
 describe("chat API router", () => {
+  it("lists chat sessions without a knowledge base filter", async () => {
+    const chatService: Partial<ChatService> = {
+      async listSessions(input) {
+        expect(input.actor).toEqual(adminSession);
+        expect(input.query).toEqual({});
+        return { ok: true, result: { sessions: [sessionSummary] } };
+      },
+    };
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService,
+    });
+
+    const response = await app.request("/api/chat/sessions", {
+      headers: {
+        cookie: "better-auth.session_token=token",
+        "x-request-id": "req_chat_sessions",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    expect(
+      apiSuccessResponseSchema(chatSessionsResponseSchema).parse(
+        await response.json(),
+      ),
+    ).toMatchObject({
+      data: { sessions: [{ id: "chat_1" }] },
+      requestId: "req_chat_sessions",
+    });
+  });
+
+  it("passes a valid knowledge base filter to the chat session service", async () => {
+    const knowledgeBaseId = "11111111-1111-4111-8111-111111111111";
+    const chatService: Partial<ChatService> = {
+      async listSessions(input) {
+        expect(input.query).toEqual({ knowledgeBaseId });
+        return { ok: true, result: { sessions: [] } };
+      },
+    };
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService,
+    });
+
+    const response = await app.request(
+      `/api/chat/sessions?knowledgeBaseId=${knowledgeBaseId}`,
+      {
+        headers: {
+          cookie: "better-auth.session_token=token",
+          "x-request-id": "req_chat_sessions_filtered",
+        },
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(
+      apiSuccessResponseSchema(chatSessionsResponseSchema).parse(
+        await response.json(),
+      ),
+    ).toMatchObject({
+      data: { sessions: [] },
+      requestId: "req_chat_sessions_filtered",
+    });
+  });
+
+  it("returns a validation envelope for an empty chat sessions knowledge base filter", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService: {
+        async listSessions() {
+          throw new Error("chat service should not run for invalid queries");
+        },
+      },
+    });
+
+    const response = await app.request("/api/chat/sessions?knowledgeBaseId=", {
+      headers: {
+        cookie: "better-auth.session_token=token",
+        "x-request-id": "req_chat_sessions_empty_filter",
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 400,
+      requestId: "req_chat_sessions_empty_filter",
+    });
+  });
+
+  it("returns a validation envelope for a non-UUID chat sessions knowledge base filter", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService: {
+        async listSessions() {
+          throw new Error("chat service should not run for invalid queries");
+        },
+      },
+    });
+
+    const response = await app.request(
+      "/api/chat/sessions?knowledgeBaseId=not-a-uuid",
+      {
+        headers: {
+          cookie: "better-auth.session_token=token",
+          "x-request-id": "req_chat_sessions_invalid_filter",
+        },
+      },
+    );
+
+    expect(response.status).toBe(400);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 400,
+      requestId: "req_chat_sessions_invalid_filter",
+    });
+  });
+
   it("submits a non-streaming chat question through the authenticated chat service", async () => {
     const chatService: Partial<ChatService> = {
       async submitQuestion(input) {
