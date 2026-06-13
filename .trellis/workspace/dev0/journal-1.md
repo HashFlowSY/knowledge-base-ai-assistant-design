@@ -1152,3 +1152,36 @@ Refactored API route guard, validation, rate-limit, auth, and upload preflight l
 ### Next Steps
 
 - None - task complete
+
+
+## Session 35: Fix chat KB authorization
+
+**Date**: 2026-06-13
+**Task**: Fix chat KB authorization
+**Branch**: `main`
+
+### Summary
+
+Centralized KB permission checks in knowledge package and enforced current KB visibility for RAG chat sessions, message reads, and feedback writes.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0034f01` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
