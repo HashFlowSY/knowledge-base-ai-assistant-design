@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 35
+- **Total Sessions**: 36
 - **Last Active**: 2026-06-13
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1187 | Active |
+| `journal-1.md` | ~1220 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 36 | 2026-06-13 | Validate chat sessions query | `bdf860e` | `main` |
 | 35 | 2026-06-13 | Fix chat KB authorization | `0034f01` | `main` |
 | 34 | 2026-06-11 | API middleware refactor | `f53bd8e` | `main` |
 | 33 | 2026-06-08 | Update README current progress | `204e7a5` | `main` |

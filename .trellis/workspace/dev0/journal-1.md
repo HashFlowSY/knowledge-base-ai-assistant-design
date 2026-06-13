@@ -1185,3 +1185,36 @@ Centralized KB permission checks in knowledge package and enforced current KB vi
 ### Next Steps
 
 - None - task complete
+
+
+## Session 36: Validate chat sessions query
+
+**Date**: 2026-06-13
+**Task**: Validate chat sessions query
+**Branch**: `main`
+
+### Summary
+
+Validated chat sessions query input at the router level, tightened knowledgeBaseId to UUID, added regression coverage for invalid filters, and archived the task.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bdf860e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
