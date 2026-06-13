@@ -1,3 +1,5 @@
+import type { KnowledgeActor } from "@kb/knowledge";
+
 import type {
   ChatMessagesResponse,
   ChatSessionSummary,
@@ -12,11 +14,7 @@ import type {
   SubmitChatQuestionInput,
 } from "./types";
 
-export interface RagActor {
-  user: { id: string };
-  tenant: { id: string };
-  role: "admin" | "member";
-}
+export type RagActor = KnowledgeActor;
 
 export interface RagServiceError {
   ok: false;
@@ -59,11 +57,6 @@ export interface RagChatRepository {
     knowledgeBaseId: string;
     title: string;
   }): Promise<ChatSessionSummary>;
-  canAccessMessage(input: {
-    actor: RagActor;
-    messageId: string;
-    role?: "user" | "assistant";
-  }): Promise<boolean>;
   getSession(input: {
     actor: RagActor;
     knowledgeBaseId?: string;
@@ -72,7 +65,7 @@ export interface RagChatRepository {
   listMessages(input: {
     actor: RagActor;
     sessionId: string;
-  }): Promise<ChatMessagesResponse>;
+  }): Promise<ChatMessagesResponse | null>;
   listRecentMessages(input: {
     actor: RagActor;
     limit: number;
@@ -86,7 +79,7 @@ export interface RagChatRepository {
     actor: RagActor;
     body: SubmitAnswerFeedbackInput;
     messageId: string;
-  }): Promise<SubmitAnswerFeedbackResponse>;
+  }): Promise<SubmitAnswerFeedbackResponse | null>;
   recordRetrievalResults(input: {
     actor: RagActor;
     candidates: RankedRetrievalCandidate[];

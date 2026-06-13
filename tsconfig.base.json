@@ -35,6 +35,7 @@
       "@kb/db": ["src/packages/db/src/index.ts"],
       "@kb/ingestion": ["src/packages/ingestion/src/index.ts"],
       "@kb/knowledge": ["src/packages/knowledge/src/index.ts"],
+      "@kb/knowledge/permissions": ["src/packages/knowledge/src/service/permissions.ts"],
       "@kb/observability": ["src/packages/observability/src/index.ts"],
       "@kb/queue": ["src/packages/queue/src/index.ts"],
       "@kb/queue/producer": ["src/packages/queue/src/producer.ts"],

@@ -4,9 +4,11 @@ import {
   answerFeedback,
   answerFeedbackCitations,
   chatMessages,
+  chatSessions,
   type ProjectDb,
 } from "@kb/db";
 
+import { createAccessibleChatSessionConditions } from "./drizzle-chat-access";
 import { mapFeedback, readRetrievalRunId } from "./drizzle-records";
 import type { RagChatRepository } from "./service-types";
 
@@ -18,17 +20,28 @@ export async function saveAnswerFeedback(
     const messageRows = await tx
       .select({ metadata: chatMessages.metadata })
       .from(chatMessages)
+      .innerJoin(
+        chatSessions,
+        and(
+          eq(chatSessions.tenantId, chatMessages.tenantId),
+          eq(chatSessions.id, chatMessages.sessionId),
+        ),
+      )
       .where(
         and(
           eq(chatMessages.tenantId, input.actor.tenant.id),
           eq(chatMessages.id, input.messageId),
+          eq(chatMessages.role, "assistant"),
+          ...createAccessibleChatSessionConditions({ actor: input.actor }),
         ),
       )
       .limit(1);
-    const retrievalRunId =
-      messageRows[0] === undefined
-        ? null
-        : readRetrievalRunId(messageRows[0].metadata);
+    const message = messageRows[0];
+    if (message === undefined) {
+      return null;
+    }
+
+    const retrievalRunId = readRetrievalRunId(message.metadata);
     const rows = await tx
       .insert(answerFeedback)
       .values({

@@ -68,10 +68,6 @@ export function createRepository(
         updatedAt: "2026-05-25T00:00:00.000Z",
       };
     },
-    async canAccessMessage() {
-      calls.push("canAccessMessage");
-      return options.hasMessageAccess ?? true;
-    },
     async getSession(input) {
       calls.push("getSession");
       return (options.hasSessionAccess ?? true)
@@ -97,6 +93,10 @@ export function createRepository(
     },
     async saveFeedback() {
       calls.push("saveFeedback");
+      if (options.hasMessageAccess === false) {
+        return null;
+      }
+
       return {
         feedback: {
           createdAt: "2026-05-25T00:00:03.000Z",

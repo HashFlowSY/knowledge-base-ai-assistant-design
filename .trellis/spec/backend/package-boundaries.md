@@ -200,6 +200,34 @@ Rules:
 - Put queue payload builders and ingestion-specific adapters under
   `ingestion/` when they are owned by the domain package.
 
+### Server-Only Permission Subpaths
+
+Domain-owned permission helpers that query domain tables must be exported from
+an explicit server-only subpath, not from the browser-safe package root.
+
+Current contract:
+
+- `@kb/knowledge` is browser-safe and may export schemas and `KnowledgeActor`
+  types.
+- `@kb/knowledge/service` owns the database-backed knowledge service.
+- `@kb/knowledge/permissions` owns reusable database-backed KB visibility
+  primitives, including:
+  - `createVisibleKnowledgeBaseConditions(actor)`
+  - `actorCanAccessKnowledgeBase(db, { actor, knowledgeBaseId })`
+- `@kb/rag` may depend on `@kb/knowledge/permissions` for KB authorization, but
+  must not duplicate `knowledge_base_members` SQL.
+
+Rules:
+
+- Mirror every server-only package subpath in `package.json` `exports` and
+  `tsconfig.base.json` `paths`.
+- Keep database imports out of browser-safe roots such as
+  `src/packages/knowledge/src/index.ts`.
+- If a permission helper needs `ProjectDb` or Drizzle SQL, it belongs under the
+  domain owner server-only surface, not `@kb/security`.
+- Chat read/write paths that hide historical resource existence should convert
+  failed current-KB visibility checks to the domain `NOT_FOUND` response.
+
 ## Scenario: Browser-Safe Package Entry Points
 
 ### 1. Scope / Trigger

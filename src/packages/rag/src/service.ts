@@ -47,17 +47,14 @@ export function createRagChatService(input: {
       return { ok: true, result: { session } };
     },
     async listMessages(request) {
-      const session = await input.repository.getSession({
-        actor: request.actor,
-        sessionId: request.sessionId,
-      });
-      if (session === null) {
+      const messages = await input.repository.listMessages(request);
+      if (messages === null) {
         return chatResourceNotFound();
       }
 
       return {
         ok: true,
-        result: await input.repository.listMessages(request),
+        result: messages,
       };
     },
     async listSessions(request) {
@@ -77,18 +74,14 @@ export function createRagChatService(input: {
       };
     },
     async submitFeedback(request) {
-      const canAccessMessage = await input.repository.canAccessMessage({
-        actor: request.actor,
-        messageId: request.messageId,
-        role: "assistant",
-      });
-      if (!canAccessMessage) {
+      const feedback = await input.repository.saveFeedback(request);
+      if (feedback === null) {
         return chatResourceNotFound();
       }
 
       return {
         ok: true,
-        result: await input.repository.saveFeedback(request),
+        result: feedback,
       };
     },
     async submitQuestion(request) {

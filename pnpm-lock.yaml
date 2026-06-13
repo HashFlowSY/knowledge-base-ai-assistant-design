@@ -401,6 +401,9 @@ importers:
       '@kb/db':
         specifier: workspace:*
         version: link:../db
+      '@kb/knowledge':
+        specifier: workspace:*
+        version: link:../knowledge
       '@kb/search':
         specifier: workspace:*
         version: link:../search

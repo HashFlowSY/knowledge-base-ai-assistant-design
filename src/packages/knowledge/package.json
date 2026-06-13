@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./permissions": "./src/service/permissions.ts",
     "./service": "./src/service.ts"
   },
   "scripts": {

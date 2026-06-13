@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createRagChatService } from "./service";
+import type { RagChatRepository } from "./service-types";
 import {
   actor,
   createAnswerGenerator,
@@ -151,7 +152,7 @@ describe("RAG chat service", () => {
     expect(calls).not.toContain("vector");
   });
 
-  it("rejects feedback for inaccessible messages before saving feedback", async () => {
+  it("returns not found for inaccessible feedback targets", async () => {
     const calls: string[] = [];
     const service = createRagChatService({
       answerGenerator: createAnswerGenerator(calls),
@@ -176,7 +177,72 @@ describe("RAG chat service", () => {
       code: "NOT_FOUND",
       httpStatus: 404,
     });
-    expect(calls).not.toContain("saveFeedback");
+    expect(calls).toEqual(["saveFeedback"]);
+  });
+
+  it("returns not found when repository denies current knowledge-base access for messages", async () => {
+    const calls: string[] = [];
+    const repository = {
+      ...createRepository(calls),
+      async listMessages() {
+        calls.push("listMessages");
+        return null;
+      },
+    } as unknown as RagChatRepository;
+    const service = createRagChatService({
+      answerGenerator: createAnswerGenerator(calls),
+      embeddingProvider: createEmbeddingProvider(calls),
+      keywordSearcher: createKeywordSearcher(calls),
+      repository,
+      reranker: createReranker(calls),
+    });
+
+    const result = await service.listMessages({
+      actor,
+      sessionId: "session_revoked",
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: "NOT_FOUND",
+      httpStatus: 404,
+    });
+    expect(calls).toEqual(["listMessages"]);
+  });
+
+  it("returns not found when feedback write loses current knowledge-base access", async () => {
+    const calls: string[] = [];
+    const repository = {
+      ...createRepository(calls),
+      async saveFeedback() {
+        calls.push("saveFeedback");
+        return null;
+      },
+    } as unknown as RagChatRepository;
+    const service = createRagChatService({
+      answerGenerator: createAnswerGenerator(calls),
+      embeddingProvider: createEmbeddingProvider(calls),
+      keywordSearcher: createKeywordSearcher(calls),
+      repository,
+      reranker: createReranker(calls),
+    });
+
+    const result = await service.submitFeedback({
+      actor,
+      body: {
+        citationIds: ["citation_revoked"],
+        rating: "not_useful",
+        reason: "已失权",
+      },
+      messageId: "msg_revoked",
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: "NOT_FOUND",
+      httpStatus: 404,
+    });
+    expect(calls).toEqual(["saveFeedback"]);
   });
 
   it("returns a no-answer message when retrieval has no usable context", async () => {

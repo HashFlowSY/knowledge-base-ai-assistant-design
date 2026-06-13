@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 import {
   chatMessages,
@@ -7,6 +7,7 @@ import {
 } from "@kb/db";
 
 import { saveAnswerFeedback } from "./drizzle-feedback";
+import { createAccessibleChatSessionConditions } from "./drizzle-chat-access";
 import {
   createMessageMetadata,
   hydrateMessages,
@@ -32,11 +33,11 @@ export function createDrizzleRagChatRepository(db: ProjectDb): RagChatRepository
           .from(chatSessions)
           .where(
             and(
-              eq(chatSessions.tenantId, input.actor.tenant.id),
-              eq(chatSessions.id, input.sessionId),
-              eq(chatSessions.userId, input.actor.user.id),
-              isNull(chatSessions.deletedAt),
-              selectedKnowledgeBaseContains(input.knowledgeBaseId),
+              ...createAccessibleChatSessionConditions({
+                actor: input.actor,
+                knowledgeBaseId: input.knowledgeBaseId,
+                sessionId: input.sessionId,
+              }),
             ),
           )
           .limit(1);
@@ -112,43 +113,7 @@ export function createDrizzleRagChatRepository(db: ProjectDb): RagChatRepository
 
       return mapSession(row, 0);
     },
-    async canAccessMessage(input) {
-      const conditions = [
-        eq(chatMessages.tenantId, input.actor.tenant.id),
-        eq(chatMessages.id, input.messageId),
-        eq(chatSessions.userId, input.actor.user.id),
-        isNull(chatSessions.deletedAt),
-      ];
-      if (input.role !== undefined) {
-        conditions.push(eq(chatMessages.role, input.role));
-      }
-
-      const rows = await db
-        .select({ id: chatMessages.id })
-        .from(chatMessages)
-        .innerJoin(
-          chatSessions,
-          and(
-            eq(chatSessions.tenantId, chatMessages.tenantId),
-            eq(chatSessions.id, chatMessages.sessionId),
-          ),
-        )
-        .where(and(...conditions))
-        .limit(1);
-
-      return rows[0] !== undefined;
-    },
     async getSession(input) {
-      const conditions = [
-        eq(chatSessions.tenantId, input.actor.tenant.id),
-        eq(chatSessions.id, input.sessionId),
-        eq(chatSessions.userId, input.actor.user.id),
-        isNull(chatSessions.deletedAt),
-      ];
-      if (input.knowledgeBaseId !== undefined) {
-        conditions.push(selectedKnowledgeBaseContains(input.knowledgeBaseId));
-      }
-
       const rows = await db
         .select({
           session: chatSessions,
@@ -162,7 +127,17 @@ export function createDrizzleRagChatRepository(db: ProjectDb): RagChatRepository
             eq(chatMessages.sessionId, chatSessions.id),
           ),
         )
-        .where(and(...conditions))
+        .where(
+          and(
+            ...createAccessibleChatSessionConditions({
+              actor: input.actor,
+              ...(input.knowledgeBaseId === undefined
+                ? {}
+                : { knowledgeBaseId: input.knowledgeBaseId }),
+              sessionId: input.sessionId,
+            }),
+          ),
+        )
         .groupBy(chatSessions.id)
         .limit(1);
 
@@ -172,25 +147,32 @@ export function createDrizzleRagChatRepository(db: ProjectDb): RagChatRepository
     async listMessages(input) {
       const rows = await db
         .select({ message: chatMessages })
-        .from(chatMessages)
-        .innerJoin(
-          chatSessions,
+        .from(chatSessions)
+        .leftJoin(
+          chatMessages,
           and(
-            eq(chatSessions.tenantId, chatMessages.tenantId),
-            eq(chatSessions.id, chatMessages.sessionId),
+            eq(chatMessages.tenantId, chatSessions.tenantId),
+            eq(chatMessages.sessionId, chatSessions.id),
           ),
         )
         .where(
           and(
-            eq(chatMessages.tenantId, input.actor.tenant.id),
-            eq(chatMessages.sessionId, input.sessionId),
-            eq(chatSessions.userId, input.actor.user.id),
-            isNull(chatSessions.deletedAt),
+            ...createAccessibleChatSessionConditions({
+              actor: input.actor,
+              sessionId: input.sessionId,
+            }),
           ),
         )
         .orderBy(asc(chatMessages.sequence));
+      if (rows.length === 0) {
+        return null;
+      }
 
-      return { messages: await hydrateMessages(db, rows.map((row) => row.message)) };
+      const messages = rows.flatMap((row) =>
+        row.message === null ? [] : [row.message],
+      );
+
+      return { messages: await hydrateMessages(db, messages) };
     },
     async listRecentMessages(input) {
       const rows = await db
@@ -207,8 +189,10 @@ export function createDrizzleRagChatRepository(db: ProjectDb): RagChatRepository
           and(
             eq(chatMessages.tenantId, input.actor.tenant.id),
             eq(chatMessages.sessionId, input.sessionId),
-            eq(chatSessions.userId, input.actor.user.id),
-            isNull(chatSessions.deletedAt),
+            ...createAccessibleChatSessionConditions({
+              actor: input.actor,
+              sessionId: input.sessionId,
+            }),
           ),
         )
         .orderBy(desc(chatMessages.sequence))
@@ -217,15 +201,6 @@ export function createDrizzleRagChatRepository(db: ProjectDb): RagChatRepository
       return (await hydrateMessages(db, rows.map((row) => row.message))).reverse();
     },
     async listSessions(input) {
-      const conditions = [
-        eq(chatSessions.tenantId, input.actor.tenant.id),
-        eq(chatSessions.userId, input.actor.user.id),
-        isNull(chatSessions.deletedAt),
-      ];
-      if (input.query.knowledgeBaseId !== undefined) {
-        conditions.push(selectedKnowledgeBaseContains(input.query.knowledgeBaseId));
-      }
-
       const rows = await db
         .select({
           session: chatSessions,
@@ -239,7 +214,16 @@ export function createDrizzleRagChatRepository(db: ProjectDb): RagChatRepository
             eq(chatMessages.sessionId, chatSessions.id),
           ),
         )
-        .where(and(...conditions))
+        .where(
+          and(
+            ...createAccessibleChatSessionConditions({
+              actor: input.actor,
+              ...(input.query.knowledgeBaseId === undefined
+                ? {}
+                : { knowledgeBaseId: input.query.knowledgeBaseId }),
+            }),
+          ),
+        )
         .groupBy(chatSessions.id)
         .orderBy(desc(chatSessions.updatedAt))
         .limit(50);
@@ -261,10 +245,4 @@ export function createDrizzleRagChatRepository(db: ProjectDb): RagChatRepository
       return vectorSearchChunks(db, input);
     },
   };
-}
-
-function selectedKnowledgeBaseContains(knowledgeBaseId: string) {
-  return sql`${chatSessions.selectedKnowledgeBaseIds} @> ${JSON.stringify([
-    knowledgeBaseId,
-  ])}::jsonb`;
 }
