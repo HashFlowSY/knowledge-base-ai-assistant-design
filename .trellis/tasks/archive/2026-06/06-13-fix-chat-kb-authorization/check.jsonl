@@ -1,0 +1,7 @@
+{"file": ".trellis/spec/backend/security.md", "reason": "Check that all chat read/feedback paths enforce current KB authorization."}
+{"file": ".trellis/spec/backend/package-boundaries.md", "reason": "Check package ownership and dependency direction for shared permission logic."}
+{"file": ".trellis/spec/backend/api-module.md", "reason": "Check API procedures remain thin and do not own domain authorization patches."}
+{"file": ".trellis/spec/backend/api-contract.md", "reason": "Check service errors map to the standard API envelope."}
+{"file": ".trellis/spec/shared/typescript.md", "reason": "Check strict TypeScript, type reuse, and no duplicated cross-layer types."}
+{"file": ".trellis/spec/testing/strategy.md", "reason": "Check appropriate unit/integration coverage for permission-filter behavior."}
+{"file": ".trellis/tasks/06-13-fix-chat-kb-authorization/research/kb-authorization-current-state.md", "reason": "Check implementation addresses the researched current-state gaps."}

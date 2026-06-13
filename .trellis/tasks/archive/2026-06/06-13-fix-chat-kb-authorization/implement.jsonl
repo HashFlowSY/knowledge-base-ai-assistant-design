@@ -1,0 +1,8 @@
+{"file": ".trellis/spec/backend/security.md", "reason": "Defines server-side KB authorization requirements for chat, retrieval, documents, and chunks."}
+{"file": ".trellis/spec/backend/package-boundaries.md", "reason": "Defines owner package and allowed dependency direction for sharing KB permission logic from knowledge to rag."}
+{"file": ".trellis/spec/backend/api-module.md", "reason": "Defines router/procedure responsibilities and discourages ad hoc domain authorization in API handlers."}
+{"file": ".trellis/spec/backend/api-contract.md", "reason": "Defines API error envelope, middleware order, and chat authorization contract."}
+{"file": ".trellis/spec/shared/typescript.md", "reason": "Defines type/schema conventions for cross-package TypeScript changes."}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Guides cross-layer authorization flow design for chat/RAG and KB access."}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Guides unifying duplicated tenant/KB permission checks instead of scattering patches."}
+{"file": ".trellis/tasks/06-13-fix-chat-kb-authorization/research/kb-authorization-current-state.md", "reason": "Current-state research and recommended unified fix for chat KB authorization."}
