@@ -4,6 +4,7 @@ import { sessionPayloadSchema } from "@kb/auth";
 import { apiErrorResponseSchema, apiSuccessResponseSchema } from "@kb/shared";
 
 import { createApiApp, type AuthService } from "../../app";
+import type { ApiEnv } from "../../contracts";
 import type { RateLimitConsumeInput } from "../../rate-limit";
 import { adminSession, createStaticAuthService } from "../../testing/fakes";
 
@@ -89,6 +90,57 @@ describe("auth API router", () => {
     });
     expect(consumedInputs[0]?.identity).toMatch(/^ip:/);
     expect(consumedInputs[0]?.identity).not.toContain(":email:");
+  });
+
+  it("uses server remote address instead of spoofed forwarded headers for auth IP limits", async () => {
+    const consumedInputs: RateLimitConsumeInput[] = [];
+    const app = createApiApp({
+      rateLimiter: {
+        async consume(input) {
+          consumedInputs.push(input);
+          return {
+            allowed: true,
+            retryAfterSeconds: 60,
+          };
+        },
+      },
+    });
+
+    const firstResponse = await app.fetch(
+      new Request("http://localhost/api/auth/session", {
+        headers: {
+          "x-forwarded-for": "203.0.113.10",
+          "x-request-id": "req_session_spoofed_ip_1",
+        },
+      }),
+      createRemoteAddressBindings("198.51.100.20"),
+    );
+    const secondResponse = await app.fetch(
+      new Request("http://localhost/api/auth/session", {
+        headers: {
+          "x-forwarded-for": "203.0.113.11",
+          "x-request-id": "req_session_spoofed_ip_2",
+        },
+      }),
+      createRemoteAddressBindings("198.51.100.20"),
+    );
+    const thirdResponse = await app.fetch(
+      new Request("http://localhost/api/auth/session", {
+        headers: {
+          "x-forwarded-for": "203.0.113.11",
+          "x-request-id": "req_session_spoofed_ip_3",
+        },
+      }),
+      createRemoteAddressBindings("198.51.100.21"),
+    );
+
+    expect(firstResponse.status).toBe(401);
+    expect(secondResponse.status).toBe(401);
+    expect(thirdResponse.status).toBe(401);
+    expect(consumedInputs).toHaveLength(3);
+    expect(consumedInputs[0]?.identity).toMatch(/^ip:/);
+    expect(consumedInputs[1]?.identity).toBe(consumedInputs[0]?.identity);
+    expect(consumedInputs[2]?.identity).not.toBe(consumedInputs[0]?.identity);
   });
 
   it("returns the project session envelope for successful login", async () => {
@@ -417,3 +469,13 @@ describe("auth API router", () => {
     ).toBe("admin");
   });
 });
+
+function createRemoteAddressBindings(remoteAddress: string): ApiEnv["Bindings"] {
+  return {
+    incoming: {
+      socket: {
+        remoteAddress,
+      },
+    },
+  };
+}

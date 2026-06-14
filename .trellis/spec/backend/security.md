@@ -98,6 +98,90 @@ Authentication middleware should:
 
 Admin middleware should build on authenticated context and check role explicitly.
 
+## Scenario: Trusted Client IP Summary
+
+### 1. Scope / Trigger
+
+- Trigger: API code needs an IP summary for unauthenticated rate-limit
+  identities or audit/security metadata.
+- Applies to login/session fallback limits, unresolved protected-route limits,
+  upload security audit, provider config audit metadata, and document upload
+  metadata.
+
+### 2. Signatures
+
+```typescript
+getRequestIpSummary(context: Context<ApiEnv>): string
+resolveTrustedClientIpSummary(input: {
+  remoteAddress: string | null | undefined;
+}): string
+```
+
+### 3. Contracts
+
+- `getRequestIpSummary` must use server-controlled connection metadata.
+- On Node/Hono, derive the address from
+  `@hono/node-server/conninfo` `getConnInfo(context).remote.address`.
+- Do not read or trust `X-Forwarded-For`, `Forwarded`, `X-Real-IP`, or similar
+  client-controlled headers by default.
+- Normalize stable address forms before use, including trimming whitespace,
+  lowercasing IPv6 text, and converting IPv4-mapped IPv6
+  `::ffff:203.0.113.10` to `203.0.113.10`.
+- Missing connection metadata returns an explicit stable fallback such as
+  `"unknown"`; do not pretend the client is `127.0.0.1`.
+- Rate-limit keys may hash the IP summary, but must not embed raw IP values.
+- Audit metadata may store the summary string, but it must come from this helper
+  instead of route-local header parsing.
+
+### 4. Validation & Error Matrix
+
+- Server remote address present -> normalized server remote address.
+- `X-Forwarded-For` present with server remote address -> ignore forwarded
+  header and use server remote address.
+- Remote address has surrounding whitespace -> trim before use.
+- Remote address is IPv4-mapped IPv6 -> normalize to mapped IPv4.
+- Remote address is missing in non-Node test/runtime context -> `"unknown"`.
+
+### 5. Good/Base/Bad Cases
+
+- Good: `remote.address = "198.51.100.20"` and
+  `X-Forwarded-For: 203.0.113.10` produces the `198.51.100.20` summary.
+- Base: missing Node connection bindings in unit tests produces `"unknown"` and
+  still allows the request to follow the normal auth/rate-limit path.
+- Bad: using `context.req.header("x-forwarded-for")` lets clients rotate
+  headers to bypass IP-scoped unauthenticated limits and pollute audit metadata.
+- Bad: falling back to `127.0.0.1` collapses unrelated clients into localhost
+  when real connection metadata is unavailable.
+
+### 6. Tests Required
+
+- Unit test missing remote address returns the explicit fallback.
+- Unit test IPv4-mapped IPv6 and mixed-case IPv6 are normalized.
+- Route or middleware regression test same server remote address plus different
+  `X-Forwarded-For` values consumes the same IP limiter identity.
+- Route or middleware regression test different server remote addresses consume
+  different IP limiter identities.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+export function getRequestIpSummary(context: Context<ApiEnv>): string {
+  return context.req.header("x-forwarded-for") ?? "127.0.0.1";
+}
+```
+
+#### Correct
+
+```typescript
+export function getRequestIpSummary(context: Context<ApiEnv>): string {
+  return resolveTrustedClientIpSummary({
+    remoteAddress: getConnInfo(context).remote.address,
+  });
+}
+```
+
 ## Scenario: Session Cookie Parsing
 
 ### 1. Scope / Trigger

@@ -14,6 +14,26 @@ export interface ApiContextVariables {
   validatedInputs: Record<string, unknown>;
 }
 
+export interface ApiConnectionBindings {
+  incoming?: {
+    socket?: {
+      remoteAddress?: string;
+      remoteFamily?: string;
+      remotePort?: number;
+    };
+  };
+  server?: {
+    incoming?: {
+      socket?: {
+        remoteAddress?: string;
+        remoteFamily?: string;
+        remotePort?: number;
+      };
+    };
+  };
+}
+
 export interface ApiEnv {
+  Bindings: ApiConnectionBindings;
   Variables: ApiContextVariables;
 }
