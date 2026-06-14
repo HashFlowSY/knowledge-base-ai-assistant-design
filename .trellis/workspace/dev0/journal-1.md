@@ -1284,3 +1284,36 @@ Handled malformed Better Auth session cookie encoding as missing credentials, ad
 ### Next Steps
 
 - None - task complete
+
+
+## Session 39: Fix API trusted client IP rate limiting
+
+**Date**: 2026-06-14
+**Task**: Fix API trusted client IP rate limiting
+**Branch**: `main`
+
+### Summary
+
+Switched API IP summaries for unauthenticated rate limits and audit metadata from client-controlled X-Forwarded-For to Hono Node server remote address, added regression tests, and documented the trusted client IP contract.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bc7be7e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
