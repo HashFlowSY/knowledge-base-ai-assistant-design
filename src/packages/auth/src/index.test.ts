@@ -72,6 +72,14 @@ describe("@kb/auth", () => {
     expect(getSessionCookieValue("foo=bar")).toBeNull();
   });
 
+  it("treats malformed session cookie encoding as missing credentials", () => {
+    expect(getSessionCookieValue("better-auth.session_token=%")).toBeNull();
+    expect(getSessionCookieValue("foo=%; theme=dark")).toBeNull();
+    expect(getSessionCookieValue("foo=%; better-auth.session_token=abc%2Edef")).toBe(
+      "abc.def",
+    );
+  });
+
   it("hashes and verifies Better Auth compatible password values", async () => {
     const hash = await hashPasswordForAccount("password123");
 

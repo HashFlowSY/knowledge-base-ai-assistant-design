@@ -98,6 +98,79 @@ Authentication middleware should:
 
 Admin middleware should build on authenticated context and check role explicitly.
 
+## Scenario: Session Cookie Parsing
+
+### 1. Scope / Trigger
+
+- Trigger: code reads Better Auth session credentials from a raw `Cookie` header.
+- Applies to auth middleware, auth service session lookup, and rate-limit identity
+  generation.
+
+### 2. Signatures
+
+```typescript
+getSessionCookieValue(cookieHeader: string | null | undefined): string | null
+```
+
+### 3. Contracts
+
+- Supported cookie name: `better-auth.session_token`.
+- Valid encoded session cookie values are decoded before use.
+- Missing, empty, unrelated, or malformed session cookies return `null`.
+- Raw cookie values and decoded session tokens must not be logged.
+- Rate-limit identities may hash the decoded token, but must never include the raw
+  token in the key.
+
+### 4. Validation & Error Matrix
+
+- Missing `Cookie` header -> `null`.
+- Header without `better-auth.session_token` -> `null`.
+- `better-auth.session_token=` -> `null`.
+- `better-auth.session_token=abc%2Edef` -> `"abc.def"`.
+- `better-auth.session_token=%` or other malformed percent-encoding -> `null`.
+- Auth/session routes receiving `null` credentials -> controlled `401`
+  unauthorized envelope, not `500 INTERNAL_ERROR`.
+
+### 5. Good/Base/Bad Cases
+
+- Good: valid encoded session cookie reaches session lookup and session-scoped
+  rate-limit hashing.
+- Base: no usable session cookie falls back to unauthenticated behavior, such as
+  IP-scoped rate limiting and `401`.
+- Bad: `decodeURIComponent(rawCookieValue)` throws `URIError` and bubbles to the
+  global API error mapper.
+
+### 6. Tests Required
+
+- Unit test malformed session cookie parsing returns `null`.
+- Unit test valid encoded session cookie still decodes.
+- Unit test rate-limit identity generation falls back to IP identity for
+  malformed cookies.
+- Route test `/api/auth/session` with malformed session cookie returns `401`, not
+  `500`, after consuming the auth limiter.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+return decodeURIComponent(rawValue);
+```
+
+#### Correct
+
+```typescript
+try {
+  return decodeURIComponent(rawValue);
+} catch (error) {
+  if (error instanceof URIError) {
+    return null;
+  }
+
+  throw error;
+}
+```
+
 ## Input Validation
 
 Validate all external input with Zod or an equivalent schema parser before it reaches package logic.

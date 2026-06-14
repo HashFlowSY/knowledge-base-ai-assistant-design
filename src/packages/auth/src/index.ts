@@ -74,7 +74,15 @@ export function getSessionCookieValue(
       return null;
     }
 
-    return decodeURIComponent(rawValue);
+    try {
+      return decodeURIComponent(rawValue);
+    } catch (error) {
+      if (error instanceof URIError) {
+        return null;
+      }
+
+      throw error;
+    }
   }
 
   return null;

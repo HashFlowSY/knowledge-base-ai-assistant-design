@@ -241,6 +241,46 @@ describe("auth API router", () => {
     });
   });
 
+  it("treats malformed session cookies as missing credentials after auth rate limiting", async () => {
+    const consumedInputs: RateLimitConsumeInput[] = [];
+    const app = createApiApp({
+      rateLimiter: {
+        async consume(input) {
+          consumedInputs.push(input);
+          return {
+            allowed: true,
+            retryAfterSeconds: 60,
+          };
+        },
+      },
+    });
+
+    const response = await app.request("/api/auth/session", {
+      headers: {
+        cookie: "better-auth.session_token=%",
+        "x-forwarded-for": "203.0.113.10",
+        "x-request-id": "req_malformed_session_cookie",
+      },
+    });
+
+    expect(response.status).toBe(401);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      success: false,
+      httpStatus: 401,
+      code: "UNAUTHORIZED",
+      message: "请先登录。",
+      requestId: "req_malformed_session_cookie",
+    });
+    expect(consumedInputs).toHaveLength(1);
+    expect(consumedInputs[0]).toMatchObject({
+      scope: "auth",
+      limit: 120,
+      windowLabel: "1m",
+      windowMs: 60_000,
+    });
+    expect(consumedInputs[0]?.identity).toMatch(/^ip:/);
+  });
+
   it("preserves auth service session error codes and cleanup cookies", async () => {
     const app = createApiApp({
       authService: {

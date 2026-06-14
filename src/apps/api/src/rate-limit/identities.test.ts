@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createRateLimitIdentity } from "./identities";
+import { createRateLimitIdentity, createSessionRateLimitIdentity } from "./identities";
 import { buildRateLimitKey } from "./limiter";
 
 describe("rate-limit identities", () => {
@@ -32,5 +32,25 @@ describe("rate-limit identities", () => {
 
     expect(identity).toMatch(/^session:[a-f0-9]{64}$/);
     expect(identity).not.toContain("better-auth-secret-token");
+  });
+
+  it("extracts supported session cookies before hashing session identities", async () => {
+    const identity = await createSessionRateLimitIdentity({
+      cookieHeader: "foo=bar; better-auth.session_token=better-auth-secret-token",
+      ipSummary: "203.0.113.0/24",
+    });
+
+    expect(identity).toMatch(/^session:[a-f0-9]{64}$/);
+    expect(identity).not.toContain("better-auth-secret-token");
+  });
+
+  it("falls back to IP identity when session cookie encoding is malformed", async () => {
+    const identity = await createSessionRateLimitIdentity({
+      cookieHeader: "better-auth.session_token=%",
+      ipSummary: "203.0.113.0/24",
+    });
+
+    expect(identity).toMatch(/^ip:[a-f0-9]{64}$/);
+    expect(identity).not.toContain("%");
   });
 });
