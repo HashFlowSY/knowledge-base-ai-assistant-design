@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Review backend ownership and affected API layer boundaries."}
+{"file": ".trellis/spec/backend/security.md", "reason": "Verify the fix closes the client-controlled IP trust boundary."}
+{"file": ".trellis/spec/backend/api-contract.md", "reason": "Verify middleware/rate-limit behavior and tests preserve API contract."}
+{"file": ".trellis/spec/shared/typescript.md", "reason": "Verify strict TypeScript conventions and no unsafe shortcuts."}
+{"file": ".trellis/spec/shared/config.md", "reason": "Verify any config choice follows repository config ownership rules."}
+{"file": ".trellis/tasks/06-14-fix-api-trusted-client-ip-rate-limit/research/current-ip-rate-limit-logic.md", "reason": "Review implementation against researched call graph and recommendation."}

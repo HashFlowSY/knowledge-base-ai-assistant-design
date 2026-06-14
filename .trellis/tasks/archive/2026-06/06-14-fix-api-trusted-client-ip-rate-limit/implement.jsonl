@@ -1,0 +1,6 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend stack and API ownership rules for this fix."}
+{"file": ".trellis/spec/backend/security.md", "reason": "Security boundary rules for trusted request metadata, authentication, and rate-limited paths."}
+{"file": ".trellis/spec/backend/api-contract.md", "reason": "Middleware order and route rate-limit contract, including one limiter per request."}
+{"file": ".trellis/spec/shared/typescript.md", "reason": "TypeScript strictness and validation conventions for implementation."}
+{"file": ".trellis/spec/shared/config.md", "reason": "Configuration ownership rules if implementation needs or defers trusted proxy config."}
+{"file": ".trellis/tasks/06-14-fix-api-trusted-client-ip-rate-limit/research/current-ip-rate-limit-logic.md", "reason": "Current IP summary call graph, Hono conninfo findings, and recommended approach."}
