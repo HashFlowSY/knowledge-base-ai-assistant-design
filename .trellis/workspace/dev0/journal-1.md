@@ -1251,3 +1251,36 @@ Validated UUID path params at API boundaries, ensured invalid upload UUID params
 ### Next Steps
 
 - None - task complete
+
+
+## Session 38: Fix malformed session cookie rate limit
+
+**Date**: 2026-06-14
+**Task**: Fix malformed session cookie rate limit
+**Branch**: `main`
+
+### Summary
+
+Handled malformed Better Auth session cookie encoding as missing credentials, added parser/rate-limit/API regression coverage, and documented the session cookie parsing contract.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c802ed1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
