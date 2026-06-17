@@ -17,6 +17,7 @@
   "dependencies": {
     "@kb/audit": "workspace:*",
     "@kb/db": "workspace:*",
+    "@kb/errors": "workspace:*",
     "@kb/observability": "workspace:*",
     "@kb/queue": "workspace:*",
     "@kb/shared": "workspace:*",

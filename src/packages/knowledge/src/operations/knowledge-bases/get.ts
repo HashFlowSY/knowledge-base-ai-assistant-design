@@ -17,7 +17,7 @@ export async function getKnowledgeBaseOperation(
 ): ReturnType<KnowledgeBaseService["getKnowledgeBase"]> {
   const row = await findVisibleKnowledgeBaseRow(options.db, input);
   if (row === null) {
-    return createNotFoundError();
+    throw createNotFoundError();
   }
 
   const [memberRows, documentCounts] = await Promise.all([

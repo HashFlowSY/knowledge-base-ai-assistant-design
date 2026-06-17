@@ -1,12 +1,19 @@
 import type { Context, MiddlewareHandler } from "hono";
 
+import {
+  forbidden,
+  unsupportedMediaType,
+  validationError,
+  type AppError,
+} from "@kb/errors";
+
 import type { ApiEnv } from "../contracts";
-import { hasRequestBody, respondWithError } from "../http";
+import { hasRequestBody } from "../http";
 
 type RejectionHandler = (
   context: Context<ApiEnv>,
-  response: Response,
-) => Promise<Response> | Response;
+  error: AppError,
+) => Promise<void> | void;
 
 interface MutationGuardOptions {
   allowedOrigins: string[];
@@ -17,9 +24,9 @@ export function createMutationGuardMiddleware(
   options: MutationGuardOptions,
 ): MiddlewareHandler<ApiEnv> {
   return async (context, next) => {
-    const response = validateMutationRequest(context, options.allowedOrigins);
-    if (response !== null) {
-      return handleRejection(context, response, options.onRejected);
+    const error = validateMutationRequest(context, options.allowedOrigins);
+    if (error !== null) {
+      return handleRejection(context, error, options.onRejected);
     }
 
     return next();
@@ -30,11 +37,11 @@ export function createJsonMutationGuardMiddleware(
   options: MutationGuardOptions,
 ): MiddlewareHandler<ApiEnv> {
   return async (context, next) => {
-    const response =
+    const error =
       validateMutationRequest(context, options.allowedOrigins) ??
       validateJsonContentType(context);
-    if (response !== null) {
-      return handleRejection(context, response, options.onRejected);
+    if (error !== null) {
+      return handleRejection(context, error, options.onRejected);
     }
 
     return next();
@@ -52,9 +59,9 @@ export function createMultipartFormDataGuardMiddleware(options: {
     ) {
       return handleRejection(
         context,
-        respondWithError(context, {
-          code: "UNSUPPORTED_MEDIA_TYPE",
-          httpStatus: 415,
+        unsupportedMediaType({
+          domain: "api",
+          reason: "invalid_content_type",
           message: "请使用 multipart/form-data 请求体。",
         }),
         options.onRejected,
@@ -72,9 +79,9 @@ export function createNoBodyGuardMiddleware(options: {
     if (hasRequestBody(context.req.raw)) {
       return handleRejection(
         context,
-        respondWithError(context, {
-          code: "VALIDATION_ERROR",
-          httpStatus: 400,
+        validationError({
+          domain: "api",
+          reason: "unexpected_request_body",
           message: "请检查填写内容。",
         }),
         options.onRejected,
@@ -88,13 +95,12 @@ export function createNoBodyGuardMiddleware(options: {
 function validateMutationRequest(
   context: Context<ApiEnv>,
   allowedOrigins: string[],
-): Response | null {
+): AppError | null {
   const origin = context.req.header("origin");
   if (origin === undefined || !allowedOrigins.includes(origin)) {
-    return respondWithError(context, {
-      code: "FORBIDDEN",
-      httpStatus: 403,
-      message: "你没有权限执行此操作。",
+    return forbidden({
+      domain: "api",
+      reason: "bad_origin",
     });
   }
 
@@ -104,25 +110,24 @@ function validateMutationRequest(
     secFetchSite !== "same-origin" &&
     secFetchSite !== "same-site"
   ) {
-    return respondWithError(context, {
-      code: "FORBIDDEN",
-      httpStatus: 403,
-      message: "你没有权限执行此操作。",
+    return forbidden({
+      domain: "api",
+      reason: "bad_fetch_site",
     });
   }
 
   return null;
 }
 
-function validateJsonContentType(context: Context<ApiEnv>): Response | null {
+function validateJsonContentType(context: Context<ApiEnv>): AppError | null {
   const contentType = context.req.header("content-type");
   if (
     contentType === undefined ||
     !contentType.toLowerCase().includes("application/json")
   ) {
-    return respondWithError(context, {
-      code: "UNSUPPORTED_MEDIA_TYPE",
-      httpStatus: 415,
+    return unsupportedMediaType({
+      domain: "api",
+      reason: "invalid_content_type",
       message: "请使用 application/json 请求体。",
     });
   }
@@ -132,12 +137,22 @@ function validateJsonContentType(context: Context<ApiEnv>): Response | null {
 
 function handleRejection(
   context: Context<ApiEnv>,
-  response: Response,
+  error: AppError,
   onRejected: RejectionHandler | undefined,
 ): Promise<Response> | Response {
   if (onRejected === undefined) {
-    return response;
+    throw error;
   }
 
-  return onRejected(context, response);
+  return applyRejectionHandler(context, error, onRejected);
+}
+
+async function applyRejectionHandler(
+  context: Context<ApiEnv>,
+  error: AppError,
+  onRejected: RejectionHandler,
+): Promise<Response> {
+  await onRejected(context, error);
+
+  throw error;
 }

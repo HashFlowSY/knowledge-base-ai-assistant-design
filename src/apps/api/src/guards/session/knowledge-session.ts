@@ -1,7 +1,6 @@
 import type { Context } from "hono";
 
 import type { ApiEnv, ApiRateLimiter, AuthService } from "../../contracts";
-import { appendSetCookieHeaders, respondWithError } from "../../http";
 import {
   rateLimitKnowledgeBase,
   rateLimitUnresolvedKnowledgeBase,
@@ -13,46 +12,26 @@ export async function requireKnowledgeBaseSession(
   authService: AuthService,
   rateLimiter: ApiRateLimiter,
 ): SessionGuardResult {
-  const sessionResult = await authService.getSession({
-    cookieHeader: context.req.header("cookie") ?? null,
-  });
-  if (!sessionResult.ok) {
-    appendSetCookieHeaders(context, sessionResult.setCookieHeaders);
-    const rateLimitResponse = await rateLimitUnresolvedKnowledgeBase(
+  let sessionResult: Awaited<ReturnType<AuthService["getSession"]>>;
+  try {
+    sessionResult = await authService.getSession({
+      cookieHeader: context.req.header("cookie") ?? null,
+    });
+  } catch (error) {
+    await rateLimitUnresolvedKnowledgeBase(
       context,
       rateLimiter,
     );
-    if (rateLimitResponse !== null) {
-      return {
-        ok: false,
-        response: rateLimitResponse,
-      };
-    }
-
-    return {
-      ok: false,
-      response: respondWithError(context, {
-        code: sessionResult.code,
-        httpStatus: sessionResult.httpStatus,
-        message: sessionResult.message,
-      }),
-    };
+    throw error;
   }
 
-  const rateLimitResponse = await rateLimitKnowledgeBase(
+  await rateLimitKnowledgeBase(
     context,
     rateLimiter,
     sessionResult.payload,
   );
-  if (rateLimitResponse !== null) {
-    return {
-      ok: false,
-      response: rateLimitResponse,
-    };
-  }
 
   return {
     actor: sessionResult.payload,
-    ok: true,
   };
 }

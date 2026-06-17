@@ -101,7 +101,20 @@ as attributes instead of inventing incompatible span names:
 
 ## Errors
 
-When logging errors, normalize unknown values:
+When logging `AppError`, log only fields validated by `@kb/errors` and never log
+`responseHeaders`.
+
+When logging ordinary `Error` or unknown values, do not write the raw
+`error.message`, raw `error.stack`, or `String(error)` to log payloads. Upstream
+libraries can include cookies, tokens, provider keys, request bodies, object
+keys, SQL text, or document/chunk content inside exception messages.
+
+Use `createSafeErrorLogFields` from `@kb/observability` with a hard-coded safe
+message. Set `includeStack: true` only when the call site needs stack frames; the
+helper rewrites the stack first line to the safe message and keeps only `at ...`
+frames.
+
+Wrong:
 
 ```typescript
 logger.error("provider_call_failed", {
@@ -111,7 +124,24 @@ logger.error("provider_call_failed", {
 });
 ```
 
+Correct:
+
+```typescript
+logger.error("provider_call_failed", {
+  providerId,
+  operation: "chat",
+  ...createSafeErrorLogFields(error, {
+    message: "Provider call failed.",
+  }),
+});
+```
+
 Re-throw errors when the caller must handle retry, rollback, or HTTP error mapping.
+
+Tests for any new ordinary `Error` logging path must throw an error message that
+contains at least one secret-like value, such as `token=secret_token`,
+`requestBody={}`, or an object key, and assert that the serialized log records do
+not contain that value.
 
 ## API Error Handler
 

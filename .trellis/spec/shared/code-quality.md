@@ -62,16 +62,20 @@ Never log:
 Do not swallow errors silently.
 
 ```typescript
+import { createSafeErrorLogFields } from "@kb/observability";
+
 try {
   await runIngestionStep(jobId);
 } catch (error) {
   logger.error("ingestion_step_failed", {
     jobId,
-    error: error instanceof Error ? error.message : String(error),
+    ...createSafeErrorLogFields(error, { message: "Ingestion step failed." }),
   });
   throw error;
 }
 ```
+
+Do not write raw `error.message`, raw `error.stack`, or `String(error)` to log payloads.
 
 API errors should use the project error contract:
 
@@ -125,4 +129,3 @@ Remove:
 - Unused variables, functions, and types
 - Commented-out implementation blocks
 - Unreachable code
-

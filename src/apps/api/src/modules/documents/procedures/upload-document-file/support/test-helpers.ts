@@ -1,4 +1,5 @@
 import { sessionPayloadSchema, type SessionPayload } from "@kb/auth";
+import { unauthorized } from "@kb/errors";
 
 import type {
   AuthService,
@@ -120,12 +121,11 @@ export function createStaticAuthService(payload: SessionPayload): AuthService {
 
   return {
     async login() {
-      return {
-        code: "UNAUTHORIZED",
-        httpStatus: 401,
+      throw unauthorized({
+        domain: "auth",
+        reason: "invalid_credentials",
         message: "邮箱或密码不正确。",
-        ok: false,
-      };
+      });
     },
     async logout() {
       return { ok: true };
@@ -148,12 +148,11 @@ export function createRejectingAuthService(): AuthService {
       throw new Error("not used");
     },
     async getSession() {
-      return {
-        code: "UNAUTHORIZED",
-        httpStatus: 401,
+      throw unauthorized({
+        domain: "auth",
+        reason: "missing_session",
         message: "请先登录。",
-        ok: false,
-      };
+      });
     },
   };
 }

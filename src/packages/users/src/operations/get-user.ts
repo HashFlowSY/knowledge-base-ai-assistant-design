@@ -13,7 +13,7 @@ export async function getUserOperation(
   });
 
   if (target === null) {
-    return createNotFoundError();
+    throw createNotFoundError();
   }
 
   return { ok: true, user: toUserSummary(target) };

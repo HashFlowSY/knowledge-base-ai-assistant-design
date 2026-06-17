@@ -4,6 +4,7 @@ import {
   objectCleanupFailedCode,
   objectUploadFailedCode,
 } from "./shared/constants";
+import { isAppError } from "@kb/errors";
 import { authorizeUpload } from "./access/authorization";
 import {
   cleanupObjectAfterFinalizationFailure,
@@ -14,10 +15,7 @@ import { enqueueFinalizedUpload, finalizeUpload } from "./lifecycle/finalization
 import { reserveUploadMetadata } from "./metadata/reservation";
 import { findExistingUploadResult } from "./metadata/results";
 import { logUploadFailure, writeUploadAudit } from "./observability/audit";
-import {
-  createInternalError,
-  fromServiceException,
-} from "../../service/errors";
+import { createInternalError } from "../../service/errors";
 import type { KnowledgeBaseServiceOptions } from "../../service/types";
 import type {
   ReservedUpload,
@@ -33,10 +31,14 @@ export async function uploadDocumentFileOperation(
   try {
     return await runUploadDocumentFileOperation(options, input);
   } catch (error) {
+    if (isAppError(error)) {
+      throw error;
+    }
+
     logUploadFailure(options, "document_upload_operation_failed", input, {
       error,
     });
-    return createInternalError();
+    throw createInternalError(error);
   }
 }
 
@@ -47,12 +49,12 @@ async function runUploadDocumentFileOperation(
   const objectStorage = options.objectStorage;
   const sourceBucket = options.sourceBucket;
   if (objectStorage === undefined || sourceBucket === undefined) {
-    return createInternalError();
+    throw createInternalError();
   }
 
   const authorization = await authorizeUpload(options.db, input);
   if (!authorization.ok) {
-    return authorization.error;
+    throw authorization.error;
   }
 
   const duplicate = await findExistingUploadResult(options.db, input);
@@ -77,7 +79,11 @@ async function runUploadDocumentFileOperation(
       }
     }
 
-    return fromServiceException(error);
+    if (isAppError(error)) {
+      throw error;
+    }
+
+    throw createInternalError(error);
   }
 
   try {
@@ -111,7 +117,7 @@ async function runUploadDocumentFileOperation(
       sourceId: reservation.sourceId,
     });
 
-    return createInternalError();
+    throw createInternalError(error);
   }
 
   try {
@@ -160,13 +166,12 @@ async function runUploadDocumentFileOperation(
         metadata: {
           bucket: sourceBucket,
           knowledgeBaseId: input.knowledgeBaseId,
-          objectKey: reservation.objectKey,
           sourceType: "file",
         },
       });
     }
 
-    return createInternalError();
+    throw createInternalError(error);
   }
 }
 

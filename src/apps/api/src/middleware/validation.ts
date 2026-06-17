@@ -1,8 +1,10 @@
 import type { Context, MiddlewareHandler } from "hono";
 import type { z } from "zod";
 
+import { validationError } from "@kb/errors";
+
 import type { ApiEnv } from "../contracts";
-import { readJsonBody, respondWithValidationError } from "../http";
+import { readJsonBody } from "../http";
 
 export function createJsonBodyValidationMiddleware<T>(
   key: string,
@@ -12,7 +14,7 @@ export function createJsonBodyValidationMiddleware<T>(
     const body = await readJsonBodyOnce(context);
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
-      return respondWithValidationError(context, parsed.error);
+      throw createValidationAppError("invalid_request_body", parsed.error);
     }
 
     setValidatedInput(context, key, parsed.data);
@@ -28,7 +30,7 @@ export function createQueryValidationMiddleware<T>(
     const query = Object.fromEntries(new URL(context.req.url).searchParams);
     const parsed = schema.safeParse(query);
     if (!parsed.success) {
-      return respondWithValidationError(context, parsed.error);
+      throw createValidationAppError("invalid_query_params", parsed.error);
     }
 
     setValidatedInput(context, key, parsed.data);
@@ -43,12 +45,27 @@ export function createParamValidationMiddleware<T>(
   return async (context, next) => {
     const parsed = schema.safeParse(context.req.param());
     if (!parsed.success) {
-      return respondWithValidationError(context, parsed.error);
+      throw createValidationAppError("invalid_path_params", parsed.error);
     }
 
     setValidatedInput(context, key, parsed.data);
     return next();
   };
+}
+
+function createValidationAppError(
+  reason: "invalid_request_body" | "invalid_query_params" | "invalid_path_params",
+  error: z.ZodError,
+) {
+  return validationError({
+    domain: "api",
+    reason,
+    message: "请检查填写内容。",
+    validationErrors: error.issues.map((issue) => ({
+      path: issue.path,
+      message: issue.message,
+    })),
+  });
 }
 
 export async function readJsonBodyOnce(

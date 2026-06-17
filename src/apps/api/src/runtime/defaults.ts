@@ -3,6 +3,7 @@ import {
   modelServiceKindOrder,
   type ProviderPublicKey,
 } from "@kb/ai-providers";
+import { internalError, unauthorized, validationError } from "@kb/errors";
 import {
   decryptRsaOaep,
   generateRsaOaepKeyPair,
@@ -10,7 +11,6 @@ import {
 } from "@kb/security";
 
 import type {
-  ApiServiceError,
   AuditService,
   AuthService,
   ChatService,
@@ -24,23 +24,21 @@ import type {
 export function createUnauthenticatedAuthService(): AuthService {
   return {
     async login() {
-      return {
-        ok: false,
-        code: "UNAUTHORIZED",
-        httpStatus: 401,
+      throw unauthorized({
+        domain: "auth",
+        reason: "invalid_credentials",
         message: "邮箱或密码不正确。",
-      };
+      });
     },
     async logout() {
       return { ok: true };
     },
     async getSession() {
-      return {
-        ok: false,
-        code: "UNAUTHORIZED",
-        httpStatus: 401,
+      throw unauthorized({
+        domain: "auth",
+        reason: "missing_session",
         message: "请先登录。",
-      };
+      });
     },
   };
 }
@@ -78,7 +76,7 @@ export function createEmptyProviderConfigService(): ProviderConfigApiService {
       };
     },
     async saveProviderConfig() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
   };
 }
@@ -114,18 +112,29 @@ export function createInMemoryProviderTransportKeyService(input: {
       pruneExpiredKeys(keyPairs, now());
       const keyPair = keyPairs.get(decryptInput.keyId) ?? null;
       if (keyPair === null || Date.parse(keyPair.expiresAt) <= now().getTime()) {
-        return {
-          ok: false,
-          code: "VALIDATION_ERROR",
-          httpStatus: 400,
+        throw validationError({
+          domain: "providers",
+          reason: "transport_key_expired",
           message: "密钥传输凭证已过期，请重新保存。",
-        };
+        });
       }
 
-      const plaintext = await decryptRsaOaep({
-        ciphertext: decryptInput.ciphertext,
-        privateKey: keyPair.privateKey,
-      });
+      let plaintext: string;
+      try {
+        plaintext = await decryptRsaOaep({
+          ciphertext: decryptInput.ciphertext,
+          privateKey: keyPair.privateKey,
+        });
+      } catch (error) {
+        throw validationError(
+          {
+            domain: "providers",
+            reason: "transport_key_invalid",
+            message: "密钥传输凭证无效，请重新保存。",
+          },
+          { cause: error },
+        );
+      }
 
       return {
         ok: true,
@@ -149,16 +158,16 @@ export function createEmptyUserService(): UserService {
       };
     },
     async createUser() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
     async getUser() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
     async updateUser() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
     async removeUserAccess() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
   };
 }
@@ -166,13 +175,13 @@ export function createEmptyUserService(): UserService {
 export function createEmptyDocumentService(): DocumentService {
   return {
     async listDocumentProcessing() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
     async retryDocumentProcessing() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
     async uploadDocumentFile() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
   };
 }
@@ -191,13 +200,13 @@ export function createEmptyKnowledgeBaseService(): KnowledgeBaseService {
       };
     },
     async getKnowledgeBase() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
     async createKnowledgeBase() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
     async updateKnowledgeBase() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
   };
 }
@@ -208,27 +217,26 @@ export function createEmptyChatService(): ChatService {
       return { ok: true, result: { sessions: [] } };
     },
     async createSession() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
     async listMessages() {
       return { ok: true, result: { messages: [] } };
     },
     async submitQuestion() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
     async submitFeedback() {
-      return createNotImplementedServiceError();
+      throw createNotImplementedAppError();
     },
   };
 }
 
-function createNotImplementedServiceError(): ApiServiceError {
-  return {
-    ok: false,
-    code: "INTERNAL_ERROR",
-    httpStatus: 500,
+function createNotImplementedAppError(): Error {
+  return internalError({
+    domain: "api",
+    reason: "not_implemented",
     message: "操作失败，请稍后重试。",
-  };
+  });
 }
 
 function pruneExpiredKeys(

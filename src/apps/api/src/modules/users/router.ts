@@ -7,6 +7,7 @@ import {
   createJsonMutationGuardMiddleware,
   createMutationGuardMiddleware,
   createNoBodyGuardMiddleware,
+  createParamValidationMiddleware,
   createQueryValidationMiddleware,
   createUserManagementRejectionRateLimitHandler,
 } from "../../middleware";
@@ -20,6 +21,7 @@ import {
   createUserInputSchema,
   listUsersQuerySchema,
   updateUserInputSchema,
+  userPathParamsSchema,
 } from "./types";
 
 export function createUsersRouter(
@@ -58,13 +60,17 @@ export function createUsersRouter(
     createJsonBodyValidationMiddleware("createUserBody", createUserInputSchema),
     (context) => createUserProcedure(context, dependencies),
   );
-  router.get("/api/users/:userId", requireAdmin, (context) =>
-    getUserProcedure(context, dependencies),
+  router.get(
+    "/api/users/:userId",
+    requireAdmin,
+    createParamValidationMiddleware("userPathParams", userPathParamsSchema),
+    (context) => getUserProcedure(context, dependencies),
   );
   router.patch(
     "/api/users/:userId",
     jsonMutationGuard,
     requireAdmin,
+    createParamValidationMiddleware("userPathParams", userPathParamsSchema),
     createJsonBodyValidationMiddleware("updateUserBody", updateUserInputSchema),
     (context) => updateUserProcedure(context, dependencies),
   );
@@ -73,6 +79,7 @@ export function createUsersRouter(
     mutationGuard,
     noBodyGuard,
     requireAdmin,
+    createParamValidationMiddleware("userPathParams", userPathParamsSchema),
     (context) => removeUserAccessProcedure(context, dependencies),
   );
 

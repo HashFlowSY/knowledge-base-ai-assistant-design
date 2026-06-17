@@ -57,12 +57,12 @@ export async function retryDocumentProcessingOperation(
     knowledgeBaseId: input.knowledgeBaseId,
   });
   if (knowledgeBase === null) {
-    return createNotFoundError();
+    throw createNotFoundError();
   }
 
   const candidate = await findLatestRetryCandidate(options, input);
   if (candidate === null) {
-    return createNotFoundError();
+    throw createNotFoundError();
   }
 
   if (!canQueueRetry(candidate)) {
@@ -327,7 +327,7 @@ async function returnCurrentDocumentSummary(
 ): ReturnType<KnowledgeBaseService["retryDocumentProcessing"]> {
   const summary = await findDocumentProcessingSummary(options, input);
   if (summary === null) {
-    return createInternalError();
+    throw createInternalError();
   }
 
   return {

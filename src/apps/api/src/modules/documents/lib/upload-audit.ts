@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 
 import type { SessionPayload } from "@kb/auth";
-import { createLogger } from "@kb/observability";
+import { createLogger, createSafeErrorLogFields } from "@kb/observability";
 
 import type { ApiEnv } from "../../../contracts";
 import { getRequestIpSummary } from "../../../guards";
@@ -31,7 +31,9 @@ export async function recordUploadSecurityFailure(
     });
   } catch (error) {
     uploadLogger.error("document_upload_security_audit_failed", {
-      error: error instanceof Error ? error.message : String(error),
+      ...createSafeErrorLogFields(error, {
+        message: "Document upload security audit failed.",
+      }),
       reason: input.reason,
       requestId: context.get("requestId"),
     });

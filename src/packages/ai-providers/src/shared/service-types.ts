@@ -130,22 +130,10 @@ export interface ProviderConfigServiceOptions {
   auditRecorder?: (input: ProviderAuditEventInput) => Promise<void>;
 }
 
-export interface ProviderConfigServiceError {
-  ok: false;
-  code:
-    | "VALIDATION_ERROR"
-    | "FORBIDDEN"
-    | "RATE_LIMITED"
-    | "PROVIDER_UNAVAILABLE"
-    | "INTERNAL_ERROR";
-  httpStatus: 400 | 403 | 429 | 500;
-  message: string;
-}
-
 export interface ProviderConfigService {
   listProviderConfigs(input: {
     actor: ProviderConfigActor;
-  }): Promise<{ ok: true; providers: ProviderSummary[] } | ProviderConfigServiceError>;
+  }): Promise<{ ok: true; providers: ProviderSummary[] }>;
   saveProviderConfig(input: {
     actor: ProviderConfigActor;
     body: ProviderConfigServiceSaveBody;
@@ -153,7 +141,7 @@ export interface ProviderConfigService {
     kind: ModelServiceKind;
     requestId: string;
     userAgentSummary?: string | null;
-  }): Promise<{ ok: true; provider: ProviderSummary } | ProviderConfigServiceError>;
+  }): Promise<{ ok: true; provider: ProviderSummary }>;
 }
 
 export type EmbeddingFetch = (input: string, init: RequestInit) => Promise<Response>;

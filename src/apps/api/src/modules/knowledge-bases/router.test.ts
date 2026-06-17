@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { sessionPayloadSchema, type SessionPayload } from "@kb/auth";
+import { conflict, unauthorized } from "@kb/errors";
 import {
   knowledgeBaseDetailSchema,
   knowledgeBasesPageSchema,
@@ -160,7 +161,7 @@ describe("knowledge-base API", () => {
     });
   });
 
-  it("creates knowledge bases with admin actor and maps conflicts to 409", async () => {
+  it("creates knowledge bases with admin actor and maps AppError conflicts to 409", async () => {
     const app = createApiApp({
       authService: createStaticAuthService(adminSession),
       knowledgeBaseService: {
@@ -175,12 +176,11 @@ describe("knowledge-base API", () => {
             memberIds: ["member_1"],
             name: "采购知识库",
           });
-          return {
-            ok: false,
-            code: "CONFLICT",
-            httpStatus: 409,
+          throw conflict({
+            domain: "knowledge",
+            reason: "duplicate_knowledge_base_name",
             message: "当前租户下已存在同名知识库。",
-          };
+          });
         },
       },
     });
@@ -343,12 +343,11 @@ describe("knowledge-base API", () => {
           throw new Error("not used");
         },
         async getSession() {
-          return {
-            code: "UNAUTHORIZED",
-            httpStatus: 401,
+          throw unauthorized({
+            domain: "auth",
+            reason: "missing_session",
             message: "请先登录。",
-            ok: false,
-          };
+          });
         },
       },
       rateLimiter: {
@@ -398,12 +397,11 @@ function createStaticAuthService(payload: SessionPayload): AuthService {
 
   return {
     async login() {
-      return {
-        code: "UNAUTHORIZED",
-        httpStatus: 401,
+      throw unauthorized({
+        domain: "auth",
+        reason: "invalid_credentials",
         message: "邮箱或密码不正确。",
-        ok: false,
-      };
+      });
     },
     async logout() {
       return { ok: true };

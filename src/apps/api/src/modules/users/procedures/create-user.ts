@@ -1,10 +1,7 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import {
-  createSuccessResponse,
-  respondWithServiceError,
-} from "../../../http";
+import { createSuccessResponse } from "../../../http";
 import { getRequiredActor, getValidatedInput } from "../../../middleware";
 import type { UserRouteDependencies } from "../dependencies";
 import type { CreateUserInput } from "../types";
@@ -17,9 +14,6 @@ export async function createUserProcedure(
     actor: getRequiredActor(context),
     body: getValidatedInput<CreateUserInput>(context, "createUserBody"),
   });
-  if (!result.ok) {
-    return respondWithServiceError(context, result);
-  }
 
   return context.json(
     createSuccessResponse({

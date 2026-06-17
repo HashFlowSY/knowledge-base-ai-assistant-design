@@ -7,7 +7,8 @@ import {
   defaultUploadRateLimitPerMinute,
   defaultUploadRequestOverheadBytes,
 } from "@kb/config";
-import { createLogger } from "@kb/observability";
+import { createLogger, createSafeErrorLogFields } from "@kb/observability";
+import { isAppError } from "@kb/errors";
 
 import type {
   ApiApp,
@@ -27,7 +28,6 @@ export type {
   ApiEnv,
   ApiRateLimiter,
   ApiRuntimeResource,
-  ApiServiceError,
   AuditService,
   AuthService,
   ChatService,
@@ -57,6 +57,7 @@ import {
   createUnauthenticatedAuthService,
 } from "./runtime/defaults";
 import { createErrorResponse } from "./http";
+import { appendSetCookieHeaders } from "./http/cookies";
 import {
   createInMemoryRateLimitStore,
   createRateLimiter,
@@ -126,8 +127,48 @@ export function createApiApp(options: ApiAppOptions = {}): ApiApp {
     const requestId = context.get("requestId") || crypto.randomUUID();
     const requestLogger = context.get("logger") ?? logger.child({ requestId });
     context.header("X-Request-Id", requestId);
+
+    if (isAppError(error)) {
+      const appError = error.data;
+      if (appError.responseHeaders?.retryAfterSeconds !== undefined) {
+        context.header(
+          "Retry-After",
+          appError.responseHeaders.retryAfterSeconds.toString(),
+        );
+      }
+      appendSetCookieHeaders(context, appError.responseHeaders?.setCookie);
+
+      requestLogger.error("api_request_app_error", {
+        code: appError.code,
+        httpStatus: appError.httpStatus,
+        domain: appError.domain,
+        reason: appError.reason,
+        retryable: appError.retryable ?? false,
+        ...(appError.metadata === undefined
+          ? {}
+          : { metadata: appError.metadata }),
+        error: error.message,
+        stack: error.stack ?? "",
+      });
+
+      return context.json(
+        createErrorResponse({
+          code: appError.code,
+          httpStatus: appError.httpStatus,
+          message: appError.message,
+          requestId,
+          ...(appError.validationErrors === undefined
+            ? {}
+            : { validationErrors: appError.validationErrors }),
+        }),
+        appError.httpStatus,
+      );
+    }
+
     requestLogger.error("api_request_unhandled_error", {
-      error: error instanceof Error ? error.message : String(error),
+      ...createSafeErrorLogFields(error, {
+        message: "Unhandled API error.",
+      }),
       method: context.req.method,
       path: context.req.path,
     });

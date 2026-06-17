@@ -25,6 +25,7 @@ Packages:
 - `src/packages/audit`
 - `src/packages/security`
 - `src/packages/observability`
+- `src/packages/errors`
 - `src/packages/config`
 - `src/packages/shared`
 
@@ -44,6 +45,7 @@ Foundation packages:
 - `shared`
 - `config`
 - `observability`
+- `errors`
 
 Infrastructure packages:
 
@@ -72,6 +74,7 @@ Domain packages may depend on:
 - `shared`
 - `config`
 - `observability`
+- `errors`
 - `db`
 - `storage`
 - `search`
@@ -84,8 +87,11 @@ Infrastructure packages may depend on:
 - `shared`
 - `config`
 - `observability`
+- `errors`
 
 Foundation packages must not depend on domain or infrastructure packages.
+`@kb/errors` is a foundation package for API-facing backend error contracts and
+may depend on `@kb/shared`; `@kb/shared` must not depend on `@kb/errors`.
 
 ## Adjacent Domain Dependencies
 

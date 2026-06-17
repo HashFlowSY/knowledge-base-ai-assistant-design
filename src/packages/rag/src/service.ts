@@ -1,3 +1,5 @@
+import { isAppError } from "@kb/errors";
+
 import { fuseRetrievalCandidates } from "./fusion";
 import {
   appendGroundedAnswer,
@@ -35,7 +37,7 @@ export function createRagChatService(input: {
         knowledgeBaseId: request.body.knowledgeBaseId,
       });
       if (!access) {
-        return forbiddenKnowledgeBase();
+        throw forbiddenKnowledgeBase();
       }
 
       const session = await input.repository.createSession({
@@ -49,7 +51,7 @@ export function createRagChatService(input: {
     async listMessages(request) {
       const messages = await input.repository.listMessages(request);
       if (messages === null) {
-        return chatResourceNotFound();
+        throw chatResourceNotFound();
       }
 
       return {
@@ -64,7 +66,7 @@ export function createRagChatService(input: {
           knowledgeBaseId: request.query.knowledgeBaseId,
         });
         if (!access) {
-          return forbiddenKnowledgeBase();
+          throw forbiddenKnowledgeBase();
         }
       }
 
@@ -76,7 +78,7 @@ export function createRagChatService(input: {
     async submitFeedback(request) {
       const feedback = await input.repository.saveFeedback(request);
       if (feedback === null) {
-        return chatResourceNotFound();
+        throw chatResourceNotFound();
       }
 
       return {
@@ -91,7 +93,7 @@ export function createRagChatService(input: {
         knowledgeBaseId: request.body.knowledgeBaseId,
       });
       if (!access) {
-        return forbiddenKnowledgeBase();
+        throw forbiddenKnowledgeBase();
       }
 
       const session =
@@ -107,7 +109,7 @@ export function createRagChatService(input: {
               sessionId: request.body.sessionId,
             });
       if (session === null) {
-        return chatResourceNotFound();
+        throw chatResourceNotFound();
       }
 
       const userMessage = await input.repository.appendMessage({
@@ -132,37 +134,51 @@ export function createRagChatService(input: {
         limit: ragRetrievalDefaults.recentHistoryLimit,
         sessionId: session.id,
       });
-      const candidates = await retrieveCandidates({
-        embeddingProvider: input.embeddingProvider,
-        keywordSearcher: input.keywordSearcher,
-        repository: input.repository,
-        knowledgeBaseId: request.body.knowledgeBaseId,
-        query: question,
-        requestId: request.requestId,
-        tenantId: request.actor.tenant.id,
-      });
-      const fused = fuseRetrievalCandidates({
-        fusedLimit: ragRetrievalDefaults.fusedTopK,
-        keyword: candidates.keyword,
-        vector: candidates.vector,
-      });
-      const reranked = await rankCandidates({
-        candidates: fused.map((candidate, index) => ({
-          ...candidate,
-          rank: index + 1,
-        })),
-        query: question,
-        requestId: request.requestId,
-        logger: input.logger,
-        reranker: input.reranker,
-        tenantId: request.actor.tenant.id,
-      });
-      const context = assembleRankedContext({ candidates: reranked.candidates });
-      await input.repository.recordRetrievalResults({
-        actor: request.actor,
-        candidates: reranked.candidates,
-        retrievalRunId: retrievalRun.id,
-      });
+      let reranked: Awaited<ReturnType<typeof rankCandidates>>;
+      let context: ReturnType<typeof assembleRankedContext>;
+      try {
+        const candidates = await retrieveCandidates({
+          embeddingProvider: input.embeddingProvider,
+          keywordSearcher: input.keywordSearcher,
+          repository: input.repository,
+          knowledgeBaseId: request.body.knowledgeBaseId,
+          query: question,
+          requestId: request.requestId,
+          retrievalRunId: retrievalRun.id,
+          tenantId: request.actor.tenant.id,
+        });
+        const fused = fuseRetrievalCandidates({
+          fusedLimit: ragRetrievalDefaults.fusedTopK,
+          keyword: candidates.keyword,
+          vector: candidates.vector,
+        });
+        reranked = await rankCandidates({
+          candidates: fused.map((candidate, index) => ({
+            ...candidate,
+            rank: index + 1,
+          })),
+          query: question,
+          requestId: request.requestId,
+          logger: input.logger,
+          reranker: input.reranker,
+          tenantId: request.actor.tenant.id,
+        });
+        context = assembleRankedContext({ candidates: reranked.candidates });
+        await input.repository.recordRetrievalResults({
+          actor: request.actor,
+          candidates: reranked.candidates,
+          retrievalRunId: retrievalRun.id,
+        });
+      } catch (error) {
+        await input.repository.completeRetrievalRun({
+          actor: request.actor,
+          errorCode: getRetrievalRunFailureCode(error),
+          errorMessage: getRetrievalRunFailureMessage(error),
+          retrievalRunId: retrievalRun.id,
+          status: "failed",
+        });
+        throw error;
+      }
       await input.repository.completeRetrievalRun({
         actor: request.actor,
         retrievalRunId: retrievalRun.id,
@@ -207,4 +223,12 @@ export function createRagChatService(input: {
       };
     },
   };
+}
+
+function getRetrievalRunFailureCode(error: unknown): string {
+  return isAppError(error) ? error.data.reason : "unexpected_error";
+}
+
+function getRetrievalRunFailureMessage(error: unknown): string {
+  return isAppError(error) ? error.data.message : "检索失败，请稍后重试。";
 }

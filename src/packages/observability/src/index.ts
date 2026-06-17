@@ -30,6 +30,11 @@ export interface Logger {
 
 export type LogSink = (record: LogRecord) => void;
 
+export interface SafeErrorLogFieldOptions {
+  includeStack?: boolean;
+  message: string;
+}
+
 const secretLikeKeys = new Set([
   "authorization",
   "cookie",
@@ -52,6 +57,29 @@ export function redactLogFields(
       secretLikeKeys.has(key) ? "[REDACTED]" : value,
     ]),
   );
+}
+
+export function createSafeErrorLogFields(
+  error: unknown,
+  options: SafeErrorLogFieldOptions,
+): { error: string; stack?: string } {
+  if (options.includeStack !== true) {
+    return { error: options.message };
+  }
+
+  return {
+    error: options.message,
+    stack: error instanceof Error ? createSafeErrorStack(error, options.message) : "",
+  };
+}
+
+function createSafeErrorStack(error: Error, message: string): string {
+  const frames =
+    error.stack
+      ?.split("\n")
+      .filter((line) => line.trimStart().startsWith("at ")) ?? [];
+
+  return [`Error: ${message}`, ...frames].join("\n");
 }
 
 export function createJsonConsoleLogSink(

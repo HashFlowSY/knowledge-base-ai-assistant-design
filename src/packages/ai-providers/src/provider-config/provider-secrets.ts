@@ -14,7 +14,6 @@ import type {
   ProviderConfigActor,
   ProviderConfigRecord,
   ProviderConfigRepository,
-  ProviderConfigServiceError,
   ProviderConfigServiceSaveBody,
   ProviderSecretCreateInput,
 } from "../shared/service-types";
@@ -28,13 +27,12 @@ export async function resolveCandidateApiKey(input: {
   existingConfig: ProviderConfigRecord | null;
   repository: ProviderConfigRepository;
 }): Promise<
-  | {
-      ok: true;
-      apiKey: string;
-      existingPlaintext: string | null;
-      source: "existing" | "new";
-    }
-  | ProviderConfigServiceError
+  {
+    ok: true;
+    apiKey: string;
+    existingPlaintext: string | null;
+    source: "existing" | "new";
+  }
 > {
   if (input.body.apiKey.mode === "plaintext") {
     const existingPlaintext = await decryptExistingApiKey({
@@ -43,9 +41,6 @@ export async function resolveCandidateApiKey(input: {
       existingConfig: input.existingConfig,
       repository: input.repository,
     });
-    if (!existingPlaintext.ok) {
-      return existingPlaintext;
-    }
 
     return {
       ok: true,
@@ -56,7 +51,10 @@ export async function resolveCandidateApiKey(input: {
   }
 
   if (input.existingConfig === null || input.existingConfig.secretRecordId === null) {
-    return createValidationError("首次配置模型服务必须提供 API Key。");
+    throw createValidationError(
+      "首次配置模型服务必须提供 API Key。",
+      "missing_provider_api_key",
+    );
   }
 
   const existingPlaintext = await decryptExistingApiKey({
@@ -65,12 +63,12 @@ export async function resolveCandidateApiKey(input: {
     existingConfig: input.existingConfig,
     repository: input.repository,
   });
-  if (!existingPlaintext.ok) {
-    return existingPlaintext;
-  }
 
   if (existingPlaintext.apiKey === null) {
-    return createValidationError("首次配置模型服务必须提供 API Key。");
+    throw createValidationError(
+      "首次配置模型服务必须提供 API Key。",
+      "missing_provider_api_key",
+    );
   }
 
   return {
@@ -86,7 +84,7 @@ export async function decryptExistingApiKey(input: {
   encryptionKey: Aes256GcmKey;
   existingConfig: ProviderConfigRecord | null;
   repository: ProviderConfigRepository;
-}): Promise<{ ok: true; apiKey: string | null } | ProviderConfigServiceError> {
+}): Promise<{ ok: true; apiKey: string | null }> {
   if (input.existingConfig?.secretRecordId === null || input.existingConfig === null) {
     return {
       ok: true,
@@ -99,7 +97,7 @@ export async function decryptExistingApiKey(input: {
     tenantId: input.actor.tenant.id,
   });
   if (secret === null) {
-    return createInternalError();
+    throw createInternalError();
   }
 
   try {
@@ -119,7 +117,7 @@ export async function decryptExistingApiKey(input: {
       apiKey,
     };
   } catch {
-    return createInternalError();
+    throw createInternalError();
   }
 }
 

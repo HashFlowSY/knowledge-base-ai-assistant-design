@@ -6,7 +6,6 @@ import type {
   AuditService,
   AuthService,
 } from "../../contracts";
-import { appendSetCookieHeaders, respondWithError } from "../../http";
 import { respondWithForbiddenAdminAttempt } from "./audit";
 import { requireKnowledgeBaseSession } from "./knowledge-session";
 import {
@@ -21,57 +20,34 @@ export async function requireAdminUserManagementSession(
   authService: AuthService,
   rateLimiter: ApiRateLimiter,
 ): SessionGuardResult {
-  const sessionResult = await authService.getSession({
-    cookieHeader: context.req.header("cookie") ?? null,
-  });
-  if (!sessionResult.ok) {
-    appendSetCookieHeaders(context, sessionResult.setCookieHeaders);
-    const rateLimitResponse = await rateLimitUnresolvedUserManagement(
+  let sessionResult: Awaited<ReturnType<AuthService["getSession"]>>;
+  try {
+    sessionResult = await authService.getSession({
+      cookieHeader: context.req.header("cookie") ?? null,
+    });
+  } catch (error) {
+    await rateLimitUnresolvedUserManagement(
       context,
       rateLimiter,
     );
-    if (rateLimitResponse !== null) {
-      return {
-        ok: false,
-        response: rateLimitResponse,
-      };
-    }
-
-    return {
-      ok: false,
-      response: respondWithError(context, {
-        code: sessionResult.code,
-        httpStatus: sessionResult.httpStatus,
-        message: sessionResult.message,
-      }),
-    };
+    throw error;
   }
 
-  const rateLimitResponse = await rateLimitUserManagement(
+  await rateLimitUserManagement(
     context,
     rateLimiter,
     sessionResult.payload,
   );
-  if (rateLimitResponse !== null) {
-    return {
-      ok: false,
-      response: rateLimitResponse,
-    };
-  }
 
   if (sessionResult.payload.role !== "admin") {
-    return {
-      ok: false,
-      response: await respondWithForbiddenAdminAttempt(
-        context,
-        auditService,
-        sessionResult.payload,
-      ),
-    };
+    await respondWithForbiddenAdminAttempt(
+      context,
+      auditService,
+      sessionResult.payload,
+    );
   }
 
   return {
-    ok: true,
     actor: sessionResult.payload,
   };
 }
@@ -87,20 +63,14 @@ export async function requireAdminKnowledgeBaseSession(
     authService,
     rateLimiter,
   );
-  if (!authResult.ok) {
-    return authResult;
-  }
 
   if (authResult.actor.role === "admin") {
     return authResult;
   }
 
-  return {
-    ok: false,
-    response: await respondWithForbiddenAdminAttempt(
-      context,
-      auditService,
-      authResult.actor,
-    ),
-  };
+  return await respondWithForbiddenAdminAttempt(
+    context,
+    auditService,
+    authResult.actor,
+  );
 }

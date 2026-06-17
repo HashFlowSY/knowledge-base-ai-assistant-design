@@ -1,6 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { knowledgeBaseMembers, knowledgeBases } from "@kb/db";
+import { isAppError } from "@kb/errors";
 
 import {
   assertKnowledgeBaseNameAvailable,
@@ -11,8 +12,6 @@ import {
   createForbiddenError,
   createInternalError,
   createNotFoundError,
-  fromServiceException,
-  toServiceException,
 } from "../../service/errors";
 import {
   createKnowledgeBaseSlug,
@@ -34,7 +33,7 @@ export async function updateKnowledgeBaseOperation(
   input: Parameters<KnowledgeBaseService["updateKnowledgeBase"]>[0],
 ): ReturnType<KnowledgeBaseService["updateKnowledgeBase"]> {
   if (input.actor.role !== "admin") {
-    return createForbiddenError();
+    throw createForbiddenError();
   }
 
   try {
@@ -44,7 +43,7 @@ export async function updateKnowledgeBaseOperation(
         tenantId: input.actor.tenant.id,
       });
       if (existing === null) {
-        throw toServiceException(createNotFoundError());
+        throw createNotFoundError();
       }
 
       if (input.body.name !== undefined) {
@@ -88,10 +87,10 @@ export async function updateKnowledgeBaseOperation(
           id: knowledgeBases.id,
           name: knowledgeBases.name,
           updatedAt: knowledgeBases.updatedAt,
-        });
+      });
       const row = rows[0];
       if (row === undefined) {
-        throw toServiceException(createInternalError());
+        throw createInternalError();
       }
 
       if (input.body.memberIds !== undefined) {
@@ -131,6 +130,10 @@ export async function updateKnowledgeBaseOperation(
       };
     });
   } catch (error) {
-    return fromServiceException(error);
+    if (isAppError(error)) {
+      throw error;
+    }
+
+    throw createInternalError(error);
   }
 }

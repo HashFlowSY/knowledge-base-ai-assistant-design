@@ -78,6 +78,9 @@ importers:
       '@kb/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@kb/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@kb/knowledge':
         specifier: workspace:*
         version: link:../../packages/knowledge
@@ -217,6 +220,9 @@ importers:
       '@kb/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@kb/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
       '@kb/ingestion':
         specifier: workspace:*
         version: link:../../packages/ingestion
@@ -247,6 +253,9 @@ importers:
       '@kb/db':
         specifier: workspace:*
         version: link:../db
+      '@kb/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@kb/security':
         specifier: workspace:*
         version: link:../security
@@ -318,6 +327,15 @@ importers:
         specifier: ^0.31.10
         version: 0.31.10
 
+  src/packages/errors:
+    dependencies:
+      '@kb/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+
   src/packages/ingestion:
     dependencies:
       '@kb/ai-providers':
@@ -356,6 +374,9 @@ importers:
       '@kb/db':
         specifier: workspace:*
         version: link:../db
+      '@kb/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@kb/observability':
         specifier: workspace:*
         version: link:../observability
@@ -401,6 +422,9 @@ importers:
       '@kb/db':
         specifier: workspace:*
         version: link:../db
+      '@kb/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@kb/knowledge':
         specifier: workspace:*
         version: link:../knowledge
@@ -452,6 +476,9 @@ importers:
       '@kb/db':
         specifier: workspace:*
         version: link:../db
+      '@kb/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@kb/shared':
         specifier: workspace:*
         version: link:../shared

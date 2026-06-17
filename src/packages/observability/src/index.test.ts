@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  createSafeErrorLogFields,
   createJsonConsoleLogSink,
   createLogger,
   redactLogFields,
@@ -18,6 +19,40 @@ describe("@kb/observability", () => {
       databaseUrl: "[REDACTED]",
       action: "health.check",
     });
+  });
+
+  it("creates safe error log fields without leaking raw error messages", () => {
+    const error = new Error(
+      "token=secret_token requestBody={} tenants/tenant_1/private.pdf",
+    );
+    error.stack = [
+      "Error: token=secret_token requestBody={} tenants/tenant_1/private.pdf",
+      "    at runCleanup (/repo/src/apps/worker/src/lifecycle.ts:10:1)",
+    ].join("\n");
+
+    expect(
+      createSafeErrorLogFields(error, {
+        message: "Worker task failed.",
+      }),
+    ).toEqual({
+      error: "Worker task failed.",
+    });
+
+    const fieldsWithStack = createSafeErrorLogFields(error, {
+      includeStack: true,
+      message: "Worker task failed.",
+    });
+
+    expect(fieldsWithStack).toEqual({
+      error: "Worker task failed.",
+      stack: [
+        "Error: Worker task failed.",
+        "    at runCleanup (/repo/src/apps/worker/src/lifecycle.ts:10:1)",
+      ].join("\n"),
+    });
+    expect(JSON.stringify(fieldsWithStack)).not.toContain("secret_token");
+    expect(JSON.stringify(fieldsWithStack)).not.toContain("requestBody");
+    expect(JSON.stringify(fieldsWithStack)).not.toContain("private.pdf");
   });
 
   it("emits structured records through the configured sink", () => {

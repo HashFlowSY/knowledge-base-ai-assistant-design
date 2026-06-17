@@ -1,14 +1,13 @@
 import { and, eq } from "drizzle-orm";
 
 import { tenantMemberships, type ProjectDb } from "@kb/db";
+import { isAppError } from "@kb/errors";
 
 import { createAuthMutationRepository } from "../auth-mutation-repository";
 import { insertAudit } from "../service-audit";
 import {
+  createInternalError,
   createNotFoundError,
-  fromServiceException,
-  toServiceError,
-  toServiceException,
 } from "../service-errors";
 import { createRemoveUserAccessPlan } from "../service-plans";
 import { findActiveUser } from "../service-queries";
@@ -22,8 +21,8 @@ export async function removeUserAccessOperation(
     actorId: input.actor.user.id,
     targetUserId: input.userId,
   });
-  if (!plan.ok) {
-    return toServiceError(plan);
+  if (isAppError(plan)) {
+    throw plan;
   }
 
   try {
@@ -34,7 +33,7 @@ export async function removeUserAccessOperation(
         userId: input.userId,
       });
       if (target === null) {
-        throw toServiceException(createNotFoundError());
+        throw createNotFoundError();
       }
 
       await txDb
@@ -61,6 +60,10 @@ export async function removeUserAccessOperation(
 
     return { ok: true };
   } catch (error) {
-    return fromServiceException(error);
+    if (isAppError(error)) {
+      throw error;
+    }
+
+    throw createInternalError(error);
   }
 }

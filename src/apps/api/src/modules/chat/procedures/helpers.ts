@@ -1,12 +1,10 @@
 import type { Context } from "hono";
 import type { z } from "zod";
 
-import type { ApiEnv, ApiServiceError } from "../../../contracts";
-import {
-  createSuccessResponse,
-  respondWithServiceError,
-  respondWithValidationError,
-} from "../../../http";
+import { validationError } from "@kb/errors";
+
+import type { ApiEnv } from "../../../contracts";
+import { createSuccessResponse } from "../../../http";
 
 export function respondChatSuccess<T>(
   context: Context<ApiEnv>,
@@ -25,12 +23,8 @@ export function respondChatSuccess<T>(
 
 export function respondChatServiceResult<T>(
   context: Context<ApiEnv>,
-  result: { ok: true; result: T } | ApiServiceError,
+  result: { ok: true; result: T },
 ): Response {
-  if (!result.ok) {
-    return respondWithServiceError(context, result);
-  }
-
   return respondChatSuccess(context, result.result);
 }
 
@@ -38,5 +32,13 @@ export function respondChatValidationError(
   context: Context<ApiEnv>,
   error: z.ZodError,
 ): Response {
-  return respondWithValidationError(context, error);
+  throw validationError({
+    domain: "rag",
+    reason: "invalid_chat_request",
+    message: "请检查填写内容。",
+    validationErrors: error.issues.map((issue) => ({
+      path: issue.path,
+      message: issue.message,
+    })),
+  });
 }

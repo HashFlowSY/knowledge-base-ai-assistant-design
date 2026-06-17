@@ -1,3 +1,5 @@
+import { forbidden, internalError, notFound, type AppError } from "@kb/errors";
+
 import { assembleRagContext } from "./context";
 import type {
   ChatMessage,
@@ -10,7 +12,6 @@ import type {
   RagEmbeddingProvider,
   RagKeywordSearcher,
   RagReranker,
-  RagServiceError,
 } from "./service-types";
 
 export const ragRetrievalDefaults = {
@@ -26,22 +27,20 @@ export interface RagLogger {
   warn(event: string, fields?: Record<string, unknown>): void;
 }
 
-export function forbiddenKnowledgeBase(): RagServiceError {
-  return {
-    ok: false,
-    code: "FORBIDDEN",
-    httpStatus: 403,
+export function forbiddenKnowledgeBase(): AppError {
+  return forbidden({
+    domain: "rag",
+    reason: "knowledge_base_forbidden",
     message: "无权访问该知识库。",
-  };
+  });
 }
 
-export function chatResourceNotFound(): RagServiceError {
-  return {
-    ok: false,
-    code: "NOT_FOUND",
-    httpStatus: 404,
+export function chatResourceNotFound(): AppError {
+  return notFound({
+    domain: "rag",
+    reason: "chat_resource_not_found",
     message: "会话或消息不存在，或你没有访问权限。",
-  };
+  });
 }
 
 export async function retrieveCandidates(input: {
@@ -51,6 +50,7 @@ export async function retrieveCandidates(input: {
   query: string;
   repository: RagChatRepository;
   requestId: string;
+  retrievalRunId: string;
   tenantId: string;
 }): Promise<{
   keyword: RetrievalSourceCandidate[];
@@ -70,15 +70,43 @@ export async function retrieveCandidates(input: {
           vector: embedding.vector,
         })
       : Promise.resolve([]),
-    input.keywordSearcher.search({
+    searchKeywords(input),
+  ]);
+
+  return { keyword, vector };
+}
+
+async function searchKeywords(input: {
+  keywordSearcher: RagKeywordSearcher;
+  knowledgeBaseId: string;
+  query: string;
+  requestId: string;
+  retrievalRunId: string;
+  tenantId: string;
+}): Promise<RetrievalSourceCandidate[]> {
+  try {
+    return await input.keywordSearcher.search({
       knowledgeBaseId: input.knowledgeBaseId,
       limit: ragRetrievalDefaults.keywordTopK,
       query: input.query,
       tenantId: input.tenantId,
-    }),
-  ]);
-
-  return { keyword, vector };
+    });
+  } catch (error) {
+    throw internalError(
+      {
+        domain: "search",
+        reason: "keyword_search_failed",
+        message: "关键词检索失败，请稍后重试。",
+        metadata: {
+          knowledgeBaseId: input.knowledgeBaseId,
+          requestId: input.requestId,
+          retrievalRunId: input.retrievalRunId,
+          tenantId: input.tenantId,
+        },
+      },
+      { cause: error },
+    );
+  }
 }
 
 export async function rankCandidates(input: {

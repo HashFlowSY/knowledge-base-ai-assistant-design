@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { internalError } from "@kb/errors";
 import { documentFileUploadResultSchema } from "@kb/knowledge";
-import { apiSuccessResponseSchema } from "@kb/shared";
+import { apiErrorResponseSchema, apiSuccessResponseSchema } from "@kb/shared";
 
 import {
   createApiApp,
@@ -115,5 +116,37 @@ describe("document upload API successful responses", () => {
         await response.json(),
       ).data.duplicate,
     ).toBe(true);
+  });
+
+  it("lets document service AppError flow through the global error handler", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      documentService: {
+        async uploadDocumentFile() {
+          throw internalError({
+            domain: "knowledge",
+            reason: "object_upload_failed",
+            message: "操作失败，请稍后重试。",
+          });
+        },
+      },
+      uploadConfig,
+    });
+
+    const response = await app.request(
+      documentUploadPath,
+      createUploadRequest({
+        contentLength: "300",
+        file: createFile("%PDF-1.4\nhello", "policy.pdf", "application/pdf"),
+        requestId: "req_upload_service_error",
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "INTERNAL_ERROR",
+      httpStatus: 500,
+      requestId: "req_upload_service_error",
+    });
   });
 });

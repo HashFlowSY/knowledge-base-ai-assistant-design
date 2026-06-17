@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { forbidden, notFound, unauthorized } from "@kb/errors";
+import { createLogger, type LogRecord } from "@kb/observability";
 import { userSummarySchema, usersPageSchema } from "@kb/users";
 import { apiErrorResponseSchema, apiSuccessResponseSchema } from "@kb/shared";
 
@@ -40,15 +42,16 @@ describe("user API router", () => {
           throw new Error("not used");
         },
         async getSession() {
-          return {
-            ok: false,
-            code: "FORBIDDEN",
-            httpStatus: 403,
+          throw forbidden({
+            domain: "auth",
+            reason: "access_removed",
             message: "当前账号无权访问默认租户，请联系管理员。",
-            setCookieHeaders: [
-              "better-auth.session_token=; Max-Age=0; HttpOnly; SameSite=Lax",
-            ],
-          };
+            responseHeaders: {
+              setCookie: [
+                "better-auth.session_token=; Max-Age=0; HttpOnly; SameSite=Lax",
+              ],
+            },
+          });
         },
       },
     });
@@ -73,12 +76,11 @@ describe("user API router", () => {
     const app = createApiApp({
       authService: {
         async login() {
-          return {
-            ok: false,
-            code: "UNAUTHORIZED",
+          throw unauthorized({
+            domain: "auth",
+            reason: "invalid_credentials",
             message: "邮箱或密码不正确。",
-            httpStatus: 401,
-          };
+          });
         },
         async logout() {
           return { ok: true };
@@ -172,12 +174,11 @@ describe("user API router", () => {
           throw new Error("not used");
         },
         async getSession() {
-          return {
-            ok: false,
-            code: "UNAUTHORIZED",
+          throw unauthorized({
+            domain: "auth",
+            reason: "missing_session",
             message: "请先登录。",
-            httpStatus: 401,
-          };
+          });
         },
       },
       rateLimiter: {
@@ -368,6 +369,127 @@ describe("user API router", () => {
     expect(
       apiSuccessResponseSchema(userSummarySchema).parse(await response.json()).data.id,
     ).toBe("user_2");
+  });
+
+  it("rejects invalid user path params before user service calls", async () => {
+    const consumedInputs: RateLimitConsumeInput[] = [];
+    let serviceCalls = 0;
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      rateLimiter: {
+        async consume(input) {
+          consumedInputs.push(input);
+          return {
+            allowed: true,
+            retryAfterSeconds: 60,
+          };
+        },
+      },
+      userService: {
+        async listUsers() {
+          throw new Error("not used");
+        },
+        async getUser() {
+          serviceCalls += 1;
+          return { ok: true, user: userSummary };
+        },
+        async updateUser() {
+          serviceCalls += 1;
+          return { ok: true, user: userSummary };
+        },
+        async removeUserAccess() {
+          serviceCalls += 1;
+          return { ok: true };
+        },
+      },
+    });
+
+    const getResponse = await app.request("/api/users/bad%20id", {
+      headers: {
+        cookie: "better-auth.session_token=token",
+        "x-request-id": "req_users_invalid_get_param",
+      },
+    });
+    const patchResponse = await app.request("/api/users/bad%20id", {
+      method: "PATCH",
+      body: JSON.stringify({ name: "新名字" }),
+      headers: {
+        "content-type": "application/json",
+        cookie: "better-auth.session_token=token",
+        origin: "http://localhost:3000",
+        "x-request-id": "req_users_invalid_patch_param",
+      },
+    });
+    const deleteResponse = await app.request("/api/users/bad%20id/access", {
+      method: "DELETE",
+      headers: {
+        cookie: "better-auth.session_token=token",
+        origin: "http://localhost:3000",
+        "x-request-id": "req_users_invalid_delete_param",
+      },
+    });
+
+    for (const response of [getResponse, patchResponse, deleteResponse]) {
+      expect(response.status).toBe(400);
+      expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+        code: "VALIDATION_ERROR",
+        httpStatus: 400,
+      });
+    }
+    expect(serviceCalls).toBe(0);
+    expect(consumedInputs).toHaveLength(3);
+    expect(consumedInputs.map((input) => input.scope)).toEqual([
+      "user-management",
+      "user-management",
+      "user-management",
+    ]);
+  });
+
+  it("lets user service AppError responses flow through the global error handler", async () => {
+    const logRecords: LogRecord[] = [];
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      logger: createLogger({ service: "api" }, (record) => logRecords.push(record)),
+      userService: {
+        async listUsers() {
+          throw new Error("not used");
+        },
+        async getUser() {
+          throw notFound({
+            domain: "users",
+            reason: "user_not_found",
+            message: "用户不存在或已被移除。",
+          });
+        },
+      },
+    });
+
+    const response = await app.request("/api/users/user_missing", {
+      headers: {
+        cookie: "better-auth.session_token=token",
+        "x-request-id": "req_users_detail_missing",
+      },
+    });
+
+    expect(response.status).toBe(404);
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "NOT_FOUND",
+      httpStatus: 404,
+      message: "用户不存在或已被移除。",
+      requestId: "req_users_detail_missing",
+    });
+    expect(logRecords).toContainEqual(
+      expect.objectContaining({
+        event: "api_request_app_error",
+        requestId: "req_users_detail_missing",
+        fields: expect.objectContaining({
+          code: "NOT_FOUND",
+          httpStatus: 404,
+          domain: "users",
+          reason: "user_not_found",
+        }),
+      }),
+    );
   });
 
   it("updates users and rejects empty update bodies", async () => {

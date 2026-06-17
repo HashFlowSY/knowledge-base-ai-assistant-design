@@ -43,10 +43,13 @@ describe("provider config service", () => {
         kind: "chat",
         requestId: "req_first_keep",
       }),
-    ).resolves.toMatchObject({
-      ok: false,
-      code: "VALIDATION_ERROR",
-      httpStatus: 400,
+    ).rejects.toMatchObject({
+      data: {
+        code: "VALIDATION_ERROR",
+        domain: "providers",
+        httpStatus: 400,
+        reason: "missing_provider_api_key",
+      },
     });
   });
 
@@ -71,10 +74,13 @@ describe("provider config service", () => {
         kind: "chat",
         requestId: "req_connection_failed",
       }),
-    ).resolves.toMatchObject({
-      ok: false,
-      code: "FORBIDDEN",
-      httpStatus: 403,
+    ).rejects.toMatchObject({
+      data: {
+        code: "FORBIDDEN",
+        domain: "providers",
+        httpStatus: 403,
+        reason: "provider_auth_failed",
+      },
     });
     await expect(service.listProviderConfigs({ actor })).resolves.toMatchObject({
       ok: true,

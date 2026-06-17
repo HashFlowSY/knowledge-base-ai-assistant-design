@@ -1,24 +1,30 @@
 import type { Context } from "hono";
 
 import type { SessionPayload } from "@kb/auth";
+import {
+  payloadTooLarge,
+  unsupportedMediaType,
+  validationError,
+  type AppError,
+} from "@kb/errors";
 
 import type { ApiEnv } from "../../../contracts";
-import {
-  createSuccessResponse,
-  respondWithError,
-  respondWithServiceError,
-} from "../../../http";
+import { createSuccessResponse } from "../../../http";
 import {
   getRequestIpSummary,
   toKnowledgeActor,
 } from "../../../guards";
 import { getDocumentUploadContext } from "../../../middleware";
-import { validateUploadFile } from "../lib/file-validation";
+import {
+  validateUploadFile,
+  type FileValidationResult,
+} from "../lib/file-validation";
 import { recordUploadSecurityFailure } from "../lib/upload-audit";
 import {
   createSha256Checksum,
   parseContentLength,
   parseMultipartUpload,
+  type ContentLengthResult,
 } from "../lib/upload-request";
 import type { DocumentsRouteDependencies } from "../dependencies";
 
@@ -56,29 +62,25 @@ async function handleReservedUpload(
       });
     }
 
-    return respondWithError(context, {
-      code: contentLength.code,
-      httpStatus: contentLength.status,
-      message: contentLength.message,
-    });
+    throw createContentLengthAppError(contentLength);
   }
 
   let formData: FormData;
   try {
     formData = await context.req.raw.formData();
   } catch {
-    return respondWithError(context, {
-      code: "VALIDATION_ERROR",
-      httpStatus: 400,
+    throw validationError({
+      domain: "api",
+      reason: "invalid_multipart_form_data",
       message: "请提交有效的 multipart 表单。",
     });
   }
 
   const multipartResult = parseMultipartUpload(formData);
   if (!multipartResult.ok) {
-    return respondWithError(context, {
-      code: "VALIDATION_ERROR",
-      httpStatus: 400,
+    throw validationError({
+      domain: "api",
+      reason: "invalid_multipart_form_data",
       message: multipartResult.message,
     });
   }
@@ -101,16 +103,7 @@ async function handleReservedUpload(
       });
     }
 
-    return respondWithError(context, {
-      code:
-        validatedFile.status === 413
-          ? "PAYLOAD_TOO_LARGE"
-          : validatedFile.status === 415
-            ? "UNSUPPORTED_MEDIA_TYPE"
-            : "VALIDATION_ERROR",
-      httpStatus: validatedFile.status,
-      message: validatedFile.message,
-    });
+    throw createUploadFileValidationAppError(validatedFile);
   }
 
   const checksum = await createSha256Checksum(validatedFile.file.bytes);
@@ -127,9 +120,6 @@ async function handleReservedUpload(
     title: validatedFile.file.title,
     userAgentSummary: context.req.header("user-agent") ?? null,
   });
-  if (!serviceResult.ok) {
-    return respondWithServiceError(context, serviceResult);
-  }
 
   const status = serviceResult.result.duplicate ? 200 : 201;
   return context.json(
@@ -140,4 +130,48 @@ async function handleReservedUpload(
     }),
     status,
   );
+}
+
+function createContentLengthAppError(
+  result: Extract<ContentLengthResult, { ok: false }>,
+): AppError {
+  if (result.status === 413) {
+    return payloadTooLarge({
+      domain: "api",
+      reason: "upload_request_too_large",
+      message: result.message,
+    });
+  }
+
+  return validationError({
+    domain: "api",
+    reason: "invalid_content_length",
+    message: result.message,
+  });
+}
+
+function createUploadFileValidationAppError(
+  result: Extract<FileValidationResult, { ok: false }>,
+): AppError {
+  if (result.status === 413) {
+    return payloadTooLarge({
+      domain: "api",
+      reason: "upload_file_too_large",
+      message: result.message,
+    });
+  }
+
+  if (result.status === 415) {
+    return unsupportedMediaType({
+      domain: "api",
+      reason: "unsupported_upload_file_type",
+      message: result.message,
+    });
+  }
+
+  return validationError({
+    domain: "api",
+    reason: result.reason,
+    message: result.message,
+  });
 }

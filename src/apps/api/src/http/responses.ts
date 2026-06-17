@@ -1,4 +1,3 @@
-import type { Context } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import type {
@@ -6,8 +5,6 @@ import type {
   ApiErrorResponse,
   ApiSuccessResponse,
 } from "@kb/shared";
-
-import type { ApiEnv } from "../contracts";
 
 export function createSuccessResponse<T>(input: {
   data: T;
@@ -39,22 +36,4 @@ export function createErrorResponse(input: {
       ? {}
       : { validationErrors: input.validationErrors }),
   };
-}
-
-export function respondWithError(
-  context: Context<ApiEnv>,
-  input: {
-    code: ApiErrorCode;
-    httpStatus: ContentfulStatusCode;
-    message: string;
-    validationErrors?: { path: (string | number)[]; message: string }[];
-  },
-): Response {
-  return context.json(
-    createErrorResponse({
-      ...input,
-      requestId: context.get("requestId"),
-    }),
-    input.httpStatus,
-  );
 }

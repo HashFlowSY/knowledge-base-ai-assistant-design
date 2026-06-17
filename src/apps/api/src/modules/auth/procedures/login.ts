@@ -4,7 +4,6 @@ import type { ApiEnv } from "../../../contracts";
 import {
   appendSetCookieHeaders,
   createSuccessResponse,
-  respondWithError,
 } from "../../../http";
 import { getValidatedInput } from "../../../middleware";
 import type { AuthRouteDependencies } from "../dependencies";
@@ -17,14 +16,6 @@ export async function loginProcedure(
   const result = await dependencies.authService.login(
     getValidatedInput<LoginInput>(context, "loginBody"),
   );
-  if (!result.ok) {
-    appendSetCookieHeaders(context, result.setCookieHeaders);
-    return respondWithError(context, {
-      code: result.code,
-      httpStatus: result.httpStatus,
-      message: result.message,
-    });
-  }
 
   appendSetCookieHeaders(context, result.setCookieHeaders);
 

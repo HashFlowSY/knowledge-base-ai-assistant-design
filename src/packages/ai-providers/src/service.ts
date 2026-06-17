@@ -17,7 +17,6 @@ export type {
   ProviderConfigRepository,
   ProviderConfigSaveInput,
   ProviderConfigService,
-  ProviderConfigServiceError,
   ProviderConfigServiceOptions,
   ProviderConfigServiceSaveBody,
   ProviderConnectionTesterOptions,

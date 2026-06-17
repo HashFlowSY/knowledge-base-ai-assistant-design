@@ -22,7 +22,7 @@ export async function listDocumentProcessingOperation(
     knowledgeBaseId: input.knowledgeBaseId,
   });
   if (knowledgeBase === null) {
-    return createNotFoundError();
+    throw createNotFoundError();
   }
 
   const page = await listKnowledgeBaseDocumentProcessingSummaries(options.db, {

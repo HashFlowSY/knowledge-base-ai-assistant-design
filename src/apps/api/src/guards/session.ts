@@ -8,8 +8,8 @@ export {
   rateLimitAuthSession,
   rateLimitDocumentUpload,
   rateLimitLogin,
-  respondAfterUnresolvedDocumentUploadRateLimit,
-  respondAfterUnresolvedKnowledgeBaseRateLimit,
-  respondAfterUnresolvedUserManagementRateLimit,
+  rateLimitUnresolvedDocumentUpload,
+  rateLimitUnresolvedKnowledgeBase,
+  rateLimitUnresolvedUserManagement,
 } from "./session/rate-limits";
 export { getRequestIpSummary } from "./session/request";

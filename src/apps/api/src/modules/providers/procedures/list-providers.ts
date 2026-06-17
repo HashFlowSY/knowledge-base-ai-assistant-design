@@ -1,7 +1,7 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import { createSuccessResponse, respondWithServiceError } from "../../../http";
+import { createSuccessResponse } from "../../../http";
 import { getRequiredActor } from "../../../middleware";
 import type { ProviderRouteDependencies } from "../dependencies";
 
@@ -12,9 +12,6 @@ export async function listProvidersProcedure(
   const result = await dependencies.providerConfigService.listProviderConfigs({
     actor: getRequiredActor(context),
   });
-  if (!result.ok) {
-    return respondWithServiceError(context, result);
-  }
 
   return context.json(
     createSuccessResponse({

@@ -1,4 +1,5 @@
 import type { SessionPayload } from "@kb/auth";
+import { unauthorized } from "@kb/errors";
 
 import type { AuthService } from "../app";
 
@@ -26,12 +27,11 @@ export const userSummary = {
 export function createStaticAuthService(payload: SessionPayload): AuthService {
   return {
     async login() {
-      return {
-        ok: false as const,
-        code: "UNAUTHORIZED",
+      throw unauthorized({
+        domain: "auth",
+        reason: "invalid_credentials",
         message: "邮箱或密码不正确。",
-        httpStatus: 401 as const,
-      };
+      });
     },
     async logout() {
       return { ok: true as const };

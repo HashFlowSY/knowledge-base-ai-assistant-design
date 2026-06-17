@@ -71,11 +71,46 @@ describe("knowledge service adapters", () => {
       retryDocumentProcessing: vi.fn(),
       async uploadDocumentFile(input) {
         capturedActors.push(input.actor);
+        const timestamp = "2026-05-25T00:00:00.000Z";
         return {
-          ok: false,
-          code: "INTERNAL_ERROR",
-          httpStatus: 500,
-          message: "failed",
+          ok: true,
+          result: {
+            document: {
+              createdAt: timestamp,
+              currentVersion: 1,
+              id: "doc_1",
+              knowledgeBaseId: input.knowledgeBaseId,
+              status: "pending",
+              title: input.title,
+              updatedAt: timestamp,
+            },
+            duplicate: false,
+            job: {
+              createdAt: timestamp,
+              documentId: "doc_1",
+              id: "job_1",
+              knowledgeBaseId: input.knowledgeBaseId,
+              queuedAt: timestamp,
+              sourceHash: input.checksum,
+              sourceType: "file",
+              status: "queued",
+              updatedAt: timestamp,
+            },
+            source: {
+              bucket: "kb-source",
+              documentId: "doc_1",
+              id: "source_1",
+              mimeType: input.mimeType,
+              objectKey: "tenants/tenant_1/knowledge-bases/kb_1/documents/doc_1/versions/1/source/notes.txt",
+              scanStatus: "not_scanned",
+              sizeBytes: input.sizeBytes,
+              sourceHash: input.checksum,
+              sourceType: "file",
+              sourceUri: input.originalFilename,
+              uploadedAt: timestamp,
+              uploadStatus: "available",
+            },
+          },
         };
       },
       updateKnowledgeBase: vi.fn(),

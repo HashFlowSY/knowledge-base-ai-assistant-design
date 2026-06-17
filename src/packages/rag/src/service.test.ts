@@ -82,20 +82,23 @@ describe("RAG chat service", () => {
       reranker: createReranker(calls),
     });
 
-    const result = await service.submitQuestion({
-      actor,
-      body: {
-        knowledgeBaseId: "kb_forbidden",
-        question: "不能访问的问题",
-        sessionId: null,
+    await expect(
+      service.submitQuestion({
+        actor,
+        body: {
+          knowledgeBaseId: "kb_forbidden",
+          question: "不能访问的问题",
+          sessionId: null,
+        },
+        requestId: "req_forbidden",
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        code: "FORBIDDEN",
+        domain: "rag",
+        httpStatus: 403,
+        reason: "knowledge_base_forbidden",
       },
-      requestId: "req_forbidden",
-    });
-
-    expect(result).toMatchObject({
-      ok: false,
-      code: "FORBIDDEN",
-      httpStatus: 403,
     });
     expect(calls).toEqual(["authorize"]);
   });
@@ -110,15 +113,18 @@ describe("RAG chat service", () => {
       reranker: createReranker(calls),
     });
 
-    const result = await service.listSessions({
-      actor,
-      query: { knowledgeBaseId: "kb_forbidden" },
-    });
-
-    expect(result).toMatchObject({
-      ok: false,
-      code: "FORBIDDEN",
-      httpStatus: 403,
+    await expect(
+      service.listSessions({
+        actor,
+        query: { knowledgeBaseId: "kb_forbidden" },
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        code: "FORBIDDEN",
+        domain: "rag",
+        httpStatus: 403,
+        reason: "knowledge_base_forbidden",
+      },
     });
     expect(calls).toEqual(["authorize"]);
   });
@@ -133,20 +139,23 @@ describe("RAG chat service", () => {
       reranker: createReranker(calls),
     });
 
-    const result = await service.submitQuestion({
-      actor,
-      body: {
-        knowledgeBaseId: "kb_1",
-        question: "继续上一轮问题",
-        sessionId: "session_forbidden",
+    await expect(
+      service.submitQuestion({
+        actor,
+        body: {
+          knowledgeBaseId: "kb_1",
+          question: "继续上一轮问题",
+          sessionId: "session_forbidden",
+        },
+        requestId: "req_session_forbidden",
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        code: "NOT_FOUND",
+        domain: "rag",
+        httpStatus: 404,
+        reason: "chat_resource_not_found",
       },
-      requestId: "req_session_forbidden",
-    });
-
-    expect(result).toMatchObject({
-      ok: false,
-      code: "NOT_FOUND",
-      httpStatus: 404,
     });
     expect(calls).not.toContain("append:user");
     expect(calls).not.toContain("vector");
@@ -162,20 +171,23 @@ describe("RAG chat service", () => {
       reranker: createReranker(calls),
     });
 
-    const result = await service.submitFeedback({
-      actor,
-      body: {
-        citationIds: ["citation_forbidden"],
-        rating: "not_useful",
-        reason: "来源不匹配",
+    await expect(
+      service.submitFeedback({
+        actor,
+        body: {
+          citationIds: ["citation_forbidden"],
+          rating: "not_useful",
+          reason: "来源不匹配",
+        },
+        messageId: "msg_forbidden",
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        code: "NOT_FOUND",
+        domain: "rag",
+        httpStatus: 404,
+        reason: "chat_resource_not_found",
       },
-      messageId: "msg_forbidden",
-    });
-
-    expect(result).toMatchObject({
-      ok: false,
-      code: "NOT_FOUND",
-      httpStatus: 404,
     });
     expect(calls).toEqual(["saveFeedback"]);
   });
@@ -197,15 +209,18 @@ describe("RAG chat service", () => {
       reranker: createReranker(calls),
     });
 
-    const result = await service.listMessages({
-      actor,
-      sessionId: "session_revoked",
-    });
-
-    expect(result).toMatchObject({
-      ok: false,
-      code: "NOT_FOUND",
-      httpStatus: 404,
+    await expect(
+      service.listMessages({
+        actor,
+        sessionId: "session_revoked",
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        code: "NOT_FOUND",
+        domain: "rag",
+        httpStatus: 404,
+        reason: "chat_resource_not_found",
+      },
     });
     expect(calls).toEqual(["listMessages"]);
   });
@@ -227,22 +242,96 @@ describe("RAG chat service", () => {
       reranker: createReranker(calls),
     });
 
-    const result = await service.submitFeedback({
-      actor,
-      body: {
-        citationIds: ["citation_revoked"],
-        rating: "not_useful",
-        reason: "已失权",
+    await expect(
+      service.submitFeedback({
+        actor,
+        body: {
+          citationIds: ["citation_revoked"],
+          rating: "not_useful",
+          reason: "已失权",
+        },
+        messageId: "msg_revoked",
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        code: "NOT_FOUND",
+        domain: "rag",
+        httpStatus: 404,
+        reason: "chat_resource_not_found",
       },
-      messageId: "msg_revoked",
-    });
-
-    expect(result).toMatchObject({
-      ok: false,
-      code: "NOT_FOUND",
-      httpStatus: 404,
     });
     expect(calls).toEqual(["saveFeedback"]);
+  });
+
+  it("marks retrieval runs failed when keyword search fails", async () => {
+    const calls: string[] = [];
+    const failedRuns: Parameters<
+      RagChatRepository["completeRetrievalRun"]
+    >[0][] = [];
+    const repository = {
+      ...createRepository(calls),
+      async completeRetrievalRun(input) {
+        calls.push(`completeRun:${input.status}`);
+        failedRuns.push(input);
+      },
+    } satisfies RagChatRepository;
+    const service = createRagChatService({
+      answerGenerator: createAnswerGenerator(calls),
+      embeddingProvider: createEmbeddingProvider(calls),
+      keywordSearcher: {
+        async search() {
+          calls.push("keyword");
+          throw new Error("keyword search failed token=secret_token");
+        },
+      },
+      repository,
+      reranker: createReranker(calls),
+    });
+
+    await expect(
+      service.submitQuestion({
+        actor,
+        body: {
+          knowledgeBaseId: "kb_1",
+          question: "检索失败时如何处理？",
+          sessionId: null,
+        },
+        requestId: "req_keyword_failed",
+      }),
+    ).rejects.toMatchObject({
+      data: {
+        code: "INTERNAL_ERROR",
+        domain: "search",
+        httpStatus: 500,
+        metadata: {
+          knowledgeBaseId: "kb_1",
+          requestId: "req_keyword_failed",
+          retrievalRunId: "run_1",
+          tenantId: "tenant_1",
+        },
+        reason: "keyword_search_failed",
+      },
+    });
+
+    expect(failedRuns).toEqual([
+      expect.objectContaining({
+        errorCode: "keyword_search_failed",
+        errorMessage: "关键词检索失败，请稍后重试。",
+        retrievalRunId: "run_1",
+        status: "failed",
+      }),
+    ]);
+    expect(calls).toEqual([
+      "authorize",
+      "createSession",
+      "append:user",
+      "startRun",
+      "history",
+      "embedding",
+      "vector",
+      "keyword",
+      "completeRun:failed",
+    ]);
   });
 
   it("returns a no-answer message when retrieval has no usable context", async () => {

@@ -2,15 +2,11 @@ import { and, eq } from "drizzle-orm";
 
 import { upsertPasswordAccount } from "@kb/auth/server";
 import { authUsers, tenantMemberships, type ProjectDb } from "@kb/db";
+import { isAppError } from "@kb/errors";
 
 import { createAuthMutationRepository } from "../auth-mutation-repository";
 import { insertAudit } from "../service-audit";
-import {
-  createConflictError,
-  createInternalError,
-  fromServiceException,
-  toServiceException,
-} from "../service-errors";
+import { createInternalError } from "../service-errors";
 import { toUserSummary } from "../service-mappers";
 import { createCreateUserPlan } from "../service-plans";
 import {
@@ -37,8 +33,8 @@ export async function createUserOperation(
             });
       const plan = createCreateUserPlan({ existingUser, membership });
 
-      if (!plan.ok) {
-        throw toServiceException(createConflictError(plan.message));
+      if (isAppError(plan)) {
+        throw plan;
       }
 
       const now = new Date();
@@ -128,7 +124,7 @@ export async function createUserOperation(
         userId,
       });
       if (created === null) {
-        throw toServiceException(createInternalError());
+        throw createInternalError();
       }
 
       return created;
@@ -136,6 +132,10 @@ export async function createUserOperation(
 
     return { ok: true, user: toUserSummary(user) };
   } catch (error) {
-    return fromServiceException(error);
+    if (isAppError(error)) {
+      throw error;
+    }
+
+    throw createInternalError(error);
   }
 }

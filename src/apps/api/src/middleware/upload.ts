@@ -2,6 +2,7 @@ import type { Context, MiddlewareHandler } from "hono";
 import type { z } from "zod";
 
 import type { SessionPayload } from "@kb/auth";
+import { rateLimited, validationError } from "@kb/errors";
 
 import type {
   ApiEnv,
@@ -11,13 +12,10 @@ import type {
   UploadConfig,
 } from "../contracts";
 import {
-  appendSetCookieHeaders,
-  respondWithError,
-  respondWithValidationError,
-} from "../http";
-import { rateLimitDocumentUpload } from "../guards";
+  rateLimitDocumentUpload,
+  rateLimitUnresolvedDocumentUpload,
+} from "../guards";
 import { setAuthenticatedContext } from "./auth";
-import { createDocumentUploadRejectionRateLimitHandler } from "./rate-limit";
 
 export interface DocumentUploadContext {
   actor: SessionPayload;
@@ -32,41 +30,41 @@ export function createDocumentUploadPreflightMiddleware(input: {
   uploadConfig: UploadConfig;
 }): MiddlewareHandler<ApiEnv> {
   return async (context, next) => {
-    const rejectWithUploadRateLimit = createDocumentUploadRejectionRateLimitHandler(
-      input.rateLimiter,
-      input.uploadConfig.rateLimitPerMinute,
-    );
-    const sessionResult = await input.authService.getSession({
-      cookieHeader: context.req.header("cookie") ?? null,
-    });
-    if (!sessionResult.ok) {
-      appendSetCookieHeaders(context, sessionResult.setCookieHeaders);
-      return rejectWithUploadRateLimit(
+    let sessionResult: Awaited<ReturnType<AuthService["getSession"]>>;
+    try {
+      sessionResult = await input.authService.getSession({
+        cookieHeader: context.req.header("cookie") ?? null,
+      });
+    } catch (error) {
+      await rateLimitUnresolvedDocumentUpload(
         context,
-        respondWithError(context, {
-          code: sessionResult.code,
-          httpStatus: sessionResult.httpStatus,
-          message: sessionResult.message,
-        }),
+        input.rateLimiter,
+        input.uploadConfig.rateLimitPerMinute,
       );
+      throw error;
     }
 
     const actor = sessionResult.payload;
     setAuthenticatedContext(context, actor);
 
-    const rateLimitResponse = await rateLimitDocumentUpload(
+    await rateLimitDocumentUpload(
       context,
       input.rateLimiter,
       actor,
       input.uploadConfig.rateLimitPerMinute,
     );
-    if (rateLimitResponse !== null) {
-      return rateLimitResponse;
-    }
 
     const params = input.paramsSchema.safeParse(context.req.param());
     if (!params.success) {
-      return respondWithValidationError(context, params.error);
+      throw validationError({
+        domain: "api",
+        reason: "invalid_path_params",
+        message: "请检查填写内容。",
+        validationErrors: params.error.issues.map((issue) => ({
+          path: issue.path,
+          message: issue.message,
+        })),
+      });
     }
 
     const reservationResult = input.uploadConcurrencyLimiter.acquire({
@@ -76,9 +74,12 @@ export function createDocumentUploadPreflightMiddleware(input: {
       tenantLimit: input.uploadConfig.concurrencyPerTenant,
     });
     if (!reservationResult.ok) {
-      return respondWithError(context, {
-        code: "RATE_LIMITED",
-        httpStatus: 429,
+      throw rateLimited({
+        domain: "api",
+        reason:
+          reservationResult.scope === "actor"
+            ? "upload_actor_concurrency_limited"
+            : "upload_tenant_concurrency_limited",
         message:
           reservationResult.scope === "actor"
             ? "当前账号上传任务过多，请稍后重试。"

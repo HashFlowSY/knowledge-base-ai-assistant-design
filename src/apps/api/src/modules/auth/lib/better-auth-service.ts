@@ -9,7 +9,8 @@ import {
 } from "@kb/auth/server";
 import type { SessionPayload } from "@kb/auth";
 import { schema, type ProjectDb } from "@kb/db";
-import { createLogger } from "@kb/observability";
+import { isAppError } from "@kb/errors";
+import { createLogger, createSafeErrorLogFields } from "@kb/observability";
 import { resolveSessionPayload } from "@kb/users/service";
 
 import type { AuthService } from "../../../contracts";
@@ -18,8 +19,11 @@ import {
   signOutWithSetCookieHeaders,
 } from "./cookies";
 import {
+  createExpiredSessionError,
   createForbiddenAccessError,
+  createInvalidCredentialsError,
   createInternalError,
+  createMissingSessionError,
   isBetterAuthUnauthorized,
 } from "./errors";
 
@@ -70,7 +74,7 @@ export function createBetterAuthServiceFromRuntime(input: {
         });
         const setCookieHeaders = extractSetCookieHeaders(result.headers);
         if (setCookieHeaders.length === 0) {
-          return createInternalError();
+          throw createInternalError();
         }
 
         const payloadResult = await resolvePayload(input.db, {
@@ -78,17 +82,16 @@ export function createBetterAuthServiceFromRuntime(input: {
         });
         if (isSessionPayloadResolutionError(payloadResult)) {
           if (payloadResult.reason === "default_tenant_unavailable") {
-            return createInternalError();
+            throw createInternalError("default_tenant_unavailable");
           }
 
           const clearCookieHeaders = await signOutWithSetCookieHeaders(
             input.runtime,
             setCookieHeaders,
           );
-          return {
-            ...createForbiddenAccessError(),
+          throw createForbiddenAccessError({
             setCookieHeaders: clearCookieHeaders,
-          };
+          });
         }
 
         return {
@@ -97,19 +100,21 @@ export function createBetterAuthServiceFromRuntime(input: {
           setCookieHeaders,
         };
       } catch (error) {
-        if (isBetterAuthUnauthorized(error)) {
-          return {
-            ok: false,
-            code: "UNAUTHORIZED",
-            httpStatus: 401,
-            message: "邮箱或密码不正确。",
-          };
+        if (isAppError(error)) {
+          throw error;
         }
 
-        logger.error("auth_login_failed", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        return createInternalError();
+        if (isBetterAuthUnauthorized(error)) {
+          throw createInvalidCredentialsError();
+        }
+
+        logger.error(
+          "auth_login_failed",
+          createSafeErrorLogFields(error, {
+            message: "Auth login failed.",
+          }),
+        );
+        throw createInternalError();
       }
     },
     async logout(inputContext) {
@@ -128,21 +133,19 @@ export function createBetterAuthServiceFromRuntime(input: {
           setCookieHeaders: extractSetCookieHeaders(result.headers),
         };
       } catch (error) {
-        logger.error("auth_logout_failed", {
-          error: error instanceof Error ? error.message : String(error),
-        });
+        logger.error(
+          "auth_logout_failed",
+          createSafeErrorLogFields(error, {
+            message: "Auth logout failed.",
+          }),
+        );
         return { ok: true };
       }
     },
     async getSession(inputContext) {
       try {
         if (getSessionCookieValue(inputContext.cookieHeader) === null) {
-          return {
-            ok: false,
-            code: "UNAUTHORIZED",
-            httpStatus: 401,
-            message: "请先登录。",
-          };
+          throw createMissingSessionError();
         }
 
         const result = await input.runtime.api.getSession({
@@ -152,12 +155,7 @@ export function createBetterAuthServiceFromRuntime(input: {
         });
 
         if (result === null) {
-          return {
-            ok: false,
-            code: "UNAUTHORIZED",
-            httpStatus: 401,
-            message: "登录已过期，请重新登录。",
-          };
+          throw createExpiredSessionError();
         }
 
         const payloadResult = await resolvePayload(input.db, {
@@ -165,16 +163,15 @@ export function createBetterAuthServiceFromRuntime(input: {
         });
         if (isSessionPayloadResolutionError(payloadResult)) {
           if (payloadResult.reason === "default_tenant_unavailable") {
-            return createInternalError();
+            throw createInternalError("default_tenant_unavailable");
           }
 
-          return {
-            ...createForbiddenAccessError(),
+          throw createForbiddenAccessError({
             setCookieHeaders: await signOutWithCookieHeader(
               input.runtime,
               inputContext.cookieHeader,
             ),
-          };
+          });
         }
 
         return {
@@ -182,10 +179,17 @@ export function createBetterAuthServiceFromRuntime(input: {
           payload: sessionPayloadSchema.parse(payloadResult),
         };
       } catch (error) {
-        logger.error("auth_session_failed", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        return createInternalError();
+        if (isAppError(error)) {
+          throw error;
+        }
+
+        logger.error(
+          "auth_session_failed",
+          createSafeErrorLogFields(error, {
+            message: "Auth session lookup failed.",
+          }),
+        );
+        throw createInternalError();
       }
     },
   };

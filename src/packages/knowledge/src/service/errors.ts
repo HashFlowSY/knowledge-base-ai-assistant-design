@@ -1,71 +1,53 @@
-export interface KnowledgeBaseServiceError {
-  ok: false;
-  code: "FORBIDDEN" | "NOT_FOUND" | "CONFLICT" | "VALIDATION_ERROR" | "INTERNAL_ERROR";
-  httpStatus: 400 | 403 | 404 | 409 | 500;
-  message: string;
-}
+import {
+  conflict,
+  forbidden,
+  internalError,
+  notFound,
+  validationError,
+  type AppError,
+} from "@kb/errors";
 
 export function createConflictError(
   message = "当前租户下已存在同名知识库。",
-): KnowledgeBaseServiceError {
-  return {
-    ok: false,
-    code: "CONFLICT",
-    httpStatus: 409,
+): AppError {
+  return conflict({
+    domain: "knowledge",
+    reason: "duplicate_knowledge_base_name",
     message,
-  };
+  });
 }
 
-export function createForbiddenError(): KnowledgeBaseServiceError {
-  return {
-    ok: false,
-    code: "FORBIDDEN",
-    httpStatus: 403,
+export function createForbiddenError(): AppError {
+  return forbidden({
+    domain: "knowledge",
+    reason: "knowledge_base_forbidden",
     message: "你没有权限执行此操作。",
-  };
+  });
 }
 
-export function createInternalError(): KnowledgeBaseServiceError {
-  return {
-    ok: false,
-    code: "INTERNAL_ERROR",
-    httpStatus: 500,
-    message: "操作失败，请稍后重试。",
-  };
+export function createInternalError(error?: unknown): AppError {
+  return internalError(
+    {
+      domain: "knowledge",
+      reason: "unexpected_error",
+      message: "操作失败，请稍后重试。",
+    },
+    { cause: error },
+  );
 }
 
-export function createInvalidMembersError(): KnowledgeBaseServiceError {
-  return {
-    ok: false,
-    code: "VALIDATION_ERROR",
-    httpStatus: 400,
+export function createInvalidMembersError(): AppError {
+  return validationError({
+    domain: "knowledge",
+    reason: "invalid_member_ids",
     message: "请选择当前租户下仍有效的 member 用户。",
-  };
+  });
 }
 
-export function createNotFoundError(): KnowledgeBaseServiceError {
-  return {
-    ok: false,
-    code: "NOT_FOUND",
-    httpStatus: 404,
+export function createNotFoundError(): AppError {
+  return notFound({
+    domain: "knowledge",
+    reason: "knowledge_base_not_found",
     message: "知识库不存在或无权访问。",
-  };
-}
-
-export function toServiceException(error: KnowledgeBaseServiceError): Error {
-  return Object.assign(new Error(error.message), { serviceError: error });
-}
-
-export function fromServiceException(error: unknown): KnowledgeBaseServiceError {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "serviceError" in error &&
-    typeof error.serviceError === "object" &&
-    error.serviceError !== null
-  ) {
-    return error.serviceError as KnowledgeBaseServiceError;
-  }
-
-  return createInternalError();
+  });
 }

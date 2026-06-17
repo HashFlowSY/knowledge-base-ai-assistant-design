@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import { knowledgeBaseMembers, knowledgeBases } from "@kb/db";
+import { isAppError } from "@kb/errors";
 
 import { normalizeKnowledgeBaseName } from "../../contracts/schemas";
 import {
@@ -8,8 +9,6 @@ import {
   createForbiddenError,
   createInternalError,
   createInvalidMembersError,
-  fromServiceException,
-  toServiceException,
 } from "../../service/errors";
 import {
   createKnowledgeBaseSlug,
@@ -33,7 +32,7 @@ export async function createKnowledgeBaseOperation(
   input: Parameters<KnowledgeBaseService["createKnowledgeBase"]>[0],
 ): ReturnType<KnowledgeBaseService["createKnowledgeBase"]> {
   if (input.actor.role !== "admin") {
-    return createForbiddenError();
+    throw createForbiddenError();
   }
 
   try {
@@ -64,10 +63,10 @@ export async function createKnowledgeBaseOperation(
           id: knowledgeBases.id,
           name: knowledgeBases.name,
           updatedAt: knowledgeBases.updatedAt,
-        });
+      });
       const row = rows[0];
       if (row === undefined) {
-        throw toServiceException(createInternalError());
+        throw createInternalError();
       }
 
       await insertKnowledgeBaseMembers(tx, {
@@ -97,7 +96,11 @@ export async function createKnowledgeBaseOperation(
       };
     });
   } catch (error) {
-    return fromServiceException(error);
+    if (isAppError(error)) {
+      throw error;
+    }
+
+    throw createInternalError(error);
   }
 }
 
@@ -123,7 +126,7 @@ export async function assertKnowledgeBaseNameAvailable(
       : { excludeKnowledgeBaseId: input.excludeKnowledgeBaseId }),
   });
   if (duplicate !== null) {
-    throw toServiceException(createConflictError());
+    throw createConflictError();
   }
 }
 
@@ -136,7 +139,7 @@ export async function assertMemberIdsAreValid(
     (memberId) => !validMemberIds.has(memberId),
   );
   if (hasInvalidMember) {
-    throw toServiceException(createInvalidMembersError());
+    throw createInvalidMembersError();
   }
 }
 

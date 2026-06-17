@@ -1,11 +1,10 @@
 {
-  "name": "@kb/users",
+  "name": "@kb/errors",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./service": "./src/service.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
@@ -14,12 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@kb/audit": "workspace:*",
-    "@kb/auth": "workspace:*",
-    "@kb/db": "workspace:*",
-    "@kb/errors": "workspace:*",
     "@kb/shared": "workspace:*",
-    "drizzle-orm": "^0.45.2",
     "zod": "^3.24.0"
   }
 }

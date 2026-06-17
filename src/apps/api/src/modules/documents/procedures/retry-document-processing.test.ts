@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { notFound } from "@kb/errors";
 import {
   documentProcessingPageSchema,
   documentProcessingSummarySchema,
@@ -391,17 +392,16 @@ describe("document processing retry API", () => {
     });
   });
 
-  it("maps retry service errors through the standard error envelope", async () => {
+  it("maps retry service AppError through the standard error envelope", async () => {
     const app = createApiApp({
       authService: createStaticAuthService(adminSession),
       documentService: {
         async retryDocumentProcessing() {
-          return {
-            ok: false,
-            code: "NOT_FOUND",
-            httpStatus: 404,
+          throw notFound({
+            domain: "knowledge",
+            reason: "knowledge_base_not_found",
             message: "知识库不存在或无权访问。",
-          };
+          });
         },
       },
     });

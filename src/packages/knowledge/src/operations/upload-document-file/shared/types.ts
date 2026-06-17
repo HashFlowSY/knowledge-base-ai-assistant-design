@@ -1,3 +1,5 @@
+import type { AppError } from "@kb/errors";
+
 import type { DocumentFileUploadResult } from "../../../contracts/schemas";
 import type { KnowledgeBaseService } from "../../../service/types";
 
@@ -5,7 +7,7 @@ export type UploadInput = Parameters<KnowledgeBaseService["uploadDocumentFile"]>
 export type UploadResult = Awaited<
   ReturnType<KnowledgeBaseService["uploadDocumentFile"]>
 >;
-export type UploadServiceError = Extract<UploadResult, { ok: false }>;
+export type UploadServiceError = AppError;
 
 export interface ReservedUpload {
   documentId: string;

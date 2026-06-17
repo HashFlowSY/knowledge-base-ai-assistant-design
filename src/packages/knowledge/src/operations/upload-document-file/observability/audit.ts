@@ -1,4 +1,5 @@
 import { recordAuditLog } from "@kb/audit";
+import { createSafeErrorLogFields } from "@kb/observability";
 
 import type { KnowledgeDb } from "../../../service/queries";
 import type { KnowledgeBaseServiceOptions } from "../../../service/types";
@@ -17,7 +18,9 @@ export function logUploadFailure(
   options.logger?.error(event, {
     actorId: input.actor.user.id,
     documentId: fields.documentId,
-    error: fields.error instanceof Error ? fields.error.message : String(fields.error),
+    ...createSafeErrorLogFields(fields.error, {
+      message: "Document upload failed.",
+    }),
     jobId: fields.jobId,
     knowledgeBaseId: input.knowledgeBaseId,
     requestId: input.requestId,

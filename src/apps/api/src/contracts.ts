@@ -3,7 +3,6 @@ export type {
   ApiAppOptions,
   ApiRateLimiter,
   ApiRuntimeResource,
-  ApiServiceError,
   AuditService,
   AuthService,
   ChatService,

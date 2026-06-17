@@ -22,6 +22,7 @@
     "@kb/auth": "workspace:*",
     "@kb/config": "workspace:*",
     "@kb/db": "workspace:*",
+    "@kb/errors": "workspace:*",
     "@kb/knowledge": "workspace:*",
     "@kb/observability": "workspace:*",
     "@kb/queue": "workspace:*",

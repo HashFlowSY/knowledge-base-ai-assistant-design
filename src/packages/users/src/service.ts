@@ -9,7 +9,6 @@ import type {
 } from "./service-types";
 
 export { resolveDefaultTenant, resolveSessionPayload } from "./session-resolution";
-export type { UserServiceError } from "./service-errors";
 export type {
   UserManagementService,
   UserManagementServiceOptions,

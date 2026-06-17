@@ -1,6 +1,5 @@
 import type { SessionPayload } from "@kb/auth";
 import type { Logger } from "@kb/observability";
-import type { ApiErrorCode } from "@kb/shared";
 import type {
   ModelServiceKind,
   ProviderListResponse,
@@ -48,14 +47,6 @@ export type {
   RetryDocumentProcessingResult,
 } from "@kb/knowledge";
 
-export interface ApiServiceError {
-  ok: false;
-  code: ApiErrorCode;
-  httpStatus: 400 | 401 | 403 | 404 | 409 | 429 | 500;
-  message: string;
-  setCookieHeaders?: string[];
-}
-
 export interface ProviderConfigApiServiceSaveBody {
   displayName: string;
   provider: string;
@@ -66,106 +57,88 @@ export interface ProviderConfigApiServiceSaveBody {
 }
 
 export interface AuthService {
-  login(input: { email: string; password: string }): Promise<
-    | {
-        ok: true;
-        payload: SessionPayload;
-        setCookieHeaders?: string[];
-      }
-    | ApiServiceError
-  >;
+  login(input: { email: string; password: string }): Promise<{
+    ok: true;
+    payload: SessionPayload;
+    setCookieHeaders?: string[];
+  }>;
   logout(input: {
     cookieHeader: string | null;
-  }): Promise<{ ok: true; setCookieHeaders?: string[] } | ApiServiceError>;
-  getSession(input: { cookieHeader: string | null }): Promise<
-    | {
-        ok: true;
-        payload: SessionPayload;
-      }
-    | ApiServiceError
-  >;
+  }): Promise<{ ok: true; setCookieHeaders?: string[] }>;
+  getSession(input: { cookieHeader: string | null }): Promise<{
+    ok: true;
+    payload: SessionPayload;
+  }>;
 }
 
 export interface UserService {
   listUsers(input: {
     actor: SessionPayload;
     query: ReturnType<typeof listUsersQuerySchema.parse>;
-  }): Promise<
-    | {
-        ok: true;
-        page: UsersPage;
-      }
-    | ApiServiceError
-  >;
+  }): Promise<{
+    ok: true;
+    page: UsersPage;
+  }>;
   createUser(input: { actor: SessionPayload; body: CreateUserInput }): Promise<
-    | {
-        ok: true;
-        user: UserSummary;
-      }
-    | ApiServiceError
+    {
+      ok: true;
+      user: UserSummary;
+    }
   >;
   getUser(input: { actor: SessionPayload; userId: string }): Promise<
-    | {
-        ok: true;
-        user: UserSummary;
-      }
-    | ApiServiceError
+    {
+      ok: true;
+      user: UserSummary;
+    }
   >;
   updateUser(input: {
     actor: SessionPayload;
     body: UpdateUserInput;
     userId: string;
   }): Promise<
-    | {
-        ok: true;
-        user: UserSummary;
-      }
-    | ApiServiceError
+    {
+      ok: true;
+      user: UserSummary;
+    }
   >;
   removeUserAccess(input: {
     actor: SessionPayload;
     userId: string;
-  }): Promise<{ ok: true } | ApiServiceError>;
+  }): Promise<{ ok: true }>;
 }
 
 export interface KnowledgeBaseService {
   listKnowledgeBases(input: {
     actor: KnowledgeActor;
     query: KnowledgeBaseListQuery;
-  }): Promise<
-    | {
-        ok: true;
-        page: KnowledgeBasesPage;
-      }
-    | ApiServiceError
-  >;
+  }): Promise<{
+    ok: true;
+    page: KnowledgeBasesPage;
+  }>;
   getKnowledgeBase(input: { actor: KnowledgeActor; knowledgeBaseId: string }): Promise<
-    | {
-        ok: true;
-        knowledgeBase: KnowledgeBaseDetail;
-      }
-    | ApiServiceError
+    {
+      ok: true;
+      knowledgeBase: KnowledgeBaseDetail;
+    }
   >;
   createKnowledgeBase(input: {
     actor: KnowledgeActor;
     body: CreateKnowledgeBaseInput;
   }): Promise<
-    | {
-        ok: true;
-        knowledgeBase: KnowledgeBaseSummary;
-      }
-    | ApiServiceError
+    {
+      ok: true;
+      knowledgeBase: KnowledgeBaseSummary;
+    }
   >;
   updateKnowledgeBase(input: {
     actor: KnowledgeActor;
     body: UpdateKnowledgeBaseInput;
     knowledgeBaseId: string;
   }): Promise<
-    | {
-        ok: true;
-        knowledgeBase: KnowledgeBaseDetail;
-      }
-    | ApiServiceError
+    {
+      ok: true;
+      knowledgeBase: KnowledgeBaseDetail;
+    }
   >;
 }
 
@@ -188,41 +161,33 @@ export interface DocumentService {
     actor: KnowledgeActor;
     knowledgeBaseId: string;
     query: DocumentProcessingListQuery;
-  }): Promise<
-    | {
-        ok: true;
-        page: DocumentProcessingPage;
-      }
-    | ApiServiceError
-  >;
+  }): Promise<{
+    ok: true;
+    page: DocumentProcessingPage;
+  }>;
   uploadDocumentFile(input: DocumentFileUploadServiceInput): Promise<
-    | {
-        ok: true;
-        result: DocumentFileUploadResult;
-      }
-    | ApiServiceError
+    {
+      ok: true;
+      result: DocumentFileUploadResult;
+    }
   >;
   retryDocumentProcessing(input: {
     actor: KnowledgeActor;
     documentId: string;
     knowledgeBaseId: string;
   }): Promise<
-    | {
-        ok: true;
-        result: RetryDocumentProcessingResult;
-      }
-    | ApiServiceError
+    {
+      ok: true;
+      result: RetryDocumentProcessingResult;
+    }
   >;
 }
 
 export interface ProviderConfigApiService {
-  listProviderConfigs(input: { actor: SessionPayload }): Promise<
-    | {
-        ok: true;
-        providers: ProviderListResponse["providers"];
-      }
-    | ApiServiceError
-  >;
+  listProviderConfigs(input: { actor: SessionPayload }): Promise<{
+    ok: true;
+    providers: ProviderListResponse["providers"];
+  }>;
   saveProviderConfig(input: {
     actor: SessionPayload;
     body: ProviderConfigApiServiceSaveBody;
@@ -230,43 +195,35 @@ export interface ProviderConfigApiService {
     kind: ModelServiceKind;
     requestId: string;
     userAgentSummary: string | null;
-  }): Promise<
-    | {
-        ok: true;
-        provider: ProviderSummary;
-      }
-    | ApiServiceError
-  >;
+  }): Promise<{
+    ok: true;
+    provider: ProviderSummary;
+  }>;
 }
 
 export interface ChatService {
   listSessions(input: {
     actor: SessionPayload;
     query: { knowledgeBaseId?: string };
-  }): Promise<{ ok: true; result: ChatSessionsResponse } | ApiServiceError>;
+  }): Promise<{ ok: true; result: ChatSessionsResponse }>;
   createSession(input: {
     actor: SessionPayload;
     body: CreateChatSessionInput;
-  }): Promise<
-    | { ok: true; result: { session: ChatSessionsResponse["sessions"][number] } }
-    | ApiServiceError
-  >;
+  }): Promise<{ ok: true; result: { session: ChatSessionsResponse["sessions"][number] } }>;
   listMessages(input: {
     actor: SessionPayload;
     sessionId: string;
-  }): Promise<{ ok: true; result: ChatMessagesResponse } | ApiServiceError>;
+  }): Promise<{ ok: true; result: ChatMessagesResponse }>;
   submitQuestion(input: {
     actor: SessionPayload;
     body: SubmitChatQuestionInput;
     requestId: string;
-  }): Promise<{ ok: true; result: ChatSubmitResponse } | ApiServiceError>;
+  }): Promise<{ ok: true; result: ChatSubmitResponse }>;
   submitFeedback(input: {
     actor: SessionPayload;
     body: SubmitAnswerFeedbackInput;
     messageId: string;
-  }): Promise<
-    { ok: true; result: SubmitAnswerFeedbackResponse } | ApiServiceError
-  >;
+  }): Promise<{ ok: true; result: SubmitAnswerFeedbackResponse }>;
 }
 
 export interface ProviderTransportKeyService {
@@ -274,7 +231,7 @@ export interface ProviderTransportKeyService {
   decryptApiKey(input: {
     ciphertext: string;
     keyId: string;
-  }): Promise<{ ok: true; plaintext: string } | ApiServiceError>;
+  }): Promise<{ ok: true; plaintext: string }>;
 }
 
 export interface ApiRateLimiter {

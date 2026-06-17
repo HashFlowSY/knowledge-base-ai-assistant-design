@@ -33,6 +33,7 @@
       "@kb/auth/server": ["src/packages/auth/src/server.ts"],
       "@kb/config": ["src/packages/config/src/index.ts"],
       "@kb/db": ["src/packages/db/src/index.ts"],
+      "@kb/errors": ["src/packages/errors/src/index.ts"],
       "@kb/ingestion": ["src/packages/ingestion/src/index.ts"],
       "@kb/knowledge": ["src/packages/knowledge/src/index.ts"],
       "@kb/knowledge/permissions": ["src/packages/knowledge/src/service/permissions.ts"],

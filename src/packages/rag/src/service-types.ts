@@ -16,20 +16,6 @@ import type {
 
 export type RagActor = KnowledgeActor;
 
-export interface RagServiceError {
-  ok: false;
-  code:
-    | "VALIDATION_ERROR"
-    | "UNAUTHORIZED"
-    | "FORBIDDEN"
-    | "NOT_FOUND"
-    | "RATE_LIMITED"
-    | "PROVIDER_UNAVAILABLE"
-    | "INTERNAL_ERROR";
-  httpStatus: 400 | 401 | 403 | 404 | 429 | 500;
-  message: string;
-}
-
 export interface RagChatRepository {
   appendMessage(input: {
     actor: RagActor;
@@ -144,27 +130,23 @@ export interface RagChatService {
   createSession(input: {
     actor: RagActor;
     body: CreateChatSessionInput;
-  }): Promise<
-    { ok: true; result: { session: ChatSessionSummary } } | RagServiceError
-  >;
+  }): Promise<{ ok: true; result: { session: ChatSessionSummary } }>;
   listMessages(input: {
     actor: RagActor;
     sessionId: string;
-  }): Promise<{ ok: true; result: ChatMessagesResponse } | RagServiceError>;
+  }): Promise<{ ok: true; result: ChatMessagesResponse }>;
   listSessions(input: {
     actor: RagActor;
     query: { knowledgeBaseId?: string };
-  }): Promise<{ ok: true; result: ChatSessionsResponse } | RagServiceError>;
+  }): Promise<{ ok: true; result: ChatSessionsResponse }>;
   submitFeedback(input: {
     actor: RagActor;
     body: SubmitAnswerFeedbackInput;
     messageId: string;
-  }): Promise<
-    { ok: true; result: SubmitAnswerFeedbackResponse } | RagServiceError
-  >;
+  }): Promise<{ ok: true; result: SubmitAnswerFeedbackResponse }>;
   submitQuestion(input: {
     actor: RagActor;
     body: SubmitChatQuestionInput;
     requestId: string;
-  }): Promise<{ ok: true; result: ChatSubmitResponse } | RagServiceError>;
+  }): Promise<{ ok: true; result: ChatSubmitResponse }>;
 }

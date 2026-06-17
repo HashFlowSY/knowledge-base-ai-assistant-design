@@ -1,12 +1,10 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import {
-  createSuccessResponse,
-  respondWithServiceError,
-} from "../../../http";
-import { getRequiredActor } from "../../../middleware";
+import { createSuccessResponse } from "../../../http";
+import { getRequiredActor, getValidatedInput } from "../../../middleware";
 import type { UserRouteDependencies } from "../dependencies";
+import type { UserPathParams } from "../types";
 
 type RemoveUserAccessContext = Context<ApiEnv, "/api/users/:userId/access">;
 
@@ -14,13 +12,11 @@ export async function removeUserAccessProcedure(
   context: RemoveUserAccessContext,
   dependencies: UserRouteDependencies,
 ): Promise<Response> {
-  const result = await dependencies.userService.removeUserAccess({
+  const params = getValidatedInput<UserPathParams>(context, "userPathParams");
+  await dependencies.userService.removeUserAccess({
     actor: getRequiredActor(context),
-    userId: context.req.param("userId"),
+    userId: params.userId,
   });
-  if (!result.ok) {
-    return respondWithServiceError(context, result);
-  }
 
   return context.json(
     createSuccessResponse({

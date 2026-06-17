@@ -1,8 +1,9 @@
+import type { AppError } from "@kb/errors";
+
 import type { UpdateUserInput } from "./schemas";
 import {
   createConflictError,
   createSelfProtectionError,
-  type UserServiceError,
 } from "./service-errors";
 
 export function createCreateUserPlan(input: {
@@ -15,7 +16,7 @@ export function createCreateUserPlan(input: {
       restoredAccess: boolean;
       revokeExistingSessions: boolean;
     }
-  | UserServiceError {
+  | AppError {
   if (input.existingUser === null) {
     return {
       ok: true,
@@ -47,7 +48,7 @@ export function createUpdateUserPlan(input: {
       auditActions: ("user.updated" | "user.password_reset")[];
       revokeSessions: boolean;
     }
-  | UserServiceError {
+  | AppError {
   if (
     input.actorId === input.targetUserId &&
     input.input.role !== undefined &&
@@ -78,7 +79,7 @@ export function createUpdateUserPlan(input: {
 export function createRemoveUserAccessPlan(input: {
   actorId: string;
   targetUserId: string;
-}): { ok: true } | UserServiceError {
+}): { ok: true } | AppError {
   return input.actorId === input.targetUserId
     ? createSelfProtectionError()
     : { ok: true };

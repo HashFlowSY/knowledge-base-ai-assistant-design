@@ -1,53 +1,15 @@
 import type { Context } from "hono";
 
 import type { SessionPayload } from "@kb/auth";
+import { rateLimited } from "@kb/errors";
 
 import type { ApiEnv, ApiRateLimiter } from "../../contracts";
-import { respondWithError } from "../../http";
 import {
   createRateLimitIdentity,
   createSessionRateLimitIdentity,
   type RateLimitConsumeInput,
 } from "../../rate-limit";
 import { getRequestIpSummary } from "./request";
-
-export async function respondAfterUnresolvedUserManagementRateLimit(
-  context: Context<ApiEnv>,
-  rateLimiter: ApiRateLimiter,
-  fallbackResponse: Response,
-): Promise<Response> {
-  const rateLimitResponse = await rateLimitUnresolvedUserManagement(
-    context,
-    rateLimiter,
-  );
-  return rateLimitResponse ?? fallbackResponse;
-}
-
-export async function respondAfterUnresolvedKnowledgeBaseRateLimit(
-  context: Context<ApiEnv>,
-  rateLimiter: ApiRateLimiter,
-  fallbackResponse: Response,
-): Promise<Response> {
-  const rateLimitResponse = await rateLimitUnresolvedKnowledgeBase(
-    context,
-    rateLimiter,
-  );
-  return rateLimitResponse ?? fallbackResponse;
-}
-
-export async function respondAfterUnresolvedDocumentUploadRateLimit(
-  context: Context<ApiEnv>,
-  rateLimiter: ApiRateLimiter,
-  limit: number,
-  fallbackResponse: Response,
-): Promise<Response> {
-  const rateLimitResponse = await rateLimitUnresolvedDocumentUpload(
-    context,
-    rateLimiter,
-    limit,
-  );
-  return rateLimitResponse ?? fallbackResponse;
-}
 
 export async function rateLimitLogin(
   context: Context<ApiEnv>,
@@ -228,10 +190,9 @@ async function consumeRateLimit(
     return null;
   }
 
-  context.header("Retry-After", result.retryAfterSeconds.toString());
-  return respondWithError(context, {
-    code: "RATE_LIMITED",
-    httpStatus: 429,
-    message: "请求过于频繁，请稍后重试。",
+  throw rateLimited({
+    domain: "api",
+    reason: "rate_limited",
+    retryAfterSeconds: result.retryAfterSeconds,
   });
 }

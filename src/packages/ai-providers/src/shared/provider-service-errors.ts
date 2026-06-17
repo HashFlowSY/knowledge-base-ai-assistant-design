@@ -1,25 +1,30 @@
 import type { ProviderErrorCode } from "../index";
-import type { ProviderConfigServiceError } from "./service-types";
+import {
+  forbidden,
+  internalError,
+  providerUnavailable,
+  rateLimited,
+  validationError,
+  type AppError,
+} from "@kb/errors";
 
 export function mapProviderConnectionError(
   code: ProviderErrorCode,
-): ProviderConfigServiceError {
+): AppError {
   if (code === "PROVIDER_AUTH_FAILED") {
-    return {
-      ok: false,
-      code: "FORBIDDEN",
-      httpStatus: 403,
+    return forbidden({
+      domain: "providers",
+      reason: "provider_auth_failed",
       message: "模型服务认证失败，请检查 API Key。",
-    };
+    });
   }
 
   if (code === "PROVIDER_RATE_LIMITED") {
-    return {
-      ok: false,
-      code: "RATE_LIMITED",
-      httpStatus: 429,
+    return rateLimited({
+      domain: "providers",
+      reason: "provider_rate_limited",
       message: "模型服务请求过于频繁，请稍后重试。",
-    };
+    });
   }
 
   if (
@@ -30,30 +35,32 @@ export function mapProviderConnectionError(
     return createValidationError("模型服务连接测试失败，请检查配置后重试。");
   }
 
-  return {
-    ok: false,
-    code: "PROVIDER_UNAVAILABLE",
-    httpStatus: 500,
+  return providerUnavailable({
+    domain: "providers",
+    reason: "provider_unavailable",
     message: "模型服务暂时不可用，请稍后重试。",
-  };
+  });
 }
 
-export function createValidationError(message: string): ProviderConfigServiceError {
-  return {
-    ok: false,
-    code: "VALIDATION_ERROR",
-    httpStatus: 400,
+export function createValidationError(
+  message: string,
+  reason = "provider_config_invalid",
+): AppError {
+  return validationError({
+    domain: "providers",
+    reason,
     message,
-  };
+  });
 }
 
-export function createInternalError(): ProviderConfigServiceError {
-  return {
-    ok: false,
-    code: "INTERNAL_ERROR",
-    httpStatus: 500,
+export function createInternalError(
+  reason = "provider_secret_unavailable",
+): AppError {
+  return internalError({
+    domain: "providers",
+    reason,
     message: "操作失败，请稍后重试。",
-  };
+  });
 }
 
 export function isAbortError(error: unknown): boolean {

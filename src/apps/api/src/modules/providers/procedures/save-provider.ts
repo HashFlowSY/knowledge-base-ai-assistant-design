@@ -1,10 +1,7 @@
 import type { Context } from "hono";
 
-import type { ApiEnv, ApiServiceError } from "../../../contracts";
-import {
-  createSuccessResponse,
-  respondWithServiceError,
-} from "../../../http";
+import type { ApiEnv } from "../../../contracts";
+import { createSuccessResponse } from "../../../http";
 import {
   getRequestIpSummary,
 } from "../../../guards";
@@ -34,9 +31,6 @@ export async function saveProviderProcedure(
           ciphertext: body.apiKey.ciphertext,
           keyId: body.apiKey.keyId,
         });
-  if (!apiKeyResult.ok) {
-    return respondWithServiceError(context, apiKeyResult);
-  }
 
   const result = await dependencies.providerConfigService.saveProviderConfig({
     actor: getRequiredActor(context),
@@ -53,9 +47,6 @@ export async function saveProviderProcedure(
     requestId: context.get("requestId"),
     userAgentSummary: context.req.header("user-agent") ?? null,
   });
-  if (!result.ok) {
-    return respondWithServiceError(context, result);
-  }
 
   return context.json(
     createSuccessResponse({
@@ -74,14 +65,8 @@ async function decryptProviderApiKey(
     ciphertext: string;
     keyId: string;
   },
-): Promise<
-  | { ok: true; value: { mode: "plaintext"; value: string } }
-  | ApiServiceError
-> {
+): Promise<{ ok: true; value: { mode: "plaintext"; value: string } }> {
   const decrypted = await dependencies.providerTransportKeyService.decryptApiKey(input);
-  if (!decrypted.ok) {
-    return decrypted;
-  }
 
   return {
     ok: true,

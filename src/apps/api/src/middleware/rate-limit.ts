@@ -1,20 +1,22 @@
 import type { Context, MiddlewareHandler } from "hono";
 
+import type { AppError } from "@kb/errors";
+
 import type { ApiEnv, ApiRateLimiter } from "../contracts";
 import {
   getLoginRateLimitEmail,
   rateLimitAuthSession,
+  rateLimitUnresolvedDocumentUpload,
+  rateLimitUnresolvedKnowledgeBase,
+  rateLimitUnresolvedUserManagement,
   rateLimitLogin,
-  respondAfterUnresolvedDocumentUploadRateLimit,
-  respondAfterUnresolvedKnowledgeBaseRateLimit,
-  respondAfterUnresolvedUserManagementRateLimit,
 } from "../guards";
 import { readJsonBodyOnce } from "./validation";
 
 export type RejectedResponseHandler = (
   context: Context<ApiEnv>,
-  response: Response,
-) => Promise<Response>;
+  error: AppError,
+) => Promise<void> | void;
 
 export function createAuthSessionRateLimitMiddleware(
   rateLimiter: ApiRateLimiter,
@@ -50,52 +52,40 @@ export function createLoginRateLimitMiddleware(
 export function createAuthSessionRejectionRateLimitHandler(
   rateLimiter: ApiRateLimiter,
 ): RejectedResponseHandler {
-  return async (context, response) => {
-    const rateLimitResponse = await rateLimitAuthSession(context, rateLimiter);
-    return rateLimitResponse ?? response;
+  return async (context) => {
+    await rateLimitAuthSession(context, rateLimiter);
   };
 }
 
 export function createLoginRejectionRateLimitHandler(
   rateLimiter: ApiRateLimiter,
 ): RejectedResponseHandler {
-  return async (context, response) => {
-    const rateLimitResponse = await rateLimitLogin(context, rateLimiter, null);
-    return rateLimitResponse ?? response;
+  return async (context) => {
+    await rateLimitLogin(context, rateLimiter, null);
   };
 }
 
 export function createKnowledgeBaseRejectionRateLimitHandler(
   rateLimiter: ApiRateLimiter,
 ): RejectedResponseHandler {
-  return (context, response) =>
-    respondAfterUnresolvedKnowledgeBaseRateLimit(
-      context,
-      rateLimiter,
-      response,
-    );
+  return async (context) => {
+    await rateLimitUnresolvedKnowledgeBase(context, rateLimiter);
+  };
 }
 
 export function createUserManagementRejectionRateLimitHandler(
   rateLimiter: ApiRateLimiter,
 ): RejectedResponseHandler {
-  return (context, response) =>
-    respondAfterUnresolvedUserManagementRateLimit(
-      context,
-      rateLimiter,
-      response,
-    );
+  return async (context) => {
+    await rateLimitUnresolvedUserManagement(context, rateLimiter);
+  };
 }
 
 export function createDocumentUploadRejectionRateLimitHandler(
   rateLimiter: ApiRateLimiter,
   limit: number,
 ): RejectedResponseHandler {
-  return (context, response) =>
-    respondAfterUnresolvedDocumentUploadRateLimit(
-      context,
-      rateLimiter,
-      limit,
-      response,
-    );
+  return async (context) => {
+    await rateLimitUnresolvedDocumentUpload(context, rateLimiter, limit);
+  };
 }

@@ -4,6 +4,8 @@ import { createLogger, type Logger } from "@kb/observability";
 import { queueNameSchema, type QueueName } from "@kb/queue";
 import type { IngestionPipelineResult } from "@kb/ingestion";
 
+import { createWorkerTaskErrorFields } from "./task-errors";
+
 export interface WorkerRuntimeState {
   service: "worker";
   status: "started" | "stopped";
@@ -88,7 +90,7 @@ export async function startWorkerRuntime(
     recovery === undefined
       ? null
       : setInterval(() => {
-          void runRecovery(recovery, logger);
+          void runRecoveryWithLogging(recovery, logger);
         }, recovery.intervalMs ?? 300_000);
   const sourceCleanupInterval =
     sourceCleanup === undefined
@@ -97,7 +99,7 @@ export async function startWorkerRuntime(
           void runSourceCleanupOnce();
         }, sourceCleanup.intervalMs ?? recovery?.intervalMs ?? 300_000);
   if (recovery !== undefined) {
-    await runRecovery(recovery, logger);
+    await runRecoveryWithLogging(recovery, logger);
   }
   if (sourceCleanup !== undefined) {
     await runSourceCleanupOnce();
@@ -131,14 +133,21 @@ export async function startWorkerRuntime(
   };
 }
 
-async function runRecovery(
+async function runRecoveryWithLogging(
   recovery: WorkerRecoveryRunner,
   logger: Logger,
 ): Promise<void> {
-  const result = await recovery.run();
-  logger.info("worker_recovery_completed", {
-    enqueued: result.enqueued,
-  });
+  try {
+    const result = await recovery.run();
+    logger.info("worker_recovery_completed", {
+      enqueued: result.enqueued,
+    });
+  } catch (error) {
+    logger.error(
+      "worker_recovery_failed",
+      createWorkerTaskErrorFields("recovery", error),
+    );
+  }
 }
 
 async function runSourceCleanup(
@@ -157,9 +166,10 @@ async function runSourceCleanup(
     }
 
     logger.info("worker_source_cleanup_completed", eventFields);
-  } catch {
-    logger.error("worker_source_cleanup_failed", {
-      failed: 1,
-    });
+  } catch (error) {
+    logger.error(
+      "worker_source_cleanup_failed",
+      createWorkerTaskErrorFields("source_cleanup", error),
+    );
   }
 }

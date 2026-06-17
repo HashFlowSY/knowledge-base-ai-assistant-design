@@ -2,15 +2,14 @@ import { and, eq } from "drizzle-orm";
 
 import { upsertPasswordAccount } from "@kb/auth/server";
 import { authUsers, tenantMemberships, type ProjectDb } from "@kb/db";
+import { isAppError } from "@kb/errors";
 
 import { createAuthMutationRepository } from "../auth-mutation-repository";
 import { insertAudit } from "../service-audit";
 import {
   createConflictError,
+  createInternalError,
   createNotFoundError,
-  fromServiceException,
-  toServiceError,
-  toServiceException,
 } from "../service-errors";
 import { getUpdatedFieldNames, toUserSummary } from "../service-mappers";
 import { createUpdateUserPlan } from "../service-plans";
@@ -29,8 +28,8 @@ export async function updateUserOperation(
     input: input.body,
     targetUserId: input.userId,
   });
-  if (!plan.ok) {
-    return toServiceError(plan);
+  if (isAppError(plan)) {
+    throw plan;
   }
 
   try {
@@ -41,13 +40,13 @@ export async function updateUserOperation(
         userId: input.userId,
       });
       if (target === null) {
-        throw toServiceException(createNotFoundError());
+        throw createNotFoundError();
       }
 
       if (input.body.email !== undefined) {
         const conflicting = await findUserByEmail(txDb, input.body.email);
         if (conflicting !== null && conflicting.id !== input.userId) {
-          throw toServiceException(createConflictError("该邮箱已存在。"));
+          throw createConflictError("该邮箱已存在。");
         }
       }
 
@@ -118,7 +117,7 @@ export async function updateUserOperation(
         userId: input.userId,
       });
       if (next === null) {
-        throw toServiceException(createNotFoundError());
+        throw createNotFoundError();
       }
 
       return next;
@@ -126,6 +125,10 @@ export async function updateUserOperation(
 
     return { ok: true, user: toUserSummary(updated) };
   } catch (error) {
-    return fromServiceException(error);
+    if (isAppError(error)) {
+      throw error;
+    }
+
+    throw createInternalError(error);
   }
 }

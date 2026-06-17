@@ -15,7 +15,6 @@ export type {
   KnowledgeBaseService,
   KnowledgeBaseServiceOptions,
 } from "./service/types";
-export type { KnowledgeBaseServiceError } from "./service/errors";
 
 export function createKnowledgeBaseService(
   options: KnowledgeBaseServiceOptions,

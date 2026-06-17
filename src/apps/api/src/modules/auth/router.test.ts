@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import {
+  forbidden,
+  internalError,
+  unauthorized,
+} from "@kb/errors";
+import { createLogger, type LogRecord } from "@kb/observability";
 import { sessionPayloadSchema } from "@kb/auth";
 import { apiErrorResponseSchema, apiSuccessResponseSchema } from "@kb/shared";
 
@@ -10,7 +16,10 @@ import { adminSession, createStaticAuthService } from "../../testing/fakes";
 
 describe("auth API router", () => {
   it("returns a uniform validation error when login body is invalid", async () => {
-    const app = createApiApp();
+    const logRecords: LogRecord[] = [];
+    const app = createApiApp({
+      logger: createLogger({ service: "api" }, (record) => logRecords.push(record)),
+    });
     const response = await app.request("/api/auth/login", {
       method: "POST",
       body: JSON.stringify({ email: "not-email" }),
@@ -28,6 +37,18 @@ describe("auth API router", () => {
       code: "VALIDATION_ERROR",
       requestId: "req_login_validation",
     });
+    expect(logRecords).toContainEqual(
+      expect.objectContaining({
+        event: "api_request_app_error",
+        requestId: "req_login_validation",
+        fields: expect.objectContaining({
+          code: "VALIDATION_ERROR",
+          httpStatus: 400,
+          domain: "api",
+          reason: "invalid_request_body",
+        }),
+      }),
+    );
   });
 
   it("rate-limits malformed login bodies with the auth IP identity before validation", async () => {
@@ -37,12 +58,11 @@ describe("auth API router", () => {
       authService: {
         async login() {
           loginCalls += 1;
-          return {
-            ok: false,
-            code: "UNAUTHORIZED",
+          throw unauthorized({
+            domain: "auth",
+            reason: "invalid_credentials",
             message: "邮箱或密码不正确。",
-            httpStatus: 401,
-          };
+          });
         },
         async logout() {
           return { ok: true };
@@ -161,12 +181,11 @@ describe("auth API router", () => {
           return { ok: true };
         },
         async getSession() {
-          return {
-            ok: false,
-            code: "UNAUTHORIZED",
+          throw unauthorized({
+            domain: "auth",
+            reason: "missing_session",
             message: "请先登录。",
-            httpStatus: 401,
-          };
+          });
         },
       },
     });
@@ -215,15 +234,16 @@ describe("auth API router", () => {
   it("forwards auth service Set-Cookie headers on forbidden login and logout", async () => {
     const authService: AuthService = {
       async login() {
-        return {
-          ok: false,
-          code: "FORBIDDEN",
-          httpStatus: 403,
+        throw forbidden({
+          domain: "auth",
+          reason: "access_removed",
           message: "当前账号无权访问默认租户，请联系管理员。",
-          setCookieHeaders: [
-            "better-auth.session_token=; Max-Age=0; HttpOnly; SameSite=Lax",
-          ],
-        };
+          responseHeaders: {
+            setCookie: [
+              "better-auth.session_token=; Max-Age=0; HttpOnly; SameSite=Lax",
+            ],
+          },
+        });
       },
       async logout() {
         return {
@@ -234,12 +254,11 @@ describe("auth API router", () => {
         };
       },
       async getSession() {
-        return {
-          ok: false,
-          code: "UNAUTHORIZED",
+        throw unauthorized({
+          domain: "auth",
+          reason: "missing_session",
           message: "请先登录。",
-          httpStatus: 401,
-        };
+        });
       },
     };
     const app = createApiApp({ authService });
@@ -276,7 +295,10 @@ describe("auth API router", () => {
   });
 
   it("returns an unauthorized envelope for missing session", async () => {
-    const app = createApiApp();
+    const logRecords: LogRecord[] = [];
+    const app = createApiApp({
+      logger: createLogger({ service: "api" }, (record) => logRecords.push(record)),
+    });
     const response = await app.request("/api/auth/session", {
       headers: {
         "x-request-id": "req_missing_session",
@@ -291,6 +313,18 @@ describe("auth API router", () => {
       message: "请先登录。",
       requestId: "req_missing_session",
     });
+    expect(logRecords).toContainEqual(
+      expect.objectContaining({
+        event: "api_request_app_error",
+        requestId: "req_missing_session",
+        fields: expect.objectContaining({
+          code: "UNAUTHORIZED",
+          domain: "auth",
+          httpStatus: 401,
+          reason: "missing_session",
+        }),
+      }),
+    );
   });
 
   it("treats malformed session cookies as missing credentials after auth rate limiting", async () => {
@@ -343,15 +377,16 @@ describe("auth API router", () => {
           throw new Error("not used");
         },
         async getSession() {
-          return {
-            ok: false,
-            code: "FORBIDDEN",
-            httpStatus: 403,
+          throw forbidden({
+            domain: "auth",
+            reason: "access_removed",
             message: "当前账号无权访问默认租户，请联系管理员。",
-            setCookieHeaders: [
-              "better-auth.session_token=; Max-Age=0; HttpOnly; SameSite=Lax",
-            ],
-          };
+            responseHeaders: {
+              setCookie: [
+                "better-auth.session_token=; Max-Age=0; HttpOnly; SameSite=Lax",
+              ],
+            },
+          });
         },
       },
     });
@@ -383,12 +418,11 @@ describe("auth API router", () => {
           throw new Error("not used");
         },
         async getSession() {
-          return {
-            ok: false,
-            code: "INTERNAL_ERROR",
-            httpStatus: 500,
+          throw internalError({
+            domain: "auth",
+            reason: "unexpected_error",
             message: "操作失败，请稍后重试。",
-          };
+          });
         },
       },
     });
@@ -416,12 +450,11 @@ describe("auth API router", () => {
         ...createStaticAuthService(adminSession),
         async login() {
           loginCalls += 1;
-          return {
-            ok: false,
-            code: "UNAUTHORIZED",
+          throw unauthorized({
+            domain: "auth",
+            reason: "invalid_credentials",
             message: "邮箱或密码不正确。",
-            httpStatus: 401,
-          };
+          });
         },
       },
       rateLimiter: {

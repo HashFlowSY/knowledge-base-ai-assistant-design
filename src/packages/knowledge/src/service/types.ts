@@ -15,7 +15,6 @@ import type {
   RetryDocumentProcessingResult,
   UpdateKnowledgeBaseInput,
 } from "../contracts/schemas";
-import type { KnowledgeBaseServiceError } from "./errors";
 
 export interface KnowledgeActor {
   user: { id: string };
@@ -38,20 +37,20 @@ export interface KnowledgeBaseService {
   listKnowledgeBases(input: {
     actor: KnowledgeActor;
     query: KnowledgeBaseListQuery;
-  }): Promise<{ ok: true; page: KnowledgeBasesPage } | KnowledgeBaseServiceError>;
+  }): Promise<{ ok: true; page: KnowledgeBasesPage }>;
   getKnowledgeBase(input: {
     actor: KnowledgeActor;
     knowledgeBaseId: string;
-  }): Promise<{ ok: true; knowledgeBase: KnowledgeBaseDetail } | KnowledgeBaseServiceError>;
+  }): Promise<{ ok: true; knowledgeBase: KnowledgeBaseDetail }>;
   createKnowledgeBase(input: {
     actor: KnowledgeActor;
     body: CreateKnowledgeBaseInput;
-  }): Promise<{ ok: true; knowledgeBase: KnowledgeBaseSummary } | KnowledgeBaseServiceError>;
+  }): Promise<{ ok: true; knowledgeBase: KnowledgeBaseSummary }>;
   updateKnowledgeBase(input: {
     actor: KnowledgeActor;
     body: UpdateKnowledgeBaseInput;
     knowledgeBaseId: string;
-  }): Promise<{ ok: true; knowledgeBase: KnowledgeBaseDetail } | KnowledgeBaseServiceError>;
+  }): Promise<{ ok: true; knowledgeBase: KnowledgeBaseDetail }>;
   uploadDocumentFile(input: {
     actor: KnowledgeActor;
     checksum: string;
@@ -64,19 +63,15 @@ export interface KnowledgeBaseService {
     sizeBytes: number;
     title: string;
     userAgentSummary: string | null;
-  }): Promise<
-    { ok: true; result: DocumentFileUploadResult } | KnowledgeBaseServiceError
-  >;
+  }): Promise<{ ok: true; result: DocumentFileUploadResult }>;
   retryDocumentProcessing(input: {
     actor: KnowledgeActor;
     documentId: string;
     knowledgeBaseId: string;
-  }): Promise<
-    { ok: true; result: RetryDocumentProcessingResult } | KnowledgeBaseServiceError
-  >;
+  }): Promise<{ ok: true; result: RetryDocumentProcessingResult }>;
   listDocumentProcessing(input: {
     actor: KnowledgeActor;
     knowledgeBaseId: string;
     query: DocumentProcessingListQuery;
-  }): Promise<{ ok: true; page: DocumentProcessingPage } | KnowledgeBaseServiceError>;
+  }): Promise<{ ok: true; page: DocumentProcessingPage }>;
 }

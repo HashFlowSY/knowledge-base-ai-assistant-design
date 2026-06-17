@@ -26,9 +26,6 @@ export function createKnowledgeBaseSessionMiddleware(input: {
       input.authService,
       input.rateLimiter,
     );
-    if (!result.ok) {
-      return result.response;
-    }
 
     setAuthenticatedContext(context, result.actor);
     return next();
@@ -47,9 +44,6 @@ export function createAdminKnowledgeBaseSessionMiddleware(input: {
       input.authService,
       input.rateLimiter,
     );
-    if (!result.ok) {
-      return result.response;
-    }
 
     setAuthenticatedContext(context, result.actor);
     return next();
@@ -68,9 +62,6 @@ export function createAdminUserManagementSessionMiddleware(input: {
       input.authService,
       input.rateLimiter,
     );
-    if (!result.ok) {
-      return result.response;
-    }
 
     setAuthenticatedContext(context, result.actor);
     return next();

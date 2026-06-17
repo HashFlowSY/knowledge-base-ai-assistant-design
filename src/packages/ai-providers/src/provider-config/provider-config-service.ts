@@ -37,9 +37,6 @@ export function createProviderConfigService(
         existingConfig,
         repository: options.repository,
       });
-      if (!keyResult.ok) {
-        return keyResult;
-      }
 
       const connectionResult = await options.connectionTester({
         apiKey: keyResult.apiKey,
@@ -68,7 +65,7 @@ export function createProviderConfigService(
         userAgentSummary: input.userAgentSummary ?? null,
       });
       if (!connectionResult.ok) {
-        return mapProviderConnectionError(connectionResult.code);
+        throw mapProviderConnectionError(connectionResult.code);
       }
 
       const shouldRotateSecret =

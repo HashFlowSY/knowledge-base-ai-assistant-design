@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isAppError } from "@kb/errors";
+
 import { normalizeProviderConnectionResponse } from "../connection/connection-tester";
 import {
   createDashScopeEndpointUrl,
@@ -15,6 +17,7 @@ import type {
   EmbeddingServiceOptions,
   EmbeddingServiceResult,
   EmbeddingUsage,
+  ProviderConfigRecord,
   ProviderConnectionTestResult,
 } from "../shared/service-types";
 
@@ -73,17 +76,13 @@ export function createEmbeddingService(
         return createEmbeddingProviderNotConfiguredResult();
       }
 
-      const apiKeyResult = await decryptExistingApiKey({
-        actor: {
-          role: "admin",
-          tenant: { id: input.tenantId },
-          user: { id: "system" },
-        },
+      const apiKeyResult = await decryptExistingProviderApiKey({
         encryptionKey: options.encryptionKey,
-        existingConfig: config,
+        config,
         repository: options.repository,
+        tenantId: input.tenantId,
       });
-      if (!apiKeyResult.ok || apiKeyResult.apiKey === null) {
+      if (apiKeyResult.apiKey === null) {
         return {
           ok: false,
           code: "PROVIDER_UNKNOWN_ERROR",
@@ -158,6 +157,32 @@ export function createEmbeddingService(
       }
     },
   };
+}
+
+async function decryptExistingProviderApiKey(input: {
+  config: ProviderConfigRecord;
+  encryptionKey: EmbeddingServiceOptions["encryptionKey"];
+  repository: EmbeddingServiceOptions["repository"];
+  tenantId: string;
+}): Promise<{ apiKey: string | null }> {
+  try {
+    return await decryptExistingApiKey({
+      actor: {
+        role: "admin",
+        tenant: { id: input.tenantId },
+        user: { id: "system" },
+      },
+      encryptionKey: input.encryptionKey,
+      existingConfig: input.config,
+      repository: input.repository,
+    });
+  } catch (error) {
+    if (isAppError(error)) {
+      return { apiKey: null };
+    }
+
+    throw error;
+  }
 }
 
 function createEmbeddingRequest(input: {

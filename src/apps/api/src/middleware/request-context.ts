@@ -4,15 +4,14 @@ import type { Logger } from "@kb/observability";
 
 import type { ApiEnv } from "../contracts";
 
+const requestIdPattern = /^[A-Za-z0-9._-]+$/;
+const maxRequestIdLength = 128;
+
 export function createRequestContextMiddleware(
   logger: Logger,
 ): MiddlewareHandler<ApiEnv> {
   return async (context, next) => {
-    const existingRequestId = context.req.header("x-request-id");
-    const requestId =
-      existingRequestId && existingRequestId.length > 0
-        ? existingRequestId
-        : crypto.randomUUID();
+    const requestId = resolveRequestId(context.req.header("x-request-id"));
 
     context.set("actor", null);
     context.set("documentUpload", null);
@@ -34,4 +33,18 @@ export function createRequestContextMiddleware(
       status: context.res.status,
     });
   };
+}
+
+function resolveRequestId(value: string | undefined): string {
+  const candidate = value?.trim();
+  if (
+    candidate !== undefined &&
+    candidate.length > 0 &&
+    candidate.length <= maxRequestIdLength &&
+    requestIdPattern.test(candidate)
+  ) {
+    return candidate;
+  }
+
+  return crypto.randomUUID();
 }

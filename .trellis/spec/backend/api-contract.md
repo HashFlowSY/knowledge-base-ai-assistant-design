@@ -335,10 +335,91 @@ Standard codes:
 - `PAYLOAD_TOO_LARGE`
 - `UNSUPPORTED_MEDIA_TYPE`
 - `PROVIDER_UNAVAILABLE`
-- `INGESTION_FAILED`
 - `INTERNAL_ERROR`
 
 Do not return stack traces, SQL details, provider raw errors, plaintext secrets, prompt content, chunk content, or complete model output in error responses.
+
+## Scenario: Ingestion Job Error Codes Are Not API Error Codes
+
+### 1. Scope / Trigger
+
+- Trigger: ingestion pipeline or worker code records failed document processing
+  state, and API code later exposes that state through task/status endpoints.
+- Applies to persisted job/source fields such as `lastErrorCode`,
+  `lastErrorMessage`, `uploadErrorCode`, and document processing summaries.
+
+### 2. Signatures
+
+```typescript
+type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
+
+type IngestionJobErrorCode = "INGESTION_FAILED" | string;
+```
+
+### 3. Contracts
+
+- `INGESTION_FAILED` is an ingestion/job-state error code, not an
+  `ApiErrorResponse.code`.
+- Do not add `INGESTION_FAILED` to `apiErrorCodeSchema` unless an HTTP endpoint
+  intentionally returns it in the standard API error envelope.
+- Ingestion failures that happen after upload/enqueue must be persisted on the
+  job/source record and returned as normal response `data` from status/list
+  endpoints.
+- Synchronous API request failures before enqueue must map to public API codes
+  such as `VALIDATION_ERROR`, `PAYLOAD_TOO_LARGE`, `UNSUPPORTED_MEDIA_TYPE`,
+  `FORBIDDEN`, `RATE_LIMITED`, `PROVIDER_UNAVAILABLE`, or `INTERNAL_ERROR`.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| Upload request has invalid multipart/file input | Return `ApiErrorResponse` with `VALIDATION_ERROR`, `PAYLOAD_TOO_LARGE`, or `UNSUPPORTED_MEDIA_TYPE` |
+| Authenticated actor lacks upload/read permission | Return `ApiErrorResponse` with `FORBIDDEN` or hidden `NOT_FOUND` |
+| BullMQ enqueue fails synchronously before response | Return a public API error code, usually `INTERNAL_ERROR` or a documented domain mapping |
+| Worker ingestion step fails after enqueue | Persist job/source error state, such as `INGESTION_FAILED`; do not throw an API-facing `AppError` |
+| Status/list endpoint reads a failed job | Return success envelope data containing the processing/job status and safe error summary |
+
+### 5. Good/Base/Bad Cases
+
+- Good: worker records `lastErrorCode = "INGESTION_FAILED"`, and
+  `/documents/processing` returns that value inside `data.items[].job`.
+- Base: API upload parser rejects an unsupported file extension with
+  `UNSUPPORTED_MEDIA_TYPE`.
+- Bad: API procedure throws `AppError` with `code: "INGESTION_FAILED"` and the
+  global HTTP mapper returns it as `ApiErrorResponse.code`.
+
+### 6. Tests Required
+
+- Shared schema tests should reject `INGESTION_FAILED` as a public
+  `ApiErrorCode` unless the contract is deliberately changed.
+- Ingestion/worker tests should assert failed pipeline steps persist normalized
+  job/source error fields.
+- API document-processing tests should assert failed job information is returned
+  as success-envelope data, not as an API error envelope.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+throw createAppError({
+  code: "INGESTION_FAILED",
+  httpStatus: 500,
+  message: "Ingestion failed.",
+  domain: "ingestion",
+  reason: "ingestion_failed",
+});
+```
+
+#### Correct
+
+```typescript
+await markIngestionJobFailed({
+  errorCode: "INGESTION_FAILED",
+  errorMessage: "文档处理失败，请重试。",
+  ingestionJobId,
+});
+```
 
 Provider package errors must be mapped before they reach clients:
 
@@ -361,6 +442,122 @@ Tests required:
 - Shared schema tests reject non-standard public codes.
 - API typecheck catches service errors with non-public `code` values.
 - Web tests/typecheck update helpers that construct API errors to use `ApiErrorCode`.
+
+## Scenario: Unified Backend Interface Errors
+
+### 1. Scope / Trigger
+
+- Trigger: backend code needs to reject an API-facing request from API
+  middleware, API guards, or a domain package called by an API procedure.
+- Scope: `src/packages/errors`, `src/apps/api`, API-facing service methods in
+  `src/packages/*`, and scheduled/background error logging in `src/apps/worker`.
+- Non-interface errors inside ingestion pipeline result contracts, provider
+  runtime degradation, and internal planning/parse result objects may keep
+  local result unions when they do not cross the API procedure boundary.
+
+### 2. Signatures
+
+```typescript
+interface AppErrorData {
+  code: ApiErrorCode;
+  httpStatus: 400 | 401 | 403 | 404 | 409 | 413 | 415 | 429 | 500;
+  message: string;
+  validationErrors?: ApiValidationError[];
+  domain: AppErrorDomain;
+  reason: AppErrorReason;
+  retryable?: boolean;
+  metadata?: AppErrorMetadata;
+  responseHeaders?: AppErrorResponseHeaders;
+}
+
+interface AppErrorResponseHeaders {
+  retryAfterSeconds?: number;
+  setCookie?: string[];
+}
+```
+
+`@kb/errors` owns `AppError`, `appErrorDataSchema`, `isAppError`, and factory
+functions such as `unauthorized`, `forbidden`, `validationError`,
+`rateLimited`, and `internalError`.
+
+### 3. Contracts
+
+- API-facing expected errors are thrown as `AppError`; API procedures do not
+  call `respondWithServiceError` or manually convert service errors.
+- `src/apps/api/src/app.ts` is the only HTTP boundary that converts `AppError`
+  into `ApiErrorResponse`.
+- `responseHeaders.retryAfterSeconds` is converted to `Retry-After`.
+- `responseHeaders.setCookie` is converted to one or more `Set-Cookie` headers.
+- `responseHeaders` is never serialized into the JSON error body and is never
+  logged.
+- `AppErrorMetadata` is a strict whitelist. Allowed fields are safe system ids,
+  hard-coded operation names, route path without query string, HTTP method,
+  content length, max bytes, queue name, job id, and retry attempt.
+- Do not add request bodies, raw headers, cookies, tokens, passwords, provider
+  keys, provider prompts/responses, document text, chunk text, embeddings,
+  vectors, object keys, database URLs, Redis URLs, AWS/S3 credentials, or
+  encryption/private keys to `AppError.metadata` or error log payloads.
+
+### 4. Validation & Error Matrix
+
+| Condition | Required outcome |
+| --- | --- |
+| Zod body validation failure | Throw `validationError({ domain: "api", reason: "invalid_request_body" })` |
+| Query validation failure | Throw `validationError({ domain: "api", reason: "invalid_query_params" })` |
+| Path-param validation failure | Throw `validationError({ domain: "api", reason: "invalid_path_params" })` |
+| Missing or expired session | Throw `unauthorized({ domain: "auth", reason: "missing_session" | "session_expired" })` |
+| Rate limit rejection | Throw `rateLimited({ domain: "api", reason: "rate_limited", retryAfterSeconds })` |
+| Domain not found/forbidden/conflict | Domain package throws `notFound`, `forbidden`, or `conflict` with its domain |
+| Unknown API exception | Global handler returns `INTERNAL_ERROR/500` and logs safe request context |
+| Scheduled worker AppError | Worker logs only code, status, domain, reason, retryable, metadata, error, stack |
+| Scheduled worker non-AppError | Worker logs only taskName, error, stack |
+
+### 5. Good/Base/Bad Cases
+
+- Good: `@kb/users` throws `conflict({ domain: "users", reason: "duplicate_email" })`
+  and the API procedure returns only the success branch.
+- Base: an upload parser returns an internal `{ ok: false }` result; the API
+  procedure immediately converts it to `validationError`, `payloadTooLarge`, or
+  `unsupportedMediaType`.
+- Bad: a business package returns `{ ok: false, error }` to an API procedure
+  and the procedure calls `respondWithServiceError`.
+- Bad: an AppError metadata object includes `apiKey`, `cookie`,
+  `responseHeaders`, `question`, `chunkText`, or `vector`.
+
+### 6. Tests Required
+
+- `@kb/errors` tests must cover strict metadata schema, strict
+  `responseHeaders` schema, code/status pairing, `retryAfterSeconds` limited to
+  `RATE_LIMITED`, and `setCookie` limited to auth-domain errors.
+- API error-handler tests must assert `AppError` response envelopes, unknown
+  error fallback, `Retry-After`, `Set-Cookie`, and absence of `responseHeaders`
+  and `setCookie` in logs/body.
+- API guard/middleware tests must assert expected rejections become AppError
+  responses and do not call domain services after validation failure.
+- Domain package tests must assert API-facing expected errors reject with
+  `isAppError(error) === true` or match `error.data`.
+- Worker lifecycle tests must assert scheduled task failures are caught/logged
+  and BullMQ retry behavior remains unchanged.
+- Final quality checks must scan for `respondWithServiceError`,
+  `ApiServiceError`, `toServiceException`, and `fromServiceException`.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```typescript
+const result = await userService.createUser(input);
+if (!result.ok) {
+  return respondWithServiceError(context, result.error);
+}
+```
+
+#### Correct
+
+```typescript
+const result = await userService.createUser(input);
+return context.json(createSuccessResponse({ data: result.user, httpStatus: 201, requestId }), 201);
+```
 
 ## OpenAPI Rules
 

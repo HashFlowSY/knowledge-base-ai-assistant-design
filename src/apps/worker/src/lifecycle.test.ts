@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { UnrecoverableError } from "bullmq";
 
+import { internalError, rateLimited } from "@kb/errors";
 import { createLogger, type LogRecord } from "@kb/observability";
 
 import { handleIngestionPipelineResult, startWorkerRuntime } from "./lifecycle";
@@ -144,7 +145,7 @@ describe("@kb/worker", () => {
     await runtime.stop("test");
   });
 
-  it("keeps recovery running when source cleanup throws and logs only a safe summary", async () => {
+  it("keeps recovery running when source cleanup throws and logs safe error fields", async () => {
     const records: LogRecord[] = [];
     const recovered: number[] = [];
     const logger = createLogger({ service: "worker" }, (record) => records.push(record));
@@ -160,7 +161,7 @@ describe("@kb/worker", () => {
       sourceCleanup: {
         intervalMs: 60_000,
         run: async () => {
-          throw new Error("raw object key tenants/tenant-1/private.pdf");
+          throw new Error("source cleanup failed for tenants/tenant_1/private.pdf");
         },
       },
     });
@@ -172,12 +173,153 @@ describe("@kb/worker", () => {
       expect.objectContaining({
         event: "worker_source_cleanup_failed",
         fields: {
-          failed: 1,
+          taskName: "source_cleanup",
+          error: "Worker task failed.",
+          stack: expect.any(String),
         },
         level: "error",
       }),
     );
-    expect(JSON.stringify(records)).not.toContain("tenants/tenant-1/private.pdf");
+    expect(JSON.stringify(records)).not.toContain("tenant_1");
+    expect(JSON.stringify(records)).not.toContain("private.pdf");
+  });
+
+  it("logs recovery interval failures with safe AppError fields", async () => {
+    vi.useFakeTimers();
+    const records: LogRecord[] = [];
+    const logger = createLogger({ service: "worker" }, (record) => records.push(record));
+    const runtime = await startWorkerRuntime({
+      logger,
+      recovery: {
+        intervalMs: 50,
+        run: vi
+          .fn()
+          .mockResolvedValueOnce({ enqueued: 0 })
+          .mockRejectedValueOnce(
+            rateLimited(
+              {
+                domain: "queue",
+                reason: "recovery_rate_limited",
+                message: "Queue recovery was rate limited.",
+                metadata: {
+                  queueName: "ingestion",
+                  operation: "recover_ingestion_jobs",
+                },
+                retryAfterSeconds: 30,
+              },
+              { cause: new Error("upstream throttled") },
+            ),
+          ),
+      },
+    });
+
+    await vi.advanceTimersByTimeAsync(50);
+    await runtime.stop("test");
+
+    expect(records).toContainEqual(
+      expect.objectContaining({
+        event: "worker_recovery_failed",
+        fields: {
+          code: "RATE_LIMITED",
+          httpStatus: 429,
+          domain: "queue",
+          reason: "recovery_rate_limited",
+          retryable: false,
+          metadata: {
+            queueName: "ingestion",
+            operation: "recover_ingestion_jobs",
+          },
+          error: "Queue recovery was rate limited.",
+          stack: expect.any(String),
+        },
+        level: "error",
+      }),
+    );
+    expect(JSON.stringify(records)).not.toContain("responseHeaders");
+    expect(JSON.stringify(records)).not.toContain("retryAfterSeconds");
+  });
+
+  it("logs source cleanup failures with safe non-AppError fields", async () => {
+    const records: LogRecord[] = [];
+    const logger = createLogger({ service: "worker" }, (record) => records.push(record));
+    const runtime = await startWorkerRuntime({
+      logger,
+      sourceCleanup: {
+        intervalMs: 60_000,
+        run: async () => {
+          throw new Error(
+            "cleanup failed for tenants/tenant_1/private.pdf token=secret_token requestBody={}",
+          );
+        },
+      },
+    });
+
+    await runtime.stop("test");
+
+    expect(records).toContainEqual(
+      expect.objectContaining({
+        event: "worker_source_cleanup_failed",
+        fields: {
+          taskName: "source_cleanup",
+          error: "Worker task failed.",
+          stack: expect.any(String),
+        },
+        level: "error",
+      }),
+    );
+    expect(JSON.stringify(records)).not.toContain("tenant_1");
+    expect(JSON.stringify(records)).not.toContain("private.pdf");
+    expect(JSON.stringify(records)).not.toContain("secret_token");
+    expect(JSON.stringify(records)).not.toContain("requestBody");
+  });
+
+  it("logs source cleanup AppError failures without response headers", async () => {
+    const records: LogRecord[] = [];
+    const logger = createLogger({ service: "worker" }, (record) => records.push(record));
+    const runtime = await startWorkerRuntime({
+      logger,
+      sourceCleanup: {
+        intervalMs: 60_000,
+        run: async () => {
+          throw internalError({
+            domain: "auth",
+            reason: "source_cleanup_failed",
+            message: "Source cleanup failed.",
+            metadata: {
+              operation: "cleanup_uploaded_sources",
+              queueName: "maintenance",
+            },
+            responseHeaders: {
+              setCookie: ["better-auth.session_token=; Max-Age=0"],
+            },
+          });
+        },
+      },
+    });
+
+    await runtime.stop("test");
+
+    expect(records).toContainEqual(
+      expect.objectContaining({
+        event: "worker_source_cleanup_failed",
+        fields: {
+          code: "INTERNAL_ERROR",
+          httpStatus: 500,
+          domain: "auth",
+          reason: "source_cleanup_failed",
+          retryable: false,
+          metadata: {
+            operation: "cleanup_uploaded_sources",
+            queueName: "maintenance",
+          },
+          error: "Source cleanup failed.",
+          stack: expect.any(String),
+        },
+        level: "error",
+      }),
+    );
+    expect(JSON.stringify(records)).not.toContain("responseHeaders");
+    expect(JSON.stringify(records)).not.toContain("setCookie");
   });
 
   it("throws retryable pipeline failures so BullMQ can retry the job", () => {

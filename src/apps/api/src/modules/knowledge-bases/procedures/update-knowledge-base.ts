@@ -1,10 +1,7 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import {
-  createSuccessResponse,
-  respondWithServiceError,
-} from "../../../http";
+import { createSuccessResponse } from "../../../http";
 import {
   getRequiredKnowledgeActor,
   getValidatedInput,
@@ -33,9 +30,6 @@ export async function updateKnowledgeBaseProcedure(
     ),
     knowledgeBaseId: params.knowledgeBaseId,
   });
-  if (!result.ok) {
-    return respondWithServiceError(context, result);
-  }
 
   return context.json(
     createSuccessResponse({

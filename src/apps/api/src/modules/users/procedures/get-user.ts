@@ -1,9 +1,10 @@
 import type { Context } from "hono";
 
 import type { ApiEnv } from "../../../contracts";
-import { createSuccessResponse, respondWithServiceError } from "../../../http";
-import { getRequiredActor } from "../../../middleware";
+import { createSuccessResponse } from "../../../http";
+import { getRequiredActor, getValidatedInput } from "../../../middleware";
 import type { UserRouteDependencies } from "../dependencies";
+import type { UserPathParams } from "../types";
 
 type GetUserContext = Context<ApiEnv, "/api/users/:userId">;
 
@@ -11,13 +12,11 @@ export async function getUserProcedure(
   context: GetUserContext,
   dependencies: UserRouteDependencies,
 ): Promise<Response> {
+  const params = getValidatedInput<UserPathParams>(context, "userPathParams");
   const result = await dependencies.userService.getUser({
     actor: getRequiredActor(context),
-    userId: context.req.param("userId"),
+    userId: params.userId,
   });
-  if (!result.ok) {
-    return respondWithServiceError(context, result);
-  }
 
   return context.json(
     createSuccessResponse({
