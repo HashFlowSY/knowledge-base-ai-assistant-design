@@ -1317,3 +1317,36 @@ Switched API IP summaries for unauthenticated rate limits and audit metadata fro
 ### Next Steps
 
 - None - task complete
+
+
+## Session 40: Backend error handling refactor
+
+**Date**: 2026-06-17
+**Task**: Backend error handling refactor
+**Branch**: `main`
+
+### Summary
+
+Unified backend AppError handling, API error mapping, safe logging, worker task error logging, and migrated service errors/tests.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e5495f3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
