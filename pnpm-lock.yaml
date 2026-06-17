@@ -16,8 +16,8 @@ importers:
         specifier: ^9.0.0
         version: 9.39.4
       '@mindfoldhq/trellis':
-        specifier: ^0.5.15
-        version: 0.5.15(@types/node@22.19.19)
+        specifier: ^0.6.0
+        version: 0.6.0(@types/node@22.19.19)
       '@playwright/test':
         specifier: ^1.50.0
         version: 1.60.0
@@ -1463,8 +1463,12 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@mindfoldhq/trellis@0.5.15':
-    resolution: {integrity: sha512-8NjhgvmVUk2ujH7N81KHBsU47amMM2me6rnUdPuIHbfvqbBaFv496U3fEN83C2tCOONiQok1Rg5qpbotWRITHA==}
+  '@mindfoldhq/trellis-core@0.6.0':
+    resolution: {integrity: sha512-qJTvPkff/T/mYRr885hzqc9u21EmmFj3ARg1hCLxNJf0ViwQt9xoYgaPKW/ELmRtuqzqxU0qlDrG5YHw7ql3ig==}
+    engines: {node: '>=18.17.0'}
+
+  '@mindfoldhq/trellis@0.6.0':
+    resolution: {integrity: sha512-rW7IS4jX5lO6k0Vv0uARJ0FnxaV0+oeWEKu6mnSlc285YlLKNlM0Yu5NrQ38zRHMHUzwfKtH0ERkOCscFgv96A==}
     engines: {node: '>=18.17.0'}
     hasBin: true
 
@@ -3636,8 +3640,8 @@ packages:
   get-tsconfig@4.14.0:
     resolution: {integrity: sha512-yTb+8DXzDREzgvYmh6s9vHsSVCHeC0G3PI5bEXNBHtmshPnO+S5O7qgLEOn0I5QvMy6kpZN8K1NKGyilLb93wA==}
 
-  giget@3.2.0:
-    resolution: {integrity: sha512-GvHTWcykIR/fP8cj8dMpuMMkvaeJfPvYnhq0oW+chSeIr+ldX21ifU2Ms6KBoyKZQZmVaUAAhQ2EZ68KJF8a7A==}
+  giget@3.3.0:
+    resolution: {integrity: sha512-gzi2D96p+AMfDcmJHGDj3KJ9NRiwvlFAU5yfa3ROwWZmFUjX4P43x3BcyRaOMMLto1vUo7C+86+MFhYTl6Ryiw==}
     hasBin: true
 
   glob-parent@5.1.2:
@@ -4809,8 +4813,8 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici@6.25.0:
-    resolution: {integrity: sha512-ZgpWDC5gmNiuY9CnLVXEH8rl50xhRCuLNA97fAUnKi8RRuV4E6KG31pDTsLVUKnohJE0I3XDrTeEydAXRw47xg==}
+  undici@6.27.0:
+    resolution: {integrity: sha512-YmfV3YnEDzXRC5lZ2jWtWWHKGUm1zIt8AhesR1tens+HTNv+YZlN/dp6G727LOvMJ8xjP9Be7Y2Sdr96LDm+pg==}
     engines: {node: '>=18.17'}
 
   unicorn-magic@0.3.0:
@@ -5995,14 +5999,18 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@mindfoldhq/trellis@0.5.15(@types/node@22.19.19)':
+  '@mindfoldhq/trellis-core@0.6.0': {}
+
+  '@mindfoldhq/trellis@0.6.0(@types/node@22.19.19)':
     dependencies:
+      '@mindfoldhq/trellis-core': 0.6.0
       chalk: 5.6.2
       commander: 12.1.0
       figlet: 1.11.0
-      giget: 3.2.0
+      giget: 3.3.0
       inquirer: 9.3.8(@types/node@22.19.19)
-      undici: 6.25.0
+      undici: 6.27.0
+      zod: 4.4.3
     transitivePeerDependencies:
       - '@types/node'
 
@@ -8067,7 +8075,7 @@ snapshots:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
-  giget@3.2.0: {}
+  giget@3.3.0: {}
 
   glob-parent@5.1.2:
     dependencies:
@@ -9254,7 +9262,7 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici@6.25.0: {}
+  undici@6.27.0: {}
 
   unicorn-magic@0.3.0: {}
 
