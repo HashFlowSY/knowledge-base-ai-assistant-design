@@ -1350,3 +1350,36 @@ Unified backend AppError handling, API error mapping, safe logging, worker task 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 41: Update README current progress
+
+**Date**: 2026-06-17
+**Task**: Update README current progress
+**Branch**: `main`
+
+### Summary
+
+Updated README to reflect current code-backed project progress, including unified errors, router-level validation, file-only ingestion, shallow health checks, frontend API rewrite behavior, testing status, and deployment gaps.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bede9e4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
