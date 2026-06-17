@@ -2,7 +2,7 @@
 
 企业级知识库 AI 助手，面向单企业私有化交付场景。项目采用模块化单体加独立 Worker 的 monorepo 架构，目标是把文档、网页等知识来源接入统一知识库，并提供基于权限过滤、混合检索、引用溯源和审计记录的 AI 问答能力。
 
-当前代码已经推进到真实 RAG 基础闭环阶段：认证/会话、用户管理、知识库 CRUD、文件上传保存、文档处理状态列表与失败重试、Provider 配置、密钥加密、BullMQ ingestion worker、数据库、Redis、MinIO、Meilisearch、聊天页、Chat API、混合检索、rerank、引用和反馈均已接入运行时。聊天问答现在是非流式请求/响应链路，但查询改写/扩展、真正使用最近 3 轮历史进行多轮理解、结构化部分答案判断仍是未完成项；独立处理日志、审计列表和生产运维文档也仍在待实现范围内。
+当前代码已经推进到真实 RAG 基础闭环阶段：认证/会话、用户管理、知识库 CRUD、文件上传保存、文档处理状态列表与失败重试、Provider 配置、密钥加密、BullMQ 文件 ingestion worker、数据库、Redis、MinIO、Meilisearch、聊天页、Chat API、混合检索、rerank、引用和反馈均已接入运行时。近期后端也补齐了 router-level 校验、中间件化 guard、当前知识库授权修复、可信客户端地址限流、畸形 session cookie 降级和统一 `AppError` 错误处理。聊天问答现在是单知识库、非流式请求/响应链路；URL/网页导入、查询改写/扩展、真正使用最近 3 轮历史进行多轮理解、结构化部分答案判断、审计列表和生产运维文档仍是未完成项。
 
 ## 技术栈
 
@@ -10,8 +10,8 @@
 | ------------ | ----------------------------------------------------------------------------- |
 | Monorepo     | pnpm workspace、Turborepo、TypeScript strict                                  |
 | 前端         | Next.js 16 App Router、React 19.2、Tailwind CSS、TanStack Query、lucide-react |
-| API          | Hono、Hono RPC 类型客户端、Zod、Better Auth、Redis 限流                       |
-| Worker       | Node.js、tsx、BullMQ、ingestion worker 生命周期与任务恢复                     |
+| API          | Hono、Hono RPC 类型客户端、Zod、Better Auth、Redis 限流、统一 AppError        |
+| Worker       | Node.js、tsx、BullMQ、文件 ingestion worker 生命周期与任务恢复                |
 | 数据库       | PostgreSQL 17、pgvector、Drizzle ORM、drizzle-kit                             |
 | 检索与存储   | Meilisearch index writer、MinIO/S3-compatible object storage、pgvector        |
 | 测试与质量   | Vitest、Playwright、ESLint、Prettier                                          |
@@ -33,7 +33,7 @@ flowchart TB
   RAG["src/packages/rag<br/>RAG 查询、引用与反馈"]
   AI["src/packages/ai-providers<br/>Provider 配置、chat / embedding / rerank"]
   Queue["src/packages/queue<br/>BullMQ 队列生产者与 payload"]
-  Infra["基础包<br/>db / config / queue / security / storage / search / audit / observability / shared"]
+  Infra["基础包<br/>db / config / errors / queue / security / storage / search / audit / observability / shared"]
 
   Postgres[("PostgreSQL + pgvector")]
   Redis[("Redis")]
@@ -95,6 +95,7 @@ flowchart TB
 │   ├── ai-providers/             # Provider 配置、连接测试、embedding/chat/rerank 调用
 │   ├── search/                   # Meilisearch 索引写入、关键词检索与授权范围契约
 │   ├── storage/                  # S3/MinIO 对象存储客户端与文档对象 key
+│   ├── errors/                   # AppError、错误域、HTTP 状态与响应头约束
 │   ├── security/                 # hash、cookie、限流 identity 等安全工具
 │   ├── audit/                    # 审计领域契约
 │   ├── observability/            # 结构化日志与脱敏
@@ -141,7 +142,7 @@ BETTER_AUTH_SECRET=local-better-auth-secret
 APP_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
 ```
 
-前端单独的环境样例在 `src/apps/web/.env.example`，对应变量为 `NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}`。API 和 Worker 环境样例分别在 `src/apps/api/.env.example` 与 `src/apps/worker/.env.example`。
+前端单独的环境样例在 `src/apps/web/.env.example`，其中 `NEXT_PUBLIC_API_BASE_URL` 目前只是样例变量；当前 Web 代码实际使用同源 `/api/*`，再由 Next.js rewrite 转发到本地 API。API 和 Worker 环境样例分别在 `src/apps/api/.env.example` 与 `src/apps/worker/.env.example`。
 
 `APP_ENCRYPTION_KEY` 必须能解析成 32 字节 AES-256-GCM key；上面的值仅适合本地开发。
 
@@ -212,7 +213,8 @@ pnpm dev
 - API: `http://localhost:4000`
 - Health: `http://localhost:4000/health`
 
-Next.js 已配置 `/api/:path*` rewrite 到 `http://localhost:4000/api/:path*`。
+Next.js 已配置 `/api/:path*` rewrite 到 `http://localhost:4000/api/:path*`；当前不是通过 `NEXT_PUBLIC_API_BASE_URL` 动态切换 API 地址。
+`/health` 当前是浅层存活检查，依赖项会返回 `not_checked`，还不是数据库、Redis、Meilisearch、对象存储的完整 readiness 探活。
 浏览器访问地址需要与 `APP_BASE_URL` 的 origin 保持一致，否则 mutation guard 会拒绝登录、上传、保存等写操作。
 
 如需让文件导入任务成功跑完，需要用 admin 登录 `/providers`，配置并启用可用的 embedding Provider；否则 worker 会把任务标记为可重试或失败。
@@ -295,24 +297,27 @@ pnpm --filter @kb/db typecheck
 已完成：
 
 - Monorepo 基础：pnpm workspace、Turborepo、strict TypeScript、ESLint、Prettier、Vitest、Playwright。
-- 本地基础设施：`compose.yaml` 提供 PostgreSQL/pgvector、Redis、Meilisearch、MinIO。
-- 前端真实 API 页面：登录、会话保护、知识库工作台、文件上传、文档处理状态列表、用户管理、模型服务配置已接入 TanStack Query + typed Hono client。
-- API 基础：Hono app、请求 ID、健康检查、统一响应 envelope、认证路由、用户管理路由、知识库路由、文档上传与处理状态路由、Provider 路由、Chat 路由、CSRF/content-type/admin guard、Redis/in-memory rate limiter。
+- 本地基础设施：`compose.yaml` 提供 PostgreSQL/pgvector、Redis、Meilisearch、MinIO；`pnpm dev:reset` 可在安全校验后重置本地中间件、迁移数据库并写入开发账号。
+- 前端真实 API 页面：登录、会话保护、知识库工作台、文件上传、文档处理状态列表、聊天页、用户管理、模型服务配置已接入 TanStack Query + typed Hono client；`/audit` 目前是受保护占位页。
+- API 基础：Hono app、请求 ID、浅层健康检查、统一响应 envelope、统一 `@kb/errors` / `AppError` 错误处理、认证路由、用户管理路由、知识库路由、文档上传与处理状态路由、Provider 路由、Chat 路由、router-level 参数/查询/body 校验、mutation guard、Redis/in-memory rate limiter。
+- 后端安全与授权修复：Chat session/message/feedback 会重新校验当前知识库可见性；UUID path params 和 chat sessions query 在 API 边界校验；畸形 Better Auth session cookie 会降级为缺失凭据；限流和审计 IP 摘要使用服务端 remote address，不默认信任 `X-Forwarded-For`。
 - 认证与用户管理：Better Auth 服务边界、会话契约、固定 `admin/member` 角色、用户 CRUD/service operations、开发种子账号。
 - 知识库与文档上传：知识库列表/详情/创建/更新、成员授权、文件上传校验、重复上传识别、MinIO 写入、审计记录、ingestion job 入库与 BullMQ 入队、文档处理分页查询和失败重试。
 - Provider 配置：chat/embedding/rerank 配置类型、admin-only API、浏览器端 RSA-OAEP 传输加密、服务端 AES-256-GCM 入库加密、连接测试、脱敏展示、审计事件和运行时调用。
-- Worker 与 ingestion：BullMQ worker、stale job recovery、对象读取、PDF/Markdown/TXT 解析、文本归一化、chunking、embedding 调用、chunk/embedding 持久化、Meilisearch `kb_chunks` 索引写入、retry/failure 状态对齐；Drizzle 仓储已按 job、source、output、recovery、cleanup 等职责拆分。
-- 数据库：Drizzle schema 覆盖租户、认证、知识库、文档源、ingestion、RAG、Provider、密钥、审计、系统配置等核心实体；已有 6 个迁移文件和迁移脚本。
+- Worker 与 ingestion：BullMQ worker、stale job recovery、对象读取、PDF/Markdown/TXT 解析、文本归一化、chunking、embedding 调用、chunk/embedding 持久化、Meilisearch `kb_chunks` 索引写入、retry/failure 状态对齐；Drizzle 仓储已按 job、source、output、recovery、cleanup 等职责拆分。Worker 当前只处理 `file_ingestion`。
+- 数据库：Drizzle schema 覆盖租户、认证、知识库、文档源、ingestion、RAG、Provider、密钥、审计、系统配置等核心实体；已有 7 个迁移文件和迁移脚本。
 - 聊天/RAG 基础闭环：`/chat` 已从 mock store 切换到真实 API；支持单知识库会话、消息持久化、向量+关键词混合检索、RRF 融合、rerank/fallback、上下文组装、引用回写、依据标签和回答反馈。
-- 基础领域包：`auth`、`users`、`knowledge`、`ingestion`、`rag`、`ai-providers`、`search`、`storage`、`queue`、`audit`、`observability`、`security` 等均有 typed public entrypoints 和单元测试。
+- 基础领域包：`auth`、`users`、`knowledge`、`ingestion`、`rag`、`ai-providers`、`search`、`storage`、`queue`、`errors`、`audit`、`observability`、`security` 等均有 typed public entrypoints 和单元测试。
+- 测试与质量：当前仓库有覆盖 API、前端、worker lifecycle 与核心 packages 的 Vitest 单元/契约测试，以及 1 个 Playwright E2E bootstrap flow；integration 配置存在但允许无测试通过，尚未配置 CI 和 coverage threshold。
 
 进行中或待实现：
 
 - 查询改写/扩展尚未实现；当前检索直接使用原始问题。
 - 最近 3 轮历史已从数据库读取，但尚未用于 query rewrite 或最终 chat prompt。
 - 部分答案策略目前主要依赖提示词约束，尚未做结构化判断和专门测试。
-- 独立任务管理、完整处理日志浏览、审计列表尚未接入后端查询 API。
+- `/health` 尚未做真实依赖 readiness 探活。
+- 独立任务管理、完整处理日志浏览、审计列表尚未接入后端查询 API；前端 `/audit` 仍是空状态占位。
 - URL 抓取导入仍未实现；worker 当前只处理 `file_ingestion`。
 - 文档正文浏览和详情页仍未完整实现；工作台当前提供知识库摘要、成员摘要和文档处理状态列表。
-- Chat 前端组件状态测试仍偏薄，当前主要覆盖 hooks、布局与后端/RAG 单元测试；发布前建议补充浏览器级集成或 E2E 场景。
-- 生产部署、备份恢复、监控采集、外部 OpenAPI 输出和运维文档仍需补齐。
+- Chat/providers/users 仍缺少浏览器级 E2E 闭环验证。
+- 生产部署、应用容器 Dockerfile、CI、备份恢复、监控采集、外部 OpenAPI 输出和运维文档仍需补齐。
