@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { createRagChatService } from "./service";
-import type { RagChatRepository } from "./service-types";
+import type { RagAnswerGenerator, RagChatRepository } from "./service-types";
+import type { ChatStreamEvent } from "./types";
 import {
   actor,
   createAnswerGenerator,
@@ -363,4 +364,259 @@ describe("RAG chat service", () => {
       citations: [],
     });
   });
+
+  it("streams grounded answers in the required event order and persists the final answer", async () => {
+    const calls: string[] = [];
+    const service = createRagChatService({
+      answerGenerator: createAnswerGenerator(calls),
+      embeddingProvider: createEmbeddingProvider(calls),
+      keywordSearcher: createKeywordSearcher(calls),
+      repository: createRepository(calls),
+      reranker: createReranker(calls),
+    });
+
+    const events = await collectStreamEvents(
+      service.streamQuestion({
+        actor,
+        body: {
+          knowledgeBaseId: "kb_1",
+          question: "差旅住宿标准是多少？",
+          sessionId: null,
+        },
+        requestId: "req_stream_success",
+      }),
+    );
+
+    expect(events.map((event) => event.event)).toEqual([
+      "session",
+      "user_message",
+      "retrieval_started",
+      "retrieval_completed",
+      "answer_delta",
+      "answer_delta",
+      "answer_completed",
+    ]);
+    expect(events[0]).toMatchObject({
+      data: {
+        requestId: "req_stream_success",
+        session: { id: "session_1" },
+      },
+      event: "session",
+    });
+    expect(events.at(-1)).toMatchObject({
+      data: {
+        assistantMessage: {
+          content: "差旅住宿标准为 500 元。",
+          groundingLabel: "依据充分",
+          retrievalRunId: "run_1",
+        },
+        session: {
+          messageCount: 2,
+        },
+      },
+      event: "answer_completed",
+    });
+    expect(calls).toEqual([
+      "authorize",
+      "createSession",
+      "append:user",
+      "startRun",
+      "history",
+      "embedding",
+      "vector",
+      "keyword",
+      "rerank",
+      "recordResults",
+      "completeRun",
+      "answer:stream",
+      "append:assistant",
+    ]);
+  });
+
+  it("streams no-answer completion without answer deltas", async () => {
+    const service = createRagChatService({
+      answerGenerator: createAnswerGenerator([]),
+      embeddingProvider: createEmbeddingProvider([]),
+      keywordSearcher: { async search() { return []; } },
+      repository: createRepository([], { vectorResults: [] }),
+      reranker: createReranker([]),
+    });
+
+    const events = await collectStreamEvents(
+      service.streamQuestion({
+        actor,
+        body: {
+          knowledgeBaseId: "kb_1",
+          question: "没有资料的问题",
+          sessionId: null,
+        },
+        requestId: "req_stream_no_answer",
+      }),
+    );
+
+    expect(events.map((event) => event.event)).toEqual([
+      "session",
+      "user_message",
+      "retrieval_started",
+      "retrieval_completed",
+      "answer_completed",
+    ]);
+    expect(events.at(-1)).toMatchObject({
+      data: {
+        assistantMessage: {
+          content: "知识库中没有找到可支撑答案。",
+          groundingLabel: "未找到依据",
+        },
+      },
+      event: "answer_completed",
+    });
+  });
+
+  it("persists the provider fallback answer when streaming fails before any delta", async () => {
+    const calls: string[] = [];
+    const service = createRagChatService({
+      answerGenerator: {
+        async generate() {
+          return { ok: false, code: "PROVIDER_UNAVAILABLE" };
+        },
+        async *stream() {
+          calls.push("answer:stream");
+          yield { type: "error" as const, code: "PROVIDER_UNAVAILABLE" };
+        },
+      },
+      embeddingProvider: createEmbeddingProvider(calls),
+      keywordSearcher: createKeywordSearcher(calls),
+      repository: createRepository(calls),
+      reranker: createReranker(calls),
+    });
+
+    const events = await collectStreamEvents(
+      service.streamQuestion({
+        actor,
+        body: {
+          knowledgeBaseId: "kb_1",
+          question: "模型不可用时怎么处理？",
+          sessionId: null,
+        },
+        requestId: "req_provider_before_delta",
+      }),
+    );
+
+    expect(events.map((event) => event.event)).toEqual([
+      "session",
+      "user_message",
+      "retrieval_started",
+      "retrieval_completed",
+      "answer_completed",
+    ]);
+    expect(events.at(-1)).toMatchObject({
+      data: {
+        assistantMessage: {
+          content: "模型服务暂时不可用，请稍后重试。",
+        },
+      },
+    });
+    expect(calls).toContain("append:assistant");
+  });
+
+  it("emits a safe error without persisting partial answers after a streamed delta fails", async () => {
+    const calls: string[] = [];
+    const service = createRagChatService({
+      answerGenerator: {
+        async generate() {
+          return { ok: false, code: "PROVIDER_UNAVAILABLE" };
+        },
+        async *stream() {
+          calls.push("answer:stream");
+          yield { type: "delta" as const, text: "部分回答" };
+          yield { type: "error" as const, code: "PROVIDER_UNAVAILABLE" };
+        },
+      },
+      embeddingProvider: createEmbeddingProvider(calls),
+      keywordSearcher: createKeywordSearcher(calls),
+      repository: createRepository(calls),
+      reranker: createReranker(calls),
+    });
+
+    const events = await collectStreamEvents(
+      service.streamQuestion({
+        actor,
+        body: {
+          knowledgeBaseId: "kb_1",
+          question: "流式中途失败怎么处理？",
+          sessionId: null,
+        },
+        requestId: "req_provider_after_delta",
+      }),
+    );
+
+    expect(events.map((event) => event.event)).toEqual([
+      "session",
+      "user_message",
+      "retrieval_started",
+      "retrieval_completed",
+      "answer_delta",
+      "error",
+    ]);
+    expect(events.at(-1)).toMatchObject({
+      data: {
+        code: "PROVIDER_UNAVAILABLE",
+        message: "模型服务暂时不可用，请稍后重试。",
+      },
+      event: "error",
+    });
+    expect(calls).not.toContain("append:assistant");
+  });
+
+  it("persists final answers after provider done even if the caller aborts before completion delivery", async () => {
+    const calls: string[] = [];
+    const controller = new AbortController();
+    const answerGenerator: RagAnswerGenerator = {
+      async generate() {
+        return { ok: true, text: "最终回答。" };
+      },
+      async *stream() {
+        try {
+          calls.push("answer:stream");
+          yield { type: "delta" as const, text: "最终回答。" };
+          yield { type: "done" as const };
+        } finally {
+          controller.abort();
+        }
+      },
+    };
+    const service = createRagChatService({
+      answerGenerator,
+      embeddingProvider: createEmbeddingProvider(calls),
+      keywordSearcher: createKeywordSearcher(calls),
+      repository: createRepository(calls),
+      reranker: createReranker(calls),
+    });
+
+    const events = await collectStreamEvents(
+      service.streamQuestion({
+        actor,
+        body: {
+          knowledgeBaseId: "kb_1",
+          question: "完成后断连怎么处理？",
+          sessionId: null,
+        },
+        requestId: "req_provider_done_abort",
+        signal: controller.signal,
+      }),
+    );
+
+    expect(events.map((event) => event.event)).toContain("answer_completed");
+    expect(calls).toContain("append:assistant");
+  });
 });
+
+async function collectStreamEvents(
+  stream: AsyncIterable<ChatStreamEvent>,
+): Promise<ChatStreamEvent[]> {
+  const events: ChatStreamEvent[] = [];
+  for await (const event of stream) {
+    events.push(event);
+  }
+  return events;
+}

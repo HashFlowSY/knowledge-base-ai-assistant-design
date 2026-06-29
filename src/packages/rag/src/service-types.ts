@@ -4,6 +4,7 @@ import type {
   ChatMessagesResponse,
   ChatSessionSummary,
   ChatSessionsResponse,
+  ChatStreamEvent,
   ChatSubmitResponse,
   CreateChatSessionInput,
   GroundingLabel,
@@ -124,6 +125,18 @@ export interface RagAnswerGenerator {
     requestId: string;
     tenantId: string;
   }): Promise<{ ok: true; text: string } | { ok: false; code: string }>;
+  stream(input: {
+    context: string;
+    history: ChatMessagesResponse["messages"];
+    question: string;
+    requestId: string;
+    signal: AbortSignal | undefined;
+    tenantId: string;
+  }): AsyncIterable<
+    | { type: "delta"; text: string }
+    | { type: "done" }
+    | { type: "error"; code: string }
+  >;
 }
 
 export interface RagChatService {
@@ -149,4 +162,10 @@ export interface RagChatService {
     body: SubmitChatQuestionInput;
     requestId: string;
   }): Promise<{ ok: true; result: ChatSubmitResponse }>;
+  streamQuestion(input: {
+    actor: RagActor;
+    body: SubmitChatQuestionInput;
+    requestId: string;
+    signal?: AbortSignal;
+  }): AsyncIterable<ChatStreamEvent>;
 }

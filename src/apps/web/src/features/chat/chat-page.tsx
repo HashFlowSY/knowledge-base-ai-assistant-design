@@ -1,8 +1,15 @@
 "use client";
 
-import { Send } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, type ReactElement } from "react";
+import {
+  useState,
+  type Dispatch,
+  type ReactElement,
+  type SetStateAction,
+} from "react";
+
+import type { ChatMessage, ChatStreamEvent } from "@kb/rag";
 
 import { chatCopy } from "../../copy/chat";
 import { useKnowledgeBases } from "@/features/hooks/knowledge/knowledge-hooks";
@@ -36,8 +43,18 @@ import {
   useChatSessions,
   useCreateChatSession,
   useSubmitAnswerFeedback,
-  useSubmitChatQuestion,
+  useSubmitChatQuestionStream,
 } from "../hooks/chat/chat-hooks";
+
+interface TemporaryChatStream {
+  assistantMessage: ChatMessage | null;
+  hasAnswerDelta: boolean;
+  originalKnowledgeBaseId: string;
+  originalSessionId: string | null;
+  sessionId: string | null;
+  userMessage: ChatMessage | null;
+  userMessagePersisted: boolean;
+}
 
 export function ChatPage(): ReactElement {
   const searchParams = useSearchParams();
@@ -61,14 +78,23 @@ export function ChatPage(): ReactElement {
   const sessions = sessionsQuery.data ?? [];
   const selectedSessionId = searchParams.get("sessionId") ?? sessions[0]?.id ?? null;
   const messagesQuery = useChatMessages(selectedSessionId);
-  const messages = messagesQuery.data ?? [];
+  const persistedMessages = messagesQuery.data ?? [];
+  const [temporaryStream, setTemporaryStream] =
+    useState<TemporaryChatStream | null>(null);
+  const messages = mergeTemporaryMessages({
+    persistedMessages,
+    selectedSessionId,
+    stream: temporaryStream,
+  });
   const activeCitationId = searchParams.get("citationId");
   const answer = getVisibleAnswer(messages, activeCitationId);
-  const activeCitation = getActiveCitation(answer, activeCitationId);
+  const persistedAnswer = getVisibleAnswer(persistedMessages, activeCitationId);
+  const citationPanelAnswer = temporaryStream === null ? answer : persistedAnswer;
+  const activeCitation = getActiveCitation(citationPanelAnswer, activeCitationId);
   const createSession = useCreateChatSession();
-  const submitQuestion = useSubmitChatQuestion();
-  const submitFeedback = useSubmitAnswerFeedback(answer?.id ?? null);
-  const isSubmitting = submitQuestion.isPending;
+  const submitQuestion = useSubmitChatQuestionStream();
+  const submitFeedback = useSubmitAnswerFeedback(citationPanelAnswer?.id ?? null);
+  const isSubmitting = submitQuestion.isStreaming;
 
   function updateUrl(next: {
     citationId?: string | null;
@@ -94,20 +120,39 @@ export function ChatPage(): ReactElement {
       return;
     }
 
-    submitQuestion.mutate(
+    setTemporaryStream(
+      createTemporaryChatStream({
+        knowledgeBaseId: selectedKnowledgeBaseId,
+        messageCount: persistedMessages.length,
+        question: trimmedQuestion,
+        sessionId: selectedSessionId,
+      }),
+    );
+    setQuestion("");
+
+    void submitQuestion.submit(
       {
         knowledgeBaseId: selectedKnowledgeBaseId,
         question: trimmedQuestion,
         sessionId: selectedSessionId,
       },
       {
-        onSuccess: (result) => {
-          updateUrl({
-            citationId: null,
-            knowledgeBaseId: result.session.knowledgeBaseId,
-            sessionId: result.session.id,
+        onCancel: () => {
+          setTemporaryStream((current) =>
+            handleTemporaryStreamStop(current, updateUrl),
+          );
+        },
+        onError: () => {
+          setTemporaryStream((current) =>
+            handleTemporaryStreamStop(current, updateUrl),
+          );
+        },
+        onEvent: (streamEvent) => {
+          handleChatStreamEvent({
+            event: streamEvent,
+            setTemporaryStream,
+            updateUrl,
           });
-          setQuestion("");
         },
       },
     );
@@ -164,7 +209,7 @@ export function ChatPage(): ReactElement {
               size="fill"
             >
               <div className={chatMessageScrollContentClassName()}>
-                {messagesQuery.isLoading ? (
+                {messagesQuery.isLoading && temporaryStream === null ? (
                   <Notice>正在加载对话。</Notice>
                 ) : messages.length === 0 ? (
                   <StarterPrompts onPick={setQuestion} />
@@ -179,8 +224,8 @@ export function ChatPage(): ReactElement {
                     />
                   ))
                 )}
-                {submitQuestion.isError ? (
-                  <Notice tone="error">{chatCopy.failed}</Notice>
+                {submitQuestion.error !== null ? (
+                  <Notice tone="error">{submitQuestion.error.message}</Notice>
                 ) : null}
               </div>
             </ScrollArea>
@@ -190,6 +235,7 @@ export function ChatPage(): ReactElement {
                   <span className="sr-only">{chatCopy.composerLabel}</span>
                   <textarea
                     className={chatTextareaClassName()}
+                    disabled={isSubmitting}
                     onChange={(event) => setQuestion(event.target.value)}
                     placeholder={chatCopy.composerPlaceholder}
                     rows={1}
@@ -200,15 +246,19 @@ export function ChatPage(): ReactElement {
                   className={chatSubmitButtonClassName()}
                   disabled={
                     selectedKnowledgeBaseId.length === 0 ||
-                    question.trim().length === 0 ||
-                    isSubmitting
+                    (!isSubmitting && question.trim().length === 0)
                   }
                   disabledReason={chatCopy.submitDisabled}
-                  type="submit"
-                  variant="primary"
+                  onClick={isSubmitting ? submitQuestion.cancel : undefined}
+                  type={isSubmitting ? "button" : "submit"}
+                  variant={isSubmitting ? "secondary" : "primary"}
                 >
-                  <Send aria-hidden="true" className="h-4 w-4" />
-                  {isSubmitting ? "生成中" : chatCopy.submitQuestion}
+                  {isSubmitting ? (
+                    <X aria-hidden="true" className="h-4 w-4" />
+                  ) : (
+                    <Send aria-hidden="true" className="h-4 w-4" />
+                  )}
+                  {isSubmitting ? chatCopy.cancelGeneration : chatCopy.submitQuestion}
                 </Button>
               </div>
             </form>
@@ -217,11 +267,12 @@ export function ChatPage(): ReactElement {
 
         <CitationPanel
           activeCitation={activeCitation}
-          answer={answer}
+          answer={citationPanelAnswer}
           feedbackReason={feedbackReason}
           onFeedback={(rating) => {
             submitFeedback.mutate({
-              citationIds: answer?.citations.map((citation) => citation.id) ?? [],
+              citationIds:
+                citationPanelAnswer?.citations.map((citation) => citation.id) ?? [],
               rating,
               reason: feedbackReason.length === 0 ? null : feedbackReason,
             });
@@ -234,4 +285,210 @@ export function ChatPage(): ReactElement {
       </div>
     </ProtectedPage>
   );
+}
+
+function createTemporaryChatStream(input: {
+  knowledgeBaseId: string;
+  messageCount: number;
+  question: string;
+  sessionId: string | null;
+}): TemporaryChatStream {
+  const now = new Date().toISOString();
+  const sessionId = input.sessionId ?? "pending_stream_session";
+  const userSequence = input.messageCount + 1;
+
+  return {
+    assistantMessage: {
+      citations: [],
+      content: chatCopy.retrieving,
+      createdAt: now,
+      feedback: null,
+      groundingLabel: null,
+      id: `temp_assistant_${now}`,
+      retrievalRunId: null,
+      role: "assistant",
+      sequence: userSequence + 1,
+      sessionId,
+    },
+    hasAnswerDelta: false,
+    originalKnowledgeBaseId: input.knowledgeBaseId,
+    originalSessionId: input.sessionId,
+    sessionId: input.sessionId,
+    userMessage: {
+      citations: [],
+      content: input.question,
+      createdAt: now,
+      feedback: null,
+      groundingLabel: null,
+      id: `temp_user_${now}`,
+      retrievalRunId: null,
+      role: "user",
+      sequence: userSequence,
+      sessionId,
+    },
+    userMessagePersisted: false,
+  };
+}
+
+function mergeTemporaryMessages(input: {
+  persistedMessages: ChatMessage[];
+  selectedSessionId: string | null;
+  stream: TemporaryChatStream | null;
+}): ChatMessage[] {
+  if (input.stream === null) {
+    return input.persistedMessages;
+  }
+
+  const streamSessionId = input.stream.sessionId ?? input.stream.originalSessionId;
+  if (
+    streamSessionId !== input.selectedSessionId &&
+    input.stream.originalSessionId !== input.selectedSessionId
+  ) {
+    return input.persistedMessages;
+  }
+
+  return [
+    ...input.persistedMessages,
+    ...(input.stream.userMessage === null ? [] : [input.stream.userMessage]),
+    ...(input.stream.assistantMessage === null
+      ? []
+      : [input.stream.assistantMessage]),
+  ];
+}
+
+function handleChatStreamEvent(input: {
+  event: ChatStreamEvent;
+  setTemporaryStream: Dispatch<SetStateAction<TemporaryChatStream | null>>;
+  updateUrl: (next: {
+    citationId?: string | null;
+    knowledgeBaseId?: string | null;
+    sessionId?: string | null;
+  }) => void;
+}): void {
+  const { event } = input;
+
+  if (event.event === "session") {
+    input.updateUrl({
+      citationId: null,
+      knowledgeBaseId: event.data.session.knowledgeBaseId,
+      sessionId: event.data.session.id,
+    });
+    input.setTemporaryStream((current) =>
+      current === null
+        ? null
+        : {
+            ...current,
+            assistantMessage:
+              current.assistantMessage === null
+                ? null
+                : { ...current.assistantMessage, sessionId: event.data.session.id },
+            sessionId: event.data.session.id,
+            userMessage:
+              current.userMessage === null
+                ? null
+                : { ...current.userMessage, sessionId: event.data.session.id },
+          },
+    );
+    return;
+  }
+
+  if (event.event === "user_message") {
+    input.setTemporaryStream((current) =>
+      current === null
+        ? null
+        : {
+            ...current,
+            assistantMessage:
+              current.assistantMessage === null
+                ? null
+                : {
+                    ...current.assistantMessage,
+                    sequence: event.data.userMessage.sequence + 1,
+                    sessionId: event.data.sessionId,
+                  },
+            sessionId: event.data.sessionId,
+            userMessage: event.data.userMessage,
+            userMessagePersisted: true,
+          },
+    );
+    return;
+  }
+
+  if (event.event === "retrieval_completed") {
+    input.setTemporaryStream((current) =>
+      current === null
+        ? null
+        : {
+            ...current,
+            assistantMessage:
+              current.assistantMessage === null
+                ? null
+                : {
+                    ...current.assistantMessage,
+                    content: chatCopy.generating,
+                    groundingLabel: event.data.groundingLabel,
+                    retrievalRunId: event.data.retrievalRunId,
+                  },
+          },
+    );
+    return;
+  }
+
+  if (event.event === "answer_delta") {
+    input.setTemporaryStream((current) => {
+      if (current === null || current.assistantMessage === null) {
+        return current;
+      }
+
+      return {
+        ...current,
+        assistantMessage: {
+          ...current.assistantMessage,
+          content: current.hasAnswerDelta
+            ? `${current.assistantMessage.content}${event.data.delta}`
+            : event.data.delta,
+          retrievalRunId: event.data.retrievalRunId,
+        },
+        hasAnswerDelta: true,
+      };
+    });
+    return;
+  }
+
+  if (event.event === "answer_completed") {
+    input.updateUrl({
+      citationId: null,
+      knowledgeBaseId: event.data.session.knowledgeBaseId,
+      sessionId: event.data.session.id,
+    });
+    input.setTemporaryStream(null);
+    return;
+  }
+}
+
+function handleTemporaryStreamStop(
+  current: TemporaryChatStream | null,
+  updateUrl: (next: {
+    citationId?: string | null;
+    knowledgeBaseId?: string | null;
+    sessionId?: string | null;
+  }) => void,
+): TemporaryChatStream | null {
+  if (current === null) {
+    return null;
+  }
+
+  if (!current.userMessagePersisted) {
+    updateUrl({
+      citationId: null,
+      knowledgeBaseId: current.originalKnowledgeBaseId,
+      sessionId: current.originalSessionId,
+    });
+    return null;
+  }
+
+  return {
+    ...current,
+    assistantMessage: null,
+  };
 }

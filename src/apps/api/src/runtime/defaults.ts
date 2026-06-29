@@ -225,6 +225,9 @@ export function createEmptyChatService(): ChatService {
     async submitQuestion() {
       throw createNotImplementedAppError();
     },
+    streamQuestion() {
+      throw createNotImplementedAppError();
+    },
     async submitFeedback() {
       throw createNotImplementedAppError();
     },

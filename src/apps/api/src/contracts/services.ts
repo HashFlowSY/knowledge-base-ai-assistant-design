@@ -23,6 +23,7 @@ import type {
 import type {
   ChatMessagesResponse,
   ChatSessionsResponse,
+  ChatStreamEvent,
   ChatSubmitResponse,
   CreateChatSessionInput,
   SubmitAnswerFeedbackInput,
@@ -219,6 +220,12 @@ export interface ChatService {
     body: SubmitChatQuestionInput;
     requestId: string;
   }): Promise<{ ok: true; result: ChatSubmitResponse }>;
+  streamQuestion(input: {
+    actor: SessionPayload;
+    body: SubmitChatQuestionInput;
+    requestId: string;
+    signal?: AbortSignal;
+  }): AsyncIterable<ChatStreamEvent>;
   submitFeedback(input: {
     actor: SessionPayload;
     body: SubmitAnswerFeedbackInput;

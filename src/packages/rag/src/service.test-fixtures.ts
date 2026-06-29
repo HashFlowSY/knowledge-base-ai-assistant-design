@@ -202,5 +202,11 @@ export function createAnswerGenerator(calls: string[]): RagAnswerGenerator {
       calls.push("answer");
       return { ok: true, text: "差旅住宿标准为 500 元。" };
     },
+    async *stream() {
+      calls.push("answer:stream");
+      yield { type: "delta" as const, text: "差旅住宿标准为 " };
+      yield { type: "delta" as const, text: "500 元。" };
+      yield { type: "done" as const };
+    },
   };
 }

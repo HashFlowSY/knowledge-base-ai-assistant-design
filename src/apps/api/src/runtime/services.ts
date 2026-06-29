@@ -162,6 +162,24 @@ export function createApiRuntimeServices(
           tenantId: chatInput.tenantId,
         });
       },
+      stream(chatInput) {
+        return providerChatService.stream({
+          messages: [
+            {
+              role: "system",
+              content:
+                "你只能基于给定知识库上下文回答。没有依据时明确说明知识库中没有找到。",
+            },
+            {
+              role: "user",
+              content: `问题：${chatInput.question}\n\n上下文：\n${chatInput.context}`,
+            },
+          ],
+          requestId: chatInput.requestId,
+          ...(chatInput.signal === undefined ? {} : { signal: chatInput.signal }),
+          tenantId: chatInput.tenantId,
+        });
+      },
     },
     embeddingProvider: {
       async embedQuery(embedInput) {

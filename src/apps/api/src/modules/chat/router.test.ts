@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   chatMessagesResponseSchema,
   chatSessionsResponseSchema,
+  chatStreamEventSchema,
   chatSubmitResponseSchema,
   submitAnswerFeedbackResponseSchema,
 } from "@kb/rag";
@@ -233,6 +234,105 @@ describe("chat API router", () => {
     });
   });
 
+  it("submits a streaming chat question as traceable SSE frames", async () => {
+    const userMessage = {
+      id: "msg_u",
+      sessionId: SESSION_ID,
+      role: "user" as const,
+      content: "差旅住宿标准是多少？",
+      sequence: 1,
+      createdAt: "2026-05-25T00:00:01.000Z",
+      groundingLabel: null,
+      retrievalRunId: null,
+      citations: [],
+      feedback: null,
+    };
+    const chatService: Partial<ChatService> = {
+      async *streamQuestion(input) {
+        expect(input.actor).toEqual(adminSession);
+        expect(input.signal).toBeInstanceOf(AbortSignal);
+        expect(input.body).toEqual({
+          knowledgeBaseId: "kb_1",
+          question: "差旅住宿标准是多少？",
+          sessionId: null,
+        });
+        yield {
+          event: "session",
+          data: {
+            requestId: input.requestId,
+            session: sessionSummary,
+          },
+        };
+        yield {
+          event: "user_message",
+          data: {
+            requestId: input.requestId,
+            sessionId: SESSION_ID,
+            userMessage,
+          },
+        };
+        yield {
+          event: "answer_delta",
+          data: {
+            delta: "差旅",
+            requestId: input.requestId,
+            retrievalRunId: "run_1",
+            sessionId: SESSION_ID,
+            userMessageId: "msg_u",
+          },
+        };
+        yield {
+          event: "answer_completed",
+          data: {
+            assistantMessage,
+            requestId: input.requestId,
+            session: sessionSummary,
+          },
+        };
+      },
+    };
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService,
+    });
+
+    const response = await app.request("/api/chat/messages/stream", {
+      body: JSON.stringify({
+        knowledgeBaseId: "kb_1",
+        question: "差旅住宿标准是多少？",
+        sessionId: null,
+      }),
+      headers: {
+        "content-type": "application/json",
+        cookie: "better-auth.session_token=token",
+        origin: "http://localhost:3000",
+        "x-request-id": "req_chat_stream",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
+    expect(response.headers.get("x-request-id")).toBe("req_chat_stream");
+
+    const frames = parseSseFrames(await response.text());
+    expect(frames.map((frame) => frame.id)).toEqual([
+      "req_chat_stream:1",
+      "req_chat_stream:2",
+      "req_chat_stream:3",
+      "req_chat_stream:4",
+    ]);
+    expect(frames.map((frame) => frame.event)).toEqual([
+      "session",
+      "user_message",
+      "answer_delta",
+      "answer_completed",
+    ]);
+    expect(
+      frames.map((frame) => chatStreamEventSchema.parse(frame.payload).event),
+    ).toEqual(["session", "user_message", "answer_delta", "answer_completed"]);
+  });
+
   it("lists persisted session messages and maps service errors safely", async () => {
     const app = createApiApp({
       authService: createStaticAuthService(adminSession),
@@ -391,6 +491,35 @@ describe("chat API router", () => {
     });
   });
 
+  it("returns JSON validation envelopes for invalid streaming chat questions before SSE starts", async () => {
+    const app = createApiApp({
+      authService: createStaticAuthService(adminSession),
+      chatService: {
+        streamQuestion() {
+          throw new Error("chat service should not run for invalid stream bodies");
+        },
+      },
+    });
+
+    const response = await app.request("/api/chat/messages/stream", {
+      body: JSON.stringify({ knowledgeBaseId: "kb_1", question: "" }),
+      headers: {
+        "content-type": "application/json",
+        cookie: "better-auth.session_token=token",
+        origin: "http://localhost:3000",
+        "x-request-id": "req_chat_stream_invalid",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.headers.get("content-type")).toContain("application/json");
+    expect(apiErrorResponseSchema.parse(await response.json())).toMatchObject({
+      code: "VALIDATION_ERROR",
+      requestId: "req_chat_stream_invalid",
+    });
+  });
+
   it("rejects chat mutations from disallowed origins before domain calls", async () => {
     const app = createApiApp({
       authService: createStaticAuthService(adminSession),
@@ -457,3 +586,39 @@ describe("chat API router", () => {
     });
   });
 });
+
+function parseSseFrames(text: string): {
+  event: string;
+  id: string;
+  payload: unknown;
+}[] {
+  return text
+    .trim()
+    .split(/\n\n/)
+    .filter((frame) => frame.length > 0)
+    .map((frame) => {
+      const lines = frame.split(/\n/);
+      const id = lines
+        .find((line) => line.startsWith("id: "))
+        ?.slice("id: ".length);
+      const event = lines
+        .find((line) => line.startsWith("event: "))
+        ?.slice("event: ".length);
+      const data = lines
+        .find((line) => line.startsWith("data: "))
+        ?.slice("data: ".length);
+
+      if (id === undefined || event === undefined || data === undefined) {
+        throw new Error("Malformed SSE frame.");
+      }
+
+      return {
+        event,
+        id,
+        payload: {
+          event,
+          data: JSON.parse(data),
+        },
+      };
+    });
+}

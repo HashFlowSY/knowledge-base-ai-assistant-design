@@ -107,6 +107,114 @@ export const chatSubmitResponseSchema = z.object({
 
 export type ChatSubmitResponse = z.infer<typeof chatSubmitResponseSchema>;
 
+export const chatStreamEventNameSchema = z.enum([
+  "session",
+  "user_message",
+  "retrieval_started",
+  "retrieval_completed",
+  "answer_delta",
+  "answer_completed",
+  "error",
+]);
+
+export type ChatStreamEventName = z.infer<typeof chatStreamEventNameSchema>;
+
+const chatStreamRequestPayloadSchema = z.object({
+  requestId: z.string().min(1),
+});
+
+export const chatStreamSessionEventSchema = z.object({
+  event: z.literal("session"),
+  data: chatStreamRequestPayloadSchema.extend({
+    session: chatSessionSummarySchema,
+  }),
+});
+
+export const chatStreamUserMessageEventSchema = z.object({
+  event: z.literal("user_message"),
+  data: chatStreamRequestPayloadSchema.extend({
+    sessionId: z.string().min(1),
+    userMessage: chatMessageSchema,
+  }),
+});
+
+export const chatStreamRetrievalStartedEventSchema = z.object({
+  event: z.literal("retrieval_started"),
+  data: chatStreamRequestPayloadSchema.extend({
+    retrievalRunId: z.string().min(1),
+    sessionId: z.string().min(1),
+    userMessageId: z.string().min(1),
+  }),
+});
+
+export const chatStreamRetrievalCompletedEventSchema = z.object({
+  event: z.literal("retrieval_completed"),
+  data: chatStreamRequestPayloadSchema.extend({
+    citationCount: z.number().int().min(0),
+    groundingLabel: groundingLabelSchema,
+    retrievalRunId: z.string().min(1),
+    sessionId: z.string().min(1),
+    userMessageId: z.string().min(1),
+  }),
+});
+
+export const chatStreamAnswerDeltaEventSchema = z.object({
+  event: z.literal("answer_delta"),
+  data: chatStreamRequestPayloadSchema.extend({
+    delta: z.string(),
+    retrievalRunId: z.string().min(1),
+    sessionId: z.string().min(1),
+    userMessageId: z.string().min(1),
+  }),
+});
+
+export const chatStreamAnswerCompletedEventSchema = z.object({
+  event: z.literal("answer_completed"),
+  data: chatStreamRequestPayloadSchema.extend({
+    assistantMessage: chatMessageSchema,
+    session: chatSessionSummarySchema,
+  }),
+});
+
+export const chatStreamErrorEventSchema = z.object({
+  event: z.literal("error"),
+  data: chatStreamRequestPayloadSchema.extend({
+    assistantMessageId: z.string().min(1).optional(),
+    code: z.string().min(1),
+    message: z.string().min(1),
+    retrievalRunId: z.string().min(1).optional(),
+    retryable: z.boolean().optional(),
+    sessionId: z.string().min(1).optional(),
+    userMessageId: z.string().min(1).optional(),
+  }),
+});
+
+export const chatStreamEventSchema = z.discriminatedUnion("event", [
+  chatStreamSessionEventSchema,
+  chatStreamUserMessageEventSchema,
+  chatStreamRetrievalStartedEventSchema,
+  chatStreamRetrievalCompletedEventSchema,
+  chatStreamAnswerDeltaEventSchema,
+  chatStreamAnswerCompletedEventSchema,
+  chatStreamErrorEventSchema,
+]);
+
+export type ChatStreamEvent = z.infer<typeof chatStreamEventSchema>;
+
+export function createChatStreamEventId(input: {
+  requestId: string;
+  sequence: number;
+}): string {
+  if (input.requestId.trim().length === 0) {
+    throw new Error("requestId is required for chat stream event ids.");
+  }
+  if (!Number.isInteger(input.sequence) || input.sequence < 1) {
+    throw new Error("chat stream event sequence must start at 1.");
+  }
+
+  return `${input.requestId}:${input.sequence}`;
+}
+
 export const submitAnswerFeedbackInputSchema = z.object({
   rating: answerFeedbackRatingSchema,
   reason: z.string().trim().max(1000).nullable().default(null),

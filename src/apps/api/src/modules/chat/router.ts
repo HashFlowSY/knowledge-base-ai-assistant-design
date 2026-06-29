@@ -15,6 +15,7 @@ import { listChatMessagesProcedure } from "./procedures/list-messages";
 import { listChatSessionsProcedure } from "./procedures/list-sessions";
 import { submitAnswerFeedbackProcedure } from "./procedures/submit-feedback";
 import { submitChatQuestionProcedure } from "./procedures/submit-question";
+import { submitChatQuestionStreamProcedure } from "./procedures/submit-question-stream";
 import {
   chatMessageFeedbackParamsSchema,
   chatSessionMessagesParamsSchema,
@@ -76,6 +77,16 @@ export function createChatRouter(
       submitChatQuestionInputSchema,
     ),
     (context) => submitChatQuestionProcedure(context, dependencies),
+  );
+  router.post(
+    "/api/chat/messages/stream",
+    jsonMutationGuard,
+    requireSession,
+    createJsonBodyValidationMiddleware(
+      "submitChatQuestionBody",
+      submitChatQuestionInputSchema,
+    ),
+    (context) => submitChatQuestionStreamProcedure(context, dependencies),
   );
   router.post(
     "/api/chat/messages/:messageId/feedback",

@@ -257,7 +257,7 @@ pnpm --filter @kb/db typecheck
 
 ## 问答链路
 
-当前 `/chat` 使用单知识库、非流式 RAG 请求。前端通过 TanStack Query 和 typed Hono RPC client 调用 Chat API，后端完成检索、生成和持久化后一次性返回用户消息、助手消息、引用和依据标签。
+当前 `/chat` 使用单知识库 RAG 请求。默认聊天提交走 SSE 流式路径，前端用 raw `fetch` 读取 `POST /api/chat/messages/stream`，在检索完成后逐步追加模型 delta；原 `POST /api/chat/messages` JSON 路径保留为兼容和回退接口。持久化会话、消息、引用、反馈和列表缓存仍由 TanStack Query 负责，临时流式 UI 状态只保存在聊天页本地。
 
 ### Chat API
 
@@ -267,6 +267,7 @@ pnpm --filter @kb/db typecheck
 | `POST` | `/api/chat/sessions`                     | 创建绑定单个知识库的新会话                   |
 | `GET`  | `/api/chat/sessions/:sessionId/messages` | 查询会话消息与引用/反馈                      |
 | `POST` | `/api/chat/messages`                     | 提交问题并返回完整 RAG 回答                  |
+| `POST` | `/api/chat/messages/stream`              | 提交问题并返回 `text/event-stream` 流式回答  |
 | `POST` | `/api/chat/messages/:messageId/feedback` | 提交助手回答反馈                             |
 
 ### RAG 流程
@@ -277,8 +278,9 @@ pnpm --filter @kb/db typecheck
 4. 使用 RRF 融合、按 `chunkId` 去重，保留两路 rank/score 和 `fusedScore`，取融合 top 50。
 5. 调用 rerank Provider 重排序并取 top 8；如果 rerank 不可用，回退到 fused top 8 并记录安全日志。
 6. 在 6,000 估算 token 预算内组装上下文，只合并同一文档中相邻的 chunk。
-7. 调用 chat Provider 生成回答，写入助手消息、引用、依据标签和 retrieval results。
-8. 前端展示会话、答案、引用核验面板和反馈状态。
+7. 流式路径调用 chat Provider 的 OpenAI-compatible streaming 接口，把上游 SSE 归一化为内部 delta/done/error 事件。
+8. Provider 完整结束后写入助手消息、引用、依据标签和 retrieval results；provider 未完成或被用户取消时不持久化部分助手回答。
+9. 前端收到 `session` 事件后切换 URL/选中会话，收到 delta 时更新临时助手气泡，完成、错误或取消后 refetch 持久化消息和会话列表。
 
 ### 模型选择
 
@@ -286,7 +288,7 @@ pnpm --filter @kb/db typecheck
 
 | 用途     | Provider kind | 当前调用方式                                                               |
 | -------- | ------------- | -------------------------------------------------------------------------- |
-| 回答生成 | `chat`        | OpenAI-compatible `/chat/completions`，`stream: false`，`temperature: 0.2` |
+| 回答生成 | `chat`        | OpenAI-compatible `/chat/completions`，支持 `stream: true` 和 JSON 回退，`temperature: 0.2` |
 | 查询向量 | `embedding`   | 通过 embedding service 对用户问题生成向量                                  |
 | 重排序   | `rerank`      | OpenAI-compatible `/reranks`，以候选 chunk 文本作为 documents              |
 
